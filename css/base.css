@@ -74,28 +74,34 @@ table, td, tr, th, form, fieldset, em, button, a {
     --secondary-accent-color: rgb(175, 141, 92);
 
     /* Accessibility / WV theme variables */
---wv-accent-color: #1e3a8a; /* refined navy */
+--wv-accent-color: #111111; /* black */
 --wv-accent-foreground: #ffffff;
 
---wv-bg-light: #f8fafc; /* soft white */
---wv-text-dark: #0f172a; /* deep slate for readability */
---wv-muted-text: #64748b;
+--wv-bg-light: #ffffff;
+--wv-text-dark: #111111;
+--wv-muted-text: #6b6b6b;
 
---calendar-event-color: #c53030; /* strong but clean red */
---calendar-event-color-hover: #1e3a8a; /* navy */
---calendar-today-border: 2px solid #c53030;
+--calendar-event-color: #333333;
+--calendar-event-color-hover: #000000;
+--calendar-today-border: 2px solid #000000;
 
 --button-font-color: #ffffff;
 --button-padding: 0.5rem 1.5rem;
 --button-border-radius: 0.25rem;
 
---standard-border: 1px solid #1e3a8a;
---light-border: 1px solid #e2e8f0;
---text-field-border: 2px solid #cbd5e1;
+--standard-border: 1px solid #111111;
+--light-border: 1px solid #e5e5e5;
+--text-field-border: 2px solid #d4d4d4;
 
---cancel-button-background-color: #c53030;
+--cancel-button-background-color: #000000;
 
---error-color: #c53030;
+--error-color: #000000;
+
+/* Global rules */
+font-size: 18px;
+font-family: Montserrat;
+font-weight: 300;
+
 
 /* Global rules */
 font-size: 18px;
