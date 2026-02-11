@@ -49,7 +49,7 @@ table, td, tr, th, form, fieldset, em, button, a {
 
 :root {
     /* CSS variables that will be used across the page */
-    --page-background-color: rgb(31, 31, 33);
+    --page-background-color: rgb(30, 30, 205);
     --page-font-color: white;
     --inactive-font-color: #d0d0d0;
     --inactive-background-color: rgb(31,31,33);
@@ -74,27 +74,40 @@ table, td, tr, th, form, fieldset, em, button, a {
     --secondary-accent-color: rgb(175, 141, 92);
 
     /* Accessibility / WV theme variables */
-    --wv-accent-color: #C9AB81; /* gold */
-    --wv-accent-foreground: #111111;
-    --wv-bg-light: #ffffff;
-    --wv-text-dark: #111111;
-    --wv-muted-text: #6b6b6b;
+--wv-accent-color: #1e3a8a; /* refined navy */
+--wv-accent-foreground: #ffffff;
 
-    --calendar-event-color: #808080;
-    --calendar-event-color-hover: var(--accent-color);
-    --calendar-today-border: 2px solid var(--secondary-accent-color);
+--wv-bg-light: #f8fafc; /* soft white */
+--wv-text-dark: #0f172a; /* deep slate for readability */
+--wv-muted-text: #64748b;
 
-    --button-font-color: rgb(255, 255, 255);
-    --button-padding: 0.5rem 1.5rem;
-    --button-border-radius: 0.25rem;
+--calendar-event-color: #c53030; /* strong but clean red */
+--calendar-event-color-hover: #1e3a8a; /* navy */
+--calendar-today-border: 2px solid #c53030;
 
-    --standard-border: 1px solid #333333;
-    --light-border: 1px solid var(--shadow-and-border-color);
-    --text-field-border: 2px solid #e8e8e8;
+--button-font-color: #ffffff;
+--button-padding: 0.5rem 1.5rem;
+--button-border-radius: 0.25rem;
 
-    --cancel-button-background-color: #A66654;
+--standard-border: 1px solid #1e3a8a;
+--light-border: 1px solid #e2e8f0;
+--text-field-border: 2px solid #cbd5e1;
 
-    --error-color: #A66654;
+--cancel-button-background-color: #c53030;
+
+--error-color: #c53030;
+
+/* Global rules */
+font-size: 18px;
+font-family: Montserrat;
+font-weight: 300;
+
+
+/* Global rules */
+font-size: 18px;
+font-family: Montserrat;
+font-weight: 300;
+
 
     /* Global rules */
     font-size: 18px;
