@@ -107,8 +107,8 @@
 
   <!-- Left: Image Section (Hidden on small screens) -->
   <div class="hidden md:block md:w-1/2 bg-center rounded-r-[50px] bg-[#1F1F21]">
-      <img src="images/whiskeyBarrels.png"
-            alt="Barrels"
+      <img src="images/Card3.png"
+            alt="Tanya Time"
             style="height: 100%;">
   </div>
 
