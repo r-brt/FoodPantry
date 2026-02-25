@@ -14,7 +14,7 @@ class Event {
         $this->type = $date;
     }
 
-    function getID() {
+    function getId() {
         return $this->id;
     }
 
