@@ -53,7 +53,7 @@
 
         .full-width-bar {
             width: 100%;
-            background: #C9AB81;
+            background: #4d98f3;
             padding: 17px 5%;
             display: flex;
             flex-wrap: wrap;
@@ -146,7 +146,7 @@
             left: 10%;
             font-size: 14px;
             font-weight: 700;
-            color: #C9AB81;
+            color: #4d98f3;
             max-width: 90%;
         }
 
@@ -157,7 +157,7 @@
             position: fixed;
             top: 0;
             left: 0;
-            background: #C9AB81;
+            background: #4d98f3;
             box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.25);
             display: flex;
             align-items: center;
@@ -174,7 +174,7 @@
 
         /* Logo */
         .logo-container {
-            background: #C9AB81;
+            background: #4d98f3;
             padding: 10px 20px;
             border-radius: 50px;
             box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25) inset;
@@ -208,7 +208,7 @@
         }
 
         .date-box {
-            background: #C9AB81;
+            background: #4d98f3;
             padding: 10px 30px;
             border-radius: 50px;
             box-shadow: -4px 4px 4px rgba(0, 0, 0, 0.25) inset;
@@ -263,7 +263,7 @@
         width: 30px;
         height: 30px;
         /*background-color:; /* Blue color */
-        background-color: #C9AB81;
+        background-color: #4d98f3;
         color: white;
         border-radius: 50%;
         display: flex;
@@ -282,7 +282,7 @@
     }
 .colored-box {
     display: inline-block; /* Ensures it wraps tightly around the text */
-    background-color: #C9AB81; /* Change to any color */
+    background-color: #4d98f3; /* Change to any color */
     color: white; /* Text color */
     padding: 1px 5px; /* Adds space inside the box */
     border-radius: 5px; /* Optional: Rounds the corners */
@@ -293,7 +293,7 @@
         /* Footer */
         .footer {
             width: 100%;
-            background: #C9AB81;
+            background: #4d98f3;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
@@ -342,7 +342,7 @@
             flex-direction: column;
             justify-content: center;
             gap: 10px;
-            color: #C9AB81;
+            color: #4d98f3;
             font-family: Inter, sans-serif;
             font-size: 16px;
             font-weight: 500;
@@ -402,7 +402,7 @@
     
         .content-box-test {
             position: relative;
-            background-color: #C9AB81;   /* tan background */
+            background-color: #4d98f3;   /* tan background */
             border-radius: 12px;
             padding: 20px;
             color: black;                 /* default text color */
@@ -456,7 +456,7 @@
         <h2><b>Welcome <?php echo $person->get_first_name() ?>!</b> Let's get started.</h2>
     </div>
 
-            <?php if (isset($_GET['pcSuccess'])): ?>
+            <!-- <?php if (isset($_GET['pcSuccess'])): ?>
                 <div class="happy-toast">Password changed successfully!</div>
             <?php elseif (isset($_GET['deleteService'])): ?>
                 <div class="happy-toast">Service successfully removed!</div>
@@ -470,17 +470,22 @@
                 <div class="happy-toast">Location successfully removed!</div>
             <?php elseif (isset($_GET['registerSuccess'])): ?>
                 <div class="happy-toast">Volunteer registered successfully!</div>
-            <?php endif ?>
+            <?php endif ?> -->
 
-    <div class="full-width-bar">
-    <div class="content-box">
-        <img src="images/whiskeyBarrels.png" style="filter:brightness(3) contrast(25%) blur(4px);">
-        <div class="small-text" style="color: #3A3A3A;">Make a difference.</div>
-        <div class="large-text">User Management</div>
-<button class="circle-arrow-button" onclick="window.location.href='volunteerManagement.php'">
-    <span class="button-text">Go</span>
-    <div class="circle">&gt;</div>
-</button>
+<div style="margin-top: 50px; padding: 0px 80px;">
+    <h2><b>Admin Dashboard</b></h2>
+</div>
+<div class="full-width-bar-sub">
+ <div class="content-box-test" onclick="window.location.href='volunteerManagement.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/user_icon.png" alt="User Icon">
+        </div>
+        
+        <div class="large-text-sub" style="color:black;">User Management</div>
+        <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
+        <button class="arrow-button">→</button>
+    </div>
+            </div>
 <!--
         <div class="nav-buttons">
             <button class="nav-button" onclick="window.location.href='personSearch.php'">
@@ -495,10 +500,10 @@
 -->
     </div>
 
-    <div class="content-box">
+    <!-- <div class="content-box">
         <img src="images/whiskeyBarrels.png" style="filter:brightness(3) contrast(25%) blur(4px);">
         <div class="small-text" style="color: #3A3A3A;">Let’s have some fun!</div>
-        <div class="large-text">Event Management</div>
+        <div class="large-text">View Inventory</div>
 <button class="circle-arrow-button" onclick="window.location.href='eventManagement.php'">
     <span class="button-text"><?php 
                         require_once('database/dbEvents.php');
@@ -511,9 +516,9 @@
                     ?> Sign-Ups </span>
     <div class="circle">&gt;</div>
 </button>
-    </div>
+    </div> -->
 
-    <div class="content-box">
+    <!-- <div class="content-box">
         <img src="images/whiskeyBarrels.png" style="filter:brightness(3) contrast(25%) blur(4px);">
         <div class="small-text" style="color: #3A3A3A;">Get away from it all.</div>
         <div class="large-text">Retreat Applications</div>
@@ -523,11 +528,9 @@
 </button>
     </div>
 
-</div>
+</div> -->
 
-<div style="margin-top: 50px; padding: 0px 80px;">
-    <h2><b>Admin Dashboard</b></h2>
-</div>
+
 
 <div class="full-width-bar-sub">
 
@@ -545,8 +548,8 @@
         }
     ?>
 
-    <!-- Calendar -->
-    <div class="content-box-test" onclick="window.location.href='calendar.php'" style="background-color: #C9AB81; border-radius: 12px; padding: 20px; color: black;">
+    <!-- Calendar
+    <div class="content-box-test" onclick="window.location.href='calendar.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/view-calendar.svg" alt="Calendar Icon">
         </div>
@@ -556,8 +559,8 @@
         <button class="arrow-button">→</button>
     </div>
 
-    <!-- Manage Documents -->
-    <div class="content-box-test" onclick="window.location.href='view_encrypted_gallery.php'" style="background-color: #C9AB81; border-radius: 12px; padding: 20px; color: black; position: relative;">
+    Manage Documents
+    <div class="content-box-test" onclick="window.location.href='view_encrypted_gallery.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black; position: relative;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Document Icon">
         </div>
@@ -565,10 +568,10 @@
         <div class="large-text-sub" style="color:black;">View Pending IDs </div>
         <div class="graph-text" style="color:#3A3A3A;">View pending and arbitrate user submitted IDs.</div>
         <button class="arrow-button">→</button>
-    </div>
+    </div> -->
 
     <!-- System Notifications -->
-    <div class="content-box-test" onclick="window.location.href='inbox.php'" style="background-color: #C9AB81; border-radius: 12px; padding: 20px; color: black;">
+    <!-- <div class="content-box-test" onclick="window.location.href='inbox.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/<?php echo $inboxIcon ?>" alt="Notification Icon">
         </div>
@@ -582,10 +585,10 @@
         </div>
         <div class="graph-text" style="color:#3A3A3A;">Stay up to date.</div>
         <button class="arrow-button">→</button>
-    </div>
+    </div> -->
 
     <!-- Generate Report -->
-    <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #C9AB81; border-radius: 12px; padding: 20px; color: black;">
+    <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/create-report.svg" alt="Report Icon">
         </div>
@@ -595,19 +598,19 @@
         <button class="arrow-button">→</button>
     </div>
 
-    <!-- Create Email -->
-    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #C9AB81; border-radius: 12px; padding: 20px; color: black;">
+    <!-- View Inventory -->
+    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
         <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/inbox.svg" alt="Email Icon">
+            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
         </div>
         
-        <div class="large-text-sub" style="color:black;">Create Email</div>
+        <div class="large-text-sub" style="color:black;">View Inventory</div>
         <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
         <button class="arrow-button">→</button>
     </div>
 
     <!-- View Drafts -->
-    <div class="content-box-test" onclick="window.location.href='viewDrafts.php'" style="background-color: #C9AB81; border-radius: 12px; padding: 20px; color: black;">
+    <!-- <div class="content-box-test" onclick="window.location.href='viewDrafts.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/search.svg" alt="Drafts Icon">
         </div>
@@ -617,8 +620,8 @@
         <button class="arrow-button">→</button>
     </div>
 
-    <!-- Generate Email List -->
-    <div class="content-box-test" onclick="window.location.href='generateEmailList.php'" style="background-color: #C9AB81; border-radius: 12px; padding: 20px; color: black;">
+    Generate Email List -->
+    <!-- <div class="content-box-test" onclick="window.location.href='generateEmailList.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/send.png" alt="Email List Icon">
         </div>
@@ -628,8 +631,8 @@
         <button class="arrow-button">→</button>
     </div>
 
-    <!-- Discussions -->
-    <div class="content-box-test" onclick="window.location.href='viewSuggestions.php'" style="background-color: #C9AB81; border-radius: 12px; padding: 20px; color: black;">
+     Discussions -->
+    <!-- <div class="content-box-test" onclick="window.location.href='viewSuggestions.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Discussions Icon">
         </div>
@@ -637,7 +640,7 @@
         <div class="large-text-sub" style="color:black;">User Suggestions</div>
         <div class="graph-text" style="color:#3A3A3A;">View user submitted suggestions.</div>
         <button class="arrow-button">→</button>
-    </div>
+    </div> -->
 
 </div>
 
@@ -657,7 +660,7 @@
     <footer class="footer" style="margin-top: 100px;">
         <!-- Left Side: Logo & Socials -->
         <div class="footer-left">
-            <img src="images/whiskeyLogoBlack.png" alt="Logo" class="footer-logo">
+            <img src="images/ccda-logo-white.svg" alt="Logo" class="footer-logo">
             <div class="social-icons">
                 <a href="#"><i class="fab fa-facebook"></i></a>
                 <a href="#"><i class="fab fa-twitter"></i></a>
@@ -667,7 +670,7 @@
         </div>
 
         <!-- Right Side: Page Links -->
-        <div class="footer-right">
+        <!-- <div class="footer-right">
             <div class="footer-section">
                 <div class="footer-topic">Connect</div>
                 <a href="https://www.facebook.com/profile.php?id=61566628001672&mibextid=LQQJ4d">Facebook</a>
@@ -677,9 +680,9 @@
             <div class="footer-section">
                 <div class="footer-topic">Contact Us</div>
                 <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a>
-                <!-- <a href="tel:5408981500">540-898-1500 (ext 117)</a> -->
+                 <a href="tel:5408981500">540-898-1500 (ext 117)</a>
             </div>
-        </div>
+        </div> -->
     </footer>
 
     <!-- Font Awesome for Icons -->
@@ -817,17 +820,17 @@
         <!-- Left Side: Logo & Socials -->
         <div class="footer-left">
             <img src="images/whiskeyLogoBlack.png" alt="Logo" class="footer-logo">
-            <div class="social-icons">
+            <!-- <div class="social-icons">
                 <a href="#"><i class="fab fa-facebook"></i></a>
                 <a href="#"><i class="fab fa-twitter"></i></a>
                 <a href="#"><i class="fab fa-instagram"></i></a>
                 <a href="#"><i class="fab fa-linkedin"></i></a>
-            </div>
+            </div> -->
         </div>
 
         <!-- Right Side: Page Links -->
         <div class="footer-right">
-            <div class="footer-section">
+            <!-- <div class="footer-section">
                 <div class="footer-topic">Connect</div>
                 <a href="https://www.facebook.com/profile.php?id=61566628001672&mibextid=LQQJ4d">Facebook</a>
                 <a href="https://www.instagram.com/whiskeyvalor/#">Instagram</a>
@@ -835,10 +838,10 @@
             </div>
             <div class="footer-section">
                 <div class="footer-topic">Contact Us</div>
-                <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a>
+                <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a> -->
                 <!-- <a href="tel:5408981500">540-898-1500 (ext 117)</a> -->
-            </div>
-        </div>
+            <!-- </div> -->
+        <!-- </div> -->
     </footer>
     <p>_</p>
 
