@@ -689,10 +689,10 @@ function update_services_for_event($eventID, $serviceIDs) {
     return;
 }
 */
-function find_event($nameLike) {
+/*function find_inventoryEvent($nameLike) {
     $connection = connect();
     $query = "
-        select * from dbevents
+        select * from dbInventoryEvent
         where name like '%$nameLike%'
     ";
     $result = mysqli_query($connection, $query);
@@ -704,7 +704,7 @@ function find_event($nameLike) {
     return $all;
 }
 
-function fetch_events_in_date_range_as_array($start_date, $end_date) {
+/*function fetch_events_in_date_range_as_array($start_date, $end_date) {
     $connection = connect();
     $start_date = mysqli_real_escape_string($connection, $start_date);
     $end_date = mysqli_real_escape_string($connection, $end_date);
@@ -720,10 +720,10 @@ function fetch_events_in_date_range_as_array($start_date, $end_date) {
     mysqli_close($connection);
     return $events;
 }
-
-function fetch_all_events() {
+*/
+/*function fetch_all_inventoryEvents() {
     $connection = connect();
-    $query = "select * from dbevents
+    $query = "select * from dbInventoryEvent
               order by date, startTime asc";
     $result = mysqli_query($connection, $query);
     if (!$result) {
@@ -735,7 +735,7 @@ function fetch_all_events() {
     return $events;
 }
 
-function get_animal($id) {
+/*function get_animal($id) {
     $connection = connect();
     $query = "select * from dbanimals
               where id='$id'";
@@ -809,7 +809,7 @@ function get_services($eventID) {
 // }
 
 function delete_event($id) {
-    $query = "delete from dbevents where id='$id'";
+    $query = "delete from dbInventoryEvent where id='$id'";
     $connection = connect();
     $result = mysqli_query($connection, $query);
     $result = boolval($result);
@@ -817,7 +817,7 @@ function delete_event($id) {
     return $result;
 }
 
-function cancel_event($event_id, $account_name) {
+/*function cancel_event($event_id, $account_name) {
     $query = "DELETE from dbeventpersons where userID LIKE '$account_name' AND eventID LIKE $event_id";
     $connection = connect();
     $result = mysqli_query($connection, $query);
@@ -833,7 +833,7 @@ function cancel_event($event_id, $account_name) {
  * @param mixed $notes Any notes for why the application was approved.
  * @return bool|mysqli_result
  */
-function approve_signup($event_id, $account_name, $position, $notes) {
+/*function approve_signup($event_id, $account_name, $position, $notes) {
     $connection = connect();
     $safe_event = mysqli_real_escape_string($connection, $event_id);
     $safe_user = mysqli_real_escape_string($connection, $account_name);
@@ -879,7 +879,7 @@ function approve_multiple_signups($event_id, $account_names, $notes = '') {
  * @param mixed $notes Any notes on the rejection.
  * @return bool True if successfull, false if the rejection failed
  */
-function reject_signup($event_id, $account_name, $position, $notes) {
+/*function reject_signup($event_id, $account_name, $position, $notes) {
     $query = "DELETE from dbpendingsignups where username = '$account_name' AND eventname = '$event_id'";
     $connection = connect();
     $result = mysqli_query($connection, $query);
@@ -888,9 +888,9 @@ function reject_signup($event_id, $account_name, $position, $notes) {
     {
         emailHandler($event_id, $account_name, 2, "Sign-up DENIED.");
     }*/
-    return $result;
+    /*return $result;
 }
-
+/*
 function complete_event($id) {
     $event = retrieve_event2($id);
     $animal = get_animal($event["animalID"])[0];
@@ -1016,7 +1016,7 @@ function update_animal2($animal) {
  * @param $event_id The id what we're querying. 
  * @return bool if true then the event requires approval for sign-up. if false then it does not.
  */
-    function fetch_signup_status(int $event_id): bool
+    /*function fetch_signup_status(int $event_id): bool
 {
     $connection = connect();
     
@@ -1030,7 +1030,7 @@ function update_animal2($animal) {
     return ($eventStatusRow['access'] == "Approval_Needed");
 }
 
- function getPAttendance($eventID) {
+/*function getPAttendance($eventID) {
     $conn=connect();
 
     $sql = "SELECT userID FROM dbeventpersons WHERE eventID = ?";
