@@ -39,6 +39,24 @@ function delete_itemCount($id){
 }
 
 /*
+ * get itemCount from dbItemCounts table with given inventoryEventId: return null if not found.
+ */
+
+function get_itemCount_by_id($id){
+    $con=connect();
+    $query = 'SELECT * FROM dbitemcounts WHERE id = "' . $id . '"';
+    $sql_result = mysqli_query($con,$query);
+    if ($sql_result == null || mysqli_num_rows($sql_result) == 0) {
+        mysqli_close($con);
+        return null;
+    }
+    $array_result = mysqli_fetch_array($sql_result, MYSQLI_ASSOC);
+    $itemCount = new ItemCount($array_result['id'],$array_result['inventoryEventId'],$array_result['itemCategoryId'],$array_result['quantity']);
+    mysqli_close($con);
+    return $itemCount;
+}
+
+/*
  * get all itemCounts from dbItemCounts table that have a given inventoryEventId
  */
 
