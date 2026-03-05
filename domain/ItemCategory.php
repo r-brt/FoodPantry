@@ -2,7 +2,7 @@
 /**
  * Encapsulated version of a dbs inventoryEvent.
  */
-class Event {
+class ItemCategory {
     private $id;
     private $name;
     private $status;
@@ -11,7 +11,7 @@ class Event {
     function __construct($id, $name, $status) {
         $this->id = $id;
         $this->name = $name;
-        $this->type = $status;
+        $this->status = $status;
     }
 
     function getId() {
