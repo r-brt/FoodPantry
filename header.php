@@ -38,6 +38,7 @@ if (date("H:i:s") > "18:19:59") {
         h2 {
         	font-weight: normal;
             font-size: 30px;
+            color: white;
         }
 
 /*BEGIN STYLE TEST*/
@@ -71,7 +72,7 @@ if (date("H:i:s") > "18:19:59") {
 
         .full-width-bar {
             width: 100%;
-            background: rgb(31,31,33);
+            background: #4d98f3;
             padding: 17px 5%;
             display: flex;
             flex-wrap: wrap;
@@ -177,7 +178,7 @@ if (date("H:i:s") > "18:19:59") {
             position: fixed;
             top: 0;
             left: 0;
-            background: rgb(31,31,33);
+            background: #4d98f3;
             box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.25);
             display: flex;
             align-items: center;
@@ -194,7 +195,7 @@ if (date("H:i:s") > "18:19:59") {
 
         /* Logo */
         .logo-container {
-            background: rgb(31,31,33);
+            background: #4d98f3;
             padding: 10px 20px;
             border-radius: 50px;
             box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25) inset;
@@ -241,8 +242,8 @@ if (date("H:i:s") > "18:19:59") {
             position: absolute;
             top: 150%;
             left: -10%;
-            background-color: rgb(31,31,33);
-            border: 1px solid rgb(31,31,33);
+            background-color: #4d98f3;
+            border: 1px solid #4d98f3;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             border-radius: 5px;
             min-width: 150px;
@@ -365,7 +366,7 @@ if (date("H:i:s") > "18:19:59") {
         /* Footer */
         .footer {
             width: 100%;
-            background: #C9AB81;
+            background: #4d98f3;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
@@ -398,7 +399,7 @@ if (date("H:i:s") > "18:19:59") {
         }
 
         .social-icons a:hover {
-            color: rgb(31,31,33);
+            color: #4d98f3;
         }
 
         /* Right Section */
@@ -447,7 +448,7 @@ if (date("H:i:s") > "18:19:59") {
             top: 40px; /* Adjust as needed */
             left: 50%;
             transform: translateX(-50%);
-            background: rgb(31,31,33); /* Optional background for better visibility */
+            background: #4d98f3; /* Optional background for better visibility */
             padding: 10px;
             border-radius: 50%;
             display: flex;

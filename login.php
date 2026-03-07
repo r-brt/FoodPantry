@@ -107,7 +107,7 @@
 
   <!-- Left: Image Section (Hidden on small screens) -->
   <div class="hidden md:block md:w-1/2 bg-center rounded-r-[50px] bg-[#1F1F21]">
-      <img src="images/Card3.png"
+      <img src="images/ccda-logo-white.svg"
             alt="Tanya Time"
             style="height: 100%;">
   </div>

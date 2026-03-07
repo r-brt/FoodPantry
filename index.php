@@ -43,12 +43,13 @@
 
         body {
             font-family: Quicksand, sans-serif;
-            background-color: #1F1F21;
+            background-color: rgb(255, 255, 255);
         }
 
         h2 {
         	font-weight: normal;
             font-size: 30px;
+            color: rgb(47, 51, 61) !important;
         }
 
         .full-width-bar {
@@ -62,7 +63,7 @@
         }
         .full-width-bar-sub {
             width: 100%;
-            background: #1F1F21;
+            background: rgb(255, 255, 255);
             padding: 17px 5%;
             display: flex;
             flex-wrap: wrap;
@@ -125,7 +126,7 @@
             left: 30px;
             font-size: 22px;
             font-weight: 700;
-            color: black;
+            color: white;
             max-width: 90%;
         }
 
@@ -136,7 +137,7 @@
             left: 10%;
             font-size: 22px;
             font-weight: 700;
-            color: black;
+            color: white;
             max-width: 90%;
         }
 
@@ -195,7 +196,7 @@
         .nav-links div {
             font-size: 24px;
             font-weight: 700;
-            color: black;
+            color: white;
             cursor: pointer;
         }
 
@@ -254,7 +255,7 @@
         font-size: 20px;
         font-family: Quicksand, sans-serif;
         font-weight: bold;
-        color: black;
+        color: white;
         cursor: pointer;
         transition: transform 0.3s ease;
     }
@@ -405,7 +406,7 @@
             background-color: #4d98f3;   /* tan background */
             border-radius: 12px;
             padding: 20px;
-            color: black;                 /* default text color */
+            color: white;                 /* default text color */
             flex: 1 1 280px;
             max-width: 375px;
             min-height: 250px;            /* keeps all boxes same height even without bg image */
@@ -414,7 +415,7 @@
 
         .content-box-test .large-text-sub,
         .content-box-test .graph-text {
-            color: black;
+            color: rgb(47, 51, 61);
             }
 
 
@@ -424,7 +425,7 @@
 
         
         .full-width-bar-sub{
-            background-color: #1F1F21 !important;
+            background-color:rgb(255, 255, 255) !important;
             }
 
 
@@ -476,12 +477,12 @@
     <h2><b>Admin Dashboard</b></h2>
 </div>
 <div class="full-width-bar-sub">
- <div class="content-box-test" onclick="window.location.href='volunteerManagement.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+ <div class="content-box-test" onclick="window.location.href='volunteerManagement.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/user_icon.png" alt="User Icon">
         </div>
         
-        <div class="large-text-sub" style="color:black;">User Management</div>
+        <div class="large-text-sub" style="color:white;">User Management</div>
         <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
         <button class="arrow-button">→</button>
     </div>
@@ -549,29 +550,29 @@
     ?>
 
     <!-- Calendar
-    <div class="content-box-test" onclick="window.location.href='calendar.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+    <div class="content-box-test" onclick="window.location.href='calendar.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/view-calendar.svg" alt="Calendar Icon">
         </div>
         
-        <div class="large-text-sub" style="color:#black;">Calendar</div>
+        <div class="large-text-sub" style="color:#white;">Calendar</div>
         <div class="graph-text" style="color:#3A3A3A;">See upcoming events/trainings.</div>
         <button class="arrow-button">→</button>
     </div>
 
     Manage Documents
-    <div class="content-box-test" onclick="window.location.href='view_encrypted_gallery.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black; position: relative;">
+    <div class="content-box-test" onclick="window.location.href='view_encrypted_gallery.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white; position: relative;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Document Icon">
         </div>
        
-        <div class="large-text-sub" style="color:black;">View Pending IDs </div>
+        <div class="large-text-sub" style="color:white;">View Pending IDs </div>
         <div class="graph-text" style="color:#3A3A3A;">View pending and arbitrate user submitted IDs.</div>
         <button class="arrow-button">→</button>
     </div> -->
 
     <!-- System Notifications -->
-    <!-- <div class="content-box-test" onclick="window.location.href='inbox.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+    <!-- <div class="content-box-test" onclick="window.location.href='inbox.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/<?php echo $inboxIcon ?>" alt="Notification Icon">
         </div>
@@ -588,56 +589,56 @@
     </div> -->
 
     <!-- Generate Report -->
-    <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+    <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/create-report.svg" alt="Report Icon">
         </div>
         
-        <div class="large-text-sub"style="color:black;">Generate Report</div>
+        <div class="large-text-sub"style="color:white;">Generate Report</div>
         <div class="graph-text"style="color:#3A3A3A;">From this quarter or annual.</div>
         <button class="arrow-button">→</button>
     </div>
 
     <!-- View Inventory -->
-    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
         </div>
         
-        <div class="large-text-sub" style="color:black;">View Inventory</div>
+        <div class="large-text-sub" style="color:white;">View Inventory</div>
         <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
         <button class="arrow-button">→</button>
     </div>
 
     <!-- View Drafts -->
-    <!-- <div class="content-box-test" onclick="window.location.href='viewDrafts.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+    <!-- <div class="content-box-test" onclick="window.location.href='viewDrafts.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/search.svg" alt="Drafts Icon">
         </div>
         
-        <div class="large-text-sub" style="color:black;">View Drafts</div>
+        <div class="large-text-sub" style="color:white;">View Drafts</div>
         <div class="graph-text" style="color:#3A3A3A;">Check saved email drafts.</div>
         <button class="arrow-button">→</button>
     </div>
 
     Generate Email List -->
-    <!-- <div class="content-box-test" onclick="window.location.href='generateEmailList.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+    <!-- <div class="content-box-test" onclick="window.location.href='generateEmailList.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/send.png" alt="Email List Icon">
         </div>
          
-        <div class="large-text-sub" style="color:black;">Generate Email List</div>
+        <div class="large-text-sub" style="color:white;">Generate Email List</div>
         <div class="graph-text" style="color:#3A3A3A;">Volunteer Emails</div>
         <button class="arrow-button">→</button>
     </div>
 
      Discussions -->
-    <!-- <div class="content-box-test" onclick="window.location.href='viewSuggestions.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: black;">
+    <!-- <div class="content-box-test" onclick="window.location.href='viewSuggestions.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Discussions Icon">
         </div>
         
-        <div class="large-text-sub" style="color:black;">User Suggestions</div>
+        <div class="large-text-sub" style="color:white;">User Suggestions</div>
         <div class="graph-text" style="color:#3A3A3A;">View user submitted suggestions.</div>
         <button class="arrow-button">→</button>
     </div> -->
@@ -819,7 +820,7 @@
     <footer class="footer" style="margin-top: 100px;">
         <!-- Left Side: Logo & Socials -->
         <div class="footer-left">
-            <img src="images/whiskeyLogoBlack.png" alt="Logo" class="footer-logo">
+            <img src="images/whiskeyLogowhite.png" alt="Logo" class="footer-logo">
             <!-- <div class="social-icons">
                 <a href="#"><i class="fab fa-facebook"></i></a>
                 <a href="#"><i class="fab fa-twitter"></i></a>
