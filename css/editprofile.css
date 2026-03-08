@@ -44,7 +44,7 @@ table, td, tr, th, form, fieldset, em, button, a {
 :root {
     /* CSS variables that will be used across the page */
     --page-background-color: #1F1F21;
-    --page-font-color: #C9AB81; 
+    --page-font-color: #4d98f3; 
     --inactive-font-color: #d0d0d0;
     --inactive-background-color: #f0f0f0;
     --standout-background: #fafafa;
@@ -68,7 +68,7 @@ table, td, tr, th, form, fieldset, em, button, a {
     --calendar-event-color-hover: var(--main-color);
     --calendar-today-border: 2px solid var(--secondary-accent-color);
 
-    --button-font-color: #c9ab81;
+    --button-font-color: #4d98f3;
     --button-padding: 0.5rem 1.5rem;
     --button-border-radius: 0.25rem;
 
@@ -837,7 +837,7 @@ table.general th, table.general td {
     padding: 15px;
     margin-bottom: 20px;
     background-color: #1F1F21;
-    color: #C9AB81;    
+    color: #4d98f3;    
 }
 
 .section-box legend {
