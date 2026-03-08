@@ -639,6 +639,16 @@
         <button class="arrow-button">→</button>
     </div>
 
+    <!--Weekly Inventory Report -->
+    <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Report Icon">
+        </div>
+        <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
+        <div class="graph-text" style="color:#3A3A3A;">View weekly inventory.</div>
+        <button class="arrow-button">→</button>
+    </div>    
+
 </div>
 
 
