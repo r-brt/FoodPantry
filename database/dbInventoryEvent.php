@@ -30,36 +30,24 @@ include_once(dirname(__FILE__).'/../domain/InventoryEvent.php');
  * add an event to dbEvents table: if already there, return false
  */
 
-function add_inventoryEvent($event) {
+function add_inventoryEvent($PersonID, $date) {
     // if (!$event instanceof Event)
     //     die("Error: add_event type mismatch");
     $con=connect();
-    $query = "SELECT * FROM dbInventoryEvent WHERE id = '" . $event->getId() . "'";
-    $result = mysqli_query($con,$query);
+    //$query = "SELECT * FROM dbInventoryEvent WHERE id = '" . $event->getId() . "'";
+    //$result = mysqli_query($con,$query);
     //if there's no entry for this id, add it
-    if ($result == null || mysqli_num_rows($result) == 0) {
+    //if ($result == null || mysqli_num_rows($result) == 0) {
         $insertQuery = "
-            INSERT INTO dbInventoryEvent (id, personId, date)
+            INSERT INTO dbInventoryEvent (personId, date)
             VALUES (
-                '" . $event->getId() . "',
-                '" . $event->getPersonId() . "',
-                '" . $event->getDate() . "'
+                '" . $PersonID . "',
+                '" . $date . "'
             )
         ";
         mysqli_query($con, $insertQuery);
         mysqli_close($con);
         return true;
-
-            /*mysqli_query($con,'INSERT INTO dbInventoryEvent VALUES("' .
-                    $event->getId() . '","' .
-                    $event->getPersonId() . '","' .
-                    $event->getDate() . '","' .
-                    '");');*/
-
-        
-        //mysqli_close($con);
-        //return true;
-    }
     mysqli_close($con);
     return false;
 }
