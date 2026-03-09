@@ -34,4 +34,8 @@ class ItemCount {
         return $this->quantity;
     }
 
+    public function __toString(){
+        return "ID: {$this->id}, Inventory Event ID: {$this->inventoryEventId}, Item Category ID: {$this->itemCategoryId}, Quantity: {$this->quantity}";
+    }
+
 }
