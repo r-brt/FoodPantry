@@ -8,17 +8,16 @@ include_once(dirname(__FILE__).'/../domain/ItemCategory.php');
  */
 function add_itemCategory($category) {
     if (!$category instanceof ItemCategory)
-        die("Error: add_group type mismatch");
+        die("Error: add_itemCategory type mismatch");
     $con = connect();
     $query = "SELECT * FROM dbItemCategory WHERE id = '" . $category->getId() . "'";
     $result = mysqli_query($con, $query);
     
     if ($result == null || mysqli_num_rows($result) == 0) {
-        mysqli_query($con, 'INSERT INTO dbItemCategory (group_name, color_level) VALUES ("' .
+        mysqli_query($con, 'INSERT INTO dbItemCategory (id, name, status) VALUES ("' .
                 $category->getId() . '","' .
                 $category->getName() . '","' .
-                $category->getStatus() . '","' .
-                '");');
+                $category->getStatus() . ' ")');
         mysqli_close($con);
         return true;
     }
@@ -66,20 +65,26 @@ function get_all_ItemCategory() {
     $result = mysqli_query($con, $query);
 
     // If no groups are found, return an empty array
-    if (mysqli_num_rows($result) == 0) {
+    /*if (mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return [];
-    }
+    }*/
 
     // Create an array of Group objects
-    $category = [];
-    while ($row = mysqli_fetch_assoc($result)) {
-        $category = new Group($row['id'], $row['name'], $row['status']);
-        $category[] = $category;
+    $categories = [];
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $categories[] = new ItemCategory($row['id'], $row['name'], $row['status']);
+        //$category[] = $category;
+        }
     }
+    /*while ($row = mysqli_fetch_assoc($result)) {
+        $category = new ItemCategory($row['id'], $row['name'], $row['status']);
+        //$category[] = $category;
+    }*/
 
     mysqli_close($con);
-    return $category;
+    return $categories;
 }
 /*
 add a user to a volunteer group
@@ -280,5 +285,5 @@ function get_groups_from_user($user_id) {
 
     mysqli_close($con);
     return $groups;
-}
+}*/
 
