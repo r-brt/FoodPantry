@@ -826,37 +826,24 @@ if (date("H:i:s") > "18:19:59") {
                 <div class="nav-item">Events
                     <div class="dropdown">
 
-<a href="addEvent.php" style="text-decoration: none;">
+<a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/plus-solid.svg">
-    <span>Create Event</span>
+    <span>Generate Report</span>
   </div>
 </a>
-<a href="calendar.php" style="text-decoration: none;">
+<a href="createEmail.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/list-solid.svg">
-    <span>View Events</span>
+    <span>View Inventory</span>
   </div>
 </a>
-<a href="editHours.php" style="text-decoration: none;">
+<a href="viewWeeklyReport.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/clock-regular.svg">
-    <span>Change Event Hours</span>
+    <span>Weekely Inventory Report</span>
   </div>
 </a>
-<a href="viewPendingApps.php" style="text-decoration: none;">
-  <div class="in-nav">
-    <img src="images/users-solid.svg">
-    <span>Pending Applications</span>
-  </div>
-</a>
-<a href="adminViewingEvents.php" style="text-decoration: none;">
-  <div class="in-nav">
-    <img src="images/list-solid.svg">
-    <span>Edit Event</span>
-  </div>
-</a>
-
 
                     </div>
                 </div>
