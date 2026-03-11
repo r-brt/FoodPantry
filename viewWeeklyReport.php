@@ -175,7 +175,7 @@
                                 <th>Item Name</th>
                                 <th>Days Left</th>
                                 <th>Previous Boxes</th>
-                                <th>Prevous Items Per Box</th>
+                                <th>Previous Items Per Box</th>
                                 <th>Current Boxes</th>
                                 <th>Current Items Per Box</th>
                                 <th>Weeks Left</th>
@@ -201,7 +201,7 @@
                                 <th>Item Name</th>
                                 <th>Days Left</th>
                                 <th>Previous Boxes</th>
-                                <th>Prevous Items Per Box</th>
+                                <th>Previous Items Per Box</th>
                                 <th>Current Boxes</th>
                                 <th>Current Items Per Box</th>
                                 <th>Weeks Left</th>
