@@ -4,25 +4,17 @@ include_once('dbinfo.php');
 include_once(dirname(__FILE__).'/../domain/ItemCategory.php');
 
 /*
- * Add a group to dbGroups table: if already there, return false
+ * Add a item Category to dbItemCategory table: return id
  */
-function add_itemCategory($category) {
-    if (!$category instanceof ItemCategory)
-        die("Error: add_itemCategory type mismatch");
-    $con = connect();
-    $query = "SELECT * FROM dbItemCategory WHERE id = '" . $category->getId() . "'";
-    $result = mysqli_query($con, $query);
-    
-    if ($result == null || mysqli_num_rows($result) == 0) {
-        mysqli_query($con, 'INSERT INTO dbItemCategory (id, name, status) VALUES ("' .
-                $category->getId() . '","' .
-                $category->getName() . '","' .
-                $category->getStatus() . ' ")');
-        mysqli_close($con);
-        return true;
-    }
+function add_itemCategory($name, $status) {
+    $con=connect();
+    mysqli_query($con,'INSERT INTO dbItemCategory (name, status) VALUES("' .
+            $name . '","' . 
+            $status . '");');							
+    $id = mysqli_insert_id($con);
     mysqli_close($con);
-    return false;
+    
+    return $id;
 }
 
 /*
