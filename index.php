@@ -600,7 +600,7 @@
     </div>
 
     <!-- View Inventory -->
-    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+    <div class="content-box-test" onclick="window.location.href='inventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
         </div>
