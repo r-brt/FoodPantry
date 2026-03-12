@@ -12,10 +12,47 @@
     }
 
     require_once('database/dbinfo.php');
+    require_once('database/dbPersons.php');
+    require_once('database/dbInventoryEvent.php');
     require_once('database/dbItemCategory.php');
+    require_once('database/dbItemCounts.php');
     
     $con = connect();
-    $categories = get_all_ItemCategory();
+
+    /* 
+    * _POST is empty when the page is first loaded.
+    *  Submitting the form on this page reloads the page with data in _POST
+    *  if _POST is not empty, process data from form
+    */
+    $submit_success = false;
+    if (!empty($_POST)) {
+        $updatedItems = array();
+        foreach($_POST as $name => $value){
+            if($name == "location"){
+                $location = $value;               
+            }
+            else if($name == "date"){
+                $date = $value;
+            }
+            else{
+                /* only add items that have updated values to array */
+                if(!empty($value) && $value > 0){
+                    $updatedItems[$name] = $value;
+                }
+            }
+        }
+        
+        /* if at least 1 item was updated, create inventory event and add items to database */
+        if(count($updatedItems) > 0){
+            $personId = retrieve_person($userID)->get_personId();
+            $inventoryEventId = add_inventoryEvent($personId, $location, $date);
+            foreach($updatedItems as $categoryId => $quantity){
+                add_itemCount($inventoryEventId, $categoryId, $quantity);
+            }
+
+            $submit_success = true;
+        } 
+    }
 ?>
     
 <!DOCTYPE html>
@@ -167,39 +204,43 @@
     <main>
         <div class="report-container">
             <h1 style="color:black;">Update Inventory</h1>
+            <?php 
+                /* Display success message after submitting inventory */
+                if($submit_success == true){
+                    echo("<h4 style=\"color:black;\"><i>Inventory Submitted: ".date("F jS, Y", strtotime($date))."  -  ".$location."</i></h4>");
+                }
+            ?>
 
             <!-- Update Inventory -->
             <div class="report-section">
-                <h2>Inventory Input</h2>
-                <p style="color: var(--page-font-color); margin-bottom: 1rem;">Enter the amounts for each item</p>
-                <div class="basket-options">
-                    <?php foreach($categories AS $category): ?>
-                        <div class="basket-row">
-                            <label class="basket-label"><?php echo($category->getName());?></label>
-                            <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <button class="generate-btn">Submit Inventory</button>
-
-                <!-- Basket Result Table -->
-                <div class="table-wrapper" style="margin-top: 1.5rem; display: none;" id="basketResult">
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>Category</th>
-                                <th>Qty Allocated</th>
-                                <th>Available Stock</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" class="empty-state">No basket generated yet.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <h2>Inventory Input</h2>              
+                <form method="POST" action="viewUpdateInventory.php">
+                    <div class="basket-row">
+                        <label for="date">Inventory Date:</label>
+                        <input type="date" name="date" id="date" value="<?php echo date('Y-m-d');?>">
+                        <label for="location">Choose a Location:</label>
+                        <select name="location" id="location">
+                            <option value="Pantry">Pantry</option>
+                            <option value="Warehouse">Warehouse</option>
+                        </select>
+                    </div>
+                    <div class="basket-options">
+                        <?php 
+                        $categories = get_all_ItemCategory();
+                        foreach($categories AS $category): ?>
+                            <div class="basket-row">
+                                <label class="basket-label" 
+                                        for="qty_<?php echo($category->getId())?>">
+                                        <?php echo($category->getName());?>
+                                </label>
+                                <input type="number" class="basket-qty" min="0" placeholder="Qty" 
+                                        name="<?php echo($category->getId())?>" 
+                                        id="qty_<?php echo($category->getId())?>">
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <input type="submit" value="Submit Inventory" />
+                </form>
             </div>
 
         </div>
