@@ -17,15 +17,13 @@ session_write_close();
         <nav>
             <span id="nav-top">
                 <span class="logo">
-                    <img src="images/whiskeyLogo.png">
-                        <span id="vms-logo"> Whiskey Valor Foundation </span>
-                        </span>
                     <img id="menu-toggle" src="images/menu.png">
                 </span>
             </span>
         </nav>
         <main>
-            <p class="happy-toast centered">You have been logged out.</p>
+            <p class="centered" style="background-color: #4d98f3; color: white; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; text-align: center;">You have        
+  been logged out.</p>
         </main>
     </body>
 </html>
