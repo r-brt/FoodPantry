@@ -13,7 +13,9 @@
 
     require_once('database/dbinfo.php');
     require_once('database/dbItemCategory.php');
+    
     $con = connect();
+    $categories = get_all_ItemCategory();
 ?>
     
 <!DOCTYPE html>
@@ -164,35 +166,21 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 style="color:white;">Update Inventory</h1>
+            <h1 style="color:black;">Update Inventory</h1>
 
-            <!-- Generate Basket -->
+            <!-- Update Inventory -->
             <div class="report-section">
-                <h2>Generate Basket</h2>
-                <p style="color: var(--page-font-color); margin-bottom: 1rem;">Select item categories and quantities to generate a recommended food basket.</p>
+                <h2>Inventory Input</h2>
+                <p style="color: var(--page-font-color); margin-bottom: 1rem;">Enter the amounts for each item</p>
                 <div class="basket-options">
-                    <div class="basket-row">
-                        <label class="basket-label">Grains / Bread</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                    <div class="basket-row">
-                        <label class="basket-label">Canned Goods</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                    <div class="basket-row">
-                        <label class="basket-label">Produce</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                    <div class="basket-row">
-                        <label class="basket-label">Dairy</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                    <div class="basket-row">
-                        <label class="basket-label">Protein</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
+                    <?php foreach($categories AS $category): ?>
+                        <div class="basket-row">
+                            <label class="basket-label"><?php echo($category->getName());?></label>
+                            <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-                <button class="generate-btn">Generate Basket</button>
+                <button class="generate-btn">Submit Inventory</button>
 
                 <!-- Basket Result Table -->
                 <div class="table-wrapper" style="margin-top: 1.5rem; display: none;" id="basketResult">
