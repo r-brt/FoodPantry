@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 12, 2026 at 04:01 AM
+-- Generation Time: Mar 04, 2026 at 08:18 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -24,35 +24,24 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `dbinventoryevent`
+-- Table structure for table `dbitemcounts`
 --
 
-DROP TABLE IF EXISTS `dbinventoryevent`;
-CREATE TABLE `dbinventoryevent` (
+CREATE TABLE `dbitemcounts` (
   `id` int(11) NOT NULL,
-  `personId` varchar(11) NOT NULL,
-  `location` varchar(50) NOT NULL DEFAULT 'Pantry',
-  `date` date NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `dbinventoryevent`
---
-
-INSERT INTO `dbinventoryevent` (`id`, `personId`, `location`, `date`) VALUES
-(1001, '3', 'Warehouse', '2026-01-20'),
-(1002, '3', 'Pantry', '2026-01-20'),
-(1003, '2', 'Warehouse', '2026-02-04'),
-(1004, '2', 'Pantry', '2026-02-04');
+  `inventoryEventId` int(11) NOT NULL,
+  `itemCategoryId` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `dbinventoryevent`
+-- Indexes for table `dbitemcounts`
 --
-ALTER TABLE `dbinventoryevent`
+ALTER TABLE `dbitemcounts`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -60,10 +49,10 @@ ALTER TABLE `dbinventoryevent`
 --
 
 --
--- AUTO_INCREMENT for table `dbinventoryevent`
+-- AUTO_INCREMENT for table `dbitemcounts`
 --
-ALTER TABLE `dbinventoryevent`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1005;
+ALTER TABLE `dbitemcounts`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -792,6 +792,7 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['createsuggestion.php'] = 1;
         $permission_array['viewsuggestion.php'] = 2;
         $permission_array['viewweeklyreport.php'] = 2;
+        $permission_array['viewupdateinventory.php'] = 2;
         // LOWERCASE
 
 

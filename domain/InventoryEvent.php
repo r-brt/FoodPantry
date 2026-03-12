@@ -2,16 +2,18 @@
 /**
  * Encapsulated version of a dbs inventoryEvent.
  */
-class Event {
+class InventoryEvent {
     private $id;
     private $personId;
+    private $location;
     private $date;
 
 
-    function __construct($id, $personId, $date) {
+    function __construct($id, $personId, $location, $date) {
         $this->id = $id;
-        $this->name = $personId;
-        $this->type = $date;
+        $this->personId = $personId;
+        $this->location = $location;
+        $this->date = $date;
     }
 
     function getId() {
@@ -20,6 +22,10 @@ class Event {
 
     function getPersonId() {
         return $this->personId;
+    }
+
+    function getLocation() {
+        return $this->location;
     }
 
     function getDate() {
