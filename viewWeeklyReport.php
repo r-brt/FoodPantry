@@ -1,0 +1,272 @@
+<?php
+    session_cache_expire(30);
+    session_start();
+
+    $loggedIn = false;
+    $accessLevel = 0;
+    $userID = null;
+    if (isset($_SESSION['_id'])) {
+        $loggedIn = true;
+        $accessLevel = $_SESSION['access_level'];
+        $userID = $_SESSION['_id'];
+    }
+
+    require_once('database/dbinfo.php');
+    $con = connect();
+?>
+    
+<!DOCTYPE html>
+<html>
+<head>
+    <?php require_once('universal.inc') ?>
+    <title>Weekly Inventory Report | Whiskey Valor Foundation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .report-container {
+            max-width: 1100px;
+            margin: 0 auto 4rem auto;
+            padding: 1rem;
+        }
+        .report-section {
+            background-color: rgba(0,0,0,0.15);
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .report-section h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .report-table th,
+        .report-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--shadow-and-border-color);
+            color: var(--page-font-color);
+        }
+        .report-table th {
+            background-color: var(--main-color);
+            color: var(--button-font-color);
+            font-weight: 500;
+        }
+        .report-table tr:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        .low-stock-badge {
+            display: inline-block;
+            background-color: var(--error-toast-background-color);
+            color: var(--error-toast-font-color);
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .expired-text {
+            color: var(--error-toast-background-color);
+            font-weight: 600;
+        }
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .chart-controls button {
+            padding: 0.4rem 1rem;
+            border: 2px solid var(--accent-color);
+            border-radius: 0.25rem;
+            background-color: transparent;
+            color: var(--page-font-color);
+            cursor: pointer;
+            font-weight: 500;
+            width: auto;
+            font-size: 0.85rem;
+        }
+        .chart-controls button.active,
+        .chart-controls button:hover {
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--inactive-font-color);
+        }
+        .basket-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+        .basket-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .basket-label {
+            color: var(--page-font-color);
+            width: 160px;
+            flex-shrink: 0;
+        }
+        .basket-qty {
+            width: 100px;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            font-size: 0.9rem;
+        }
+        .generate-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            width: auto;
+        }
+        .generate-btn:hover {
+            opacity: 0.85;
+        }
+        @media only screen and (max-width: 768px) {
+            .report-table th,
+            .report-table td {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+            .report-container {
+                padding: 0.5rem;
+            }
+            div.table-wrapper {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <?php require_once('header.php') ?>
+    <main>
+        <div class="report-container">
+            <h1 style="color:white;">Weekly Inventory Report</h1>
+
+            <!-- Items Updated -->
+            <div class="report-section">
+                <h2>Items Updated</h2>
+                <div class="table-wrapper">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Days Left</th>
+                                <th>Previous Boxes</th>
+                                <th>Previous Items Per Box</th>
+                                <th>Current Boxes</th>
+                                <th>Current Items Per Box</th>
+                                <th>Weeks Left</th>
+                                <th>Months Left</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="empty-state">No items updated this week.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Items at Risk -->
+            <div class="report-section">
+                <h2>Items at Risk</h2>
+                <div class="table-wrapper">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Days Left</th>
+                                <th>Previous Boxes</th>
+                                <th>Previous Items Per Box</th>
+                                <th>Current Boxes</th>
+                                <th>Current Items Per Box</th>
+                                <th>Weeks Left</th>
+                                <th>Months Left</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="empty-state">No items at risk.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Generate Basket -->
+            <div class="report-section">
+                <h2>Generate Basket</h2>
+                <p style="color: var(--page-font-color); margin-bottom: 1rem;">Select item categories and quantities to generate a recommended food basket.</p>
+                <div class="basket-options">
+                    <div class="basket-row">
+                        <label class="basket-label">Grains / Bread</label>
+                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
+                    </div>
+                    <div class="basket-row">
+                        <label class="basket-label">Canned Goods</label>
+                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
+                    </div>
+                    <div class="basket-row">
+                        <label class="basket-label">Produce</label>
+                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
+                    </div>
+                    <div class="basket-row">
+                        <label class="basket-label">Dairy</label>
+                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
+                    </div>
+                    <div class="basket-row">
+                        <label class="basket-label">Protein</label>
+                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
+                    </div>
+                </div>
+                <button class="generate-btn">Generate Basket</button>
+
+                <!-- Basket Result Table -->
+                <div class="table-wrapper" style="margin-top: 1.5rem; display: none;" id="basketResult">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Qty Allocated</th>
+                                <th>Available Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" class="empty-state">No basket generated yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>

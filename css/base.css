@@ -49,8 +49,8 @@ table, td, tr, th, form, fieldset, em, button, a {
 
 :root {
     /* CSS variables that will be used across the page */
-    --page-background-color: rgb(30, 30, 205);
-    --page-font-color: white;
+    --page-background-color: white;
+    --page-font-color: black;
     --inactive-font-color: #d0d0d0;
     --inactive-background-color: rgb(31,31,33);
     --standout-background: #fafafa;
@@ -397,7 +397,7 @@ h1 {
     font-weight: 500;
     margin-bottom: 2rem;
 
-    background-color: var(#C9AB81);
+    background-color: var(#4d98f3);
     color: var(--page-background-color);
     width: 100%;
     text-align: center;
