@@ -834,10 +834,16 @@ if (date("H:i:s") > "18:19:59") {
     <span>Generate Report</span>
   </div>
 </a>
-<a href="createEmail.php" style="text-decoration: none;">
+<a href="inventory.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/list-solid.svg">
     <span>View Inventory</span>
+  </div>
+</a>
+<a href="viewUpdateInventory.php" style="text-decoration: none;">
+  <div class="in-nav">
+    <img src="images/list-solid.svg">
+    <span>Updated Inventory</span>
   </div>
 </a>
 <a href="viewWeeklyReport.php" style="text-decoration: none;">
