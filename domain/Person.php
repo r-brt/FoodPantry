@@ -71,7 +71,13 @@ class Person {
 	}
 
 	function get_access_level() {
-		$access = ($this->id == 'vmsroot') ? 3 : 1;
+		if ($this->type == 'superadmin') {
+    		$access = 3;
+		} else if ($this->id == 'admin') {
+    		$access = 2;
+		} else {
+    		$access = 1;
+		}
 		return $access;
 	}
 

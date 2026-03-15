@@ -446,10 +446,12 @@
 <!--END TEST-->
 </head>
 
-<!-- ONLY SUPER ADMIN WILL SEE THIS -->
+<!-- all users can see the header -->
+<?php require 'header.php';?>
+
+<!-- ONLY SUPER ADMIN AND ADMIN(S) WILL SEE THIS -->
 <?php if ($_SESSION['access_level'] >= 2): ?>
 <body>
-<?php require 'header.php';?>
 
     <!-- Dummy content to enable scrolling -->
     <div style="margin-top: 0px; padding: 30px 20px;">
@@ -653,9 +655,6 @@
     </div>    
 
 </div>
-
-
-
     
 
 <div style="width: 90%; /* Stops before page ends */
@@ -667,47 +666,11 @@
 </div>
 
 
-    <footer class="footer" style="margin-top: 100px;">
-        <!-- Left Side: Logo & Socials -->
-        <div class="footer-left">
-            <img src="images/ccda-logo-white.svg" alt="Logo" class="footer-logo">
-            <div class="social-icons">
-                <a href="#"><i class="fab fa-facebook"></i></a>
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fab fa-instagram"></i></a>
-                <a href="#"><i class="fab fa-linkedin"></i></a>
-            </div>
-        </div>
-
-        <!-- Right Side: Page Links -->
-        <!-- <div class="footer-right">
-            <div class="footer-section">
-                <div class="footer-topic">Connect</div>
-                <a href="https://www.facebook.com/profile.php?id=61566628001672&mibextid=LQQJ4d">Facebook</a>
-                <a href="https://www.instagram.com/whiskeyvalor/#">Instagram</a>
-                <a href="https://whiskeyvalor.org">Main Website</a>
-            </div>
-            <div class="footer-section">
-                <div class="footer-topic">Contact Us</div>
-                <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a>
-                 <a href="tel:5408981500">540-898-1500 (ext 117)</a>
-            </div>
-        </div> -->
-    </footer>
-
-    <!-- Font Awesome for Icons -->
-    <script src="https://kit.fontawesome.com/yourkit.js" crossorigin="anonymous"></script>
-
-
 </body>
 <?php endif ?>
 
-<!-- ONLY VOLUNTEERS WILL SEE THIS -->
-<?php if ($notRoot) : ?>
+<?php?>
 <body>
-<?php require 'header.php';?>
-
-  
 
   <!-- Icon Container -->
 <div style="position: absolute; top: 110px; right: 30px; z-index: 999; display: flex; flex-direction: row; gap: 30px; align-items: center; text-align: center;">
@@ -718,14 +681,7 @@
 
 </div>
 
-
-
-    <!-- Dummy content to enable scrolling -->
-    <div style="margin-top: 0px; padding: 30px 20px;">
-        <h2><b>Welcome <?php echo $person->get_first_name() ?>!</b> Let's get started.</h2>
-    </div>
-
-    <div class="full-width-bar">
+    <!-- <div class="full-width-bar">
     <div class="content-box">
     <img src="images/VolM.png" />   
         <div class="small-text">Make a difference.</div>
@@ -761,61 +717,54 @@
     </div>
 
     
-    </div>
+    </div> -->
 
     <div style="margin-top: 50px; padding: 0px 80px;">
-        <h2><b>Your Dashboard</h2>
+        <h2><b>Inventory Management Dashboard</h2>
     </div>
     <div class="full-width-bar-sub">
-        <div class="content-box-test" onclick="window.location.href='calendar.php'">
-            <div class="icon-overlay">
-                <img style="border-radius: 5px;" src="images/view-calendar.svg" alt="Calendar Icon">
-            </div>
-            <img class="background-image" src="images/blank-white-background.jpg" />
-            <div class="large-text-sub">Calendar</div>
-            <div class="graph-text">See upcoming events/trainings.</div>
-            <button class="arrow-button">→</button>
+        <!-- Generate Report -->
+    <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/create-report.svg" alt="Report Icon">
         </div>
+        
+        <div class="large-text-sub"style="color:white;">Generate Report</div>
+        <div class="graph-text"style="color:#3A3A3A;">From this quarter or annual.</div>
+        <button class="arrow-button">→</button>
+    </div>
 
-               <?php
-                    require_once('database/dbMessages.php');
-                    $unreadMessageCount = get_user_unread_count($person->get_id());
-                    $inboxIcon = 'inbox.svg';
-                    if ($unreadMessageCount) {
-                        $inboxIcon = 'inbox-unread.svg';
-                    }   
-                ?>  
-
-        <div class="content-box-test" onclick="window.location.href='upload_encrypted_image.php'">
-            <div class="icon-overlay">
-                <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Calendar Icon">
-            </div>
-            <img class="background-image" src="images/blank-white-background.jpg" />
-            <div class="large-text-sub">Documentation Upload</div>
-            <div class="graph-text">Upload an ID for verification.</div>
-            <button class="arrow-button">→</button>
+    <!-- View Inventory -->
+    <div class="content-box-test" onclick="window.location.href='inventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
         </div>
+        
+        <div class="large-text-sub" style="color:white;">View Inventory</div>
+        <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
+        <button class="arrow-button">→</button>
+    </div>
 
-        <div class="content-box-test" onclick="window.location.href='createSuggestion.php'">
-            <div class="icon-overlay">
-                <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Report Icon">
-            </div>
-            <img class="background-image" src="images/blank-white-background.jpg" />
-            <div class="large-text-sub">Suggestions</div>
-            <div class="graph-text">Suggest opportunities for charity events.</div>
-            <button class="arrow-button">→</button>
+    <!-- Update Inventory -->
+    <div class="content-box-test" onclick="window.location.href='viewUpdateInventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/list-solid.svg" alt="Update Inventory Icon">
         </div>
-
-        <div class="content-box-test" onclick="window.location.href='inbox.php'">
-            <div class="icon-overlay">
-                <img style="border-radius: 5px;" src="images/<?php echo $inboxIcon ?>" alt="Notification Icon">
-            </div>
-            <img class="background-image" src="images/blank-white-background.jpg" />
-            <div class="large-text-sub">Notifications</div>
-            <div class="graph-text">Stay up to date.</div>
-            <button class="arrow-button">→</button>
+        
+        <div class="large-text-sub" style="color:white;">Update Inventory</div>
+        <div class="graph-text" style="color:#3A3A3A;">Submit new item counts.</div>
+        <button class="arrow-button">→</button>
+    </div>
+    
+    <!--Weekly Inventory Report -->
+    <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Report Icon">
         </div>
-
+        <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
+        <div class="graph-text" style="color:#3A3A3A;">View weekly inventory.</div>
+        <button class="arrow-button">→</button>
+    </div>  
     </div>
 
 <div style="width: 90%; /* Stops before page ends */
@@ -829,18 +778,18 @@
     <footer class="footer" style="margin-top: 100px;">
         <!-- Left Side: Logo & Socials -->
         <div class="footer-left">
-            <img src="images/whiskeyLogowhite.png" alt="Logo" class="footer-logo">
-            <!-- <div class="social-icons">
+            <img src="images/ccda-logo-white.svg" alt="Logo" class="footer-logo">
+            <div class="social-icons">
                 <a href="#"><i class="fab fa-facebook"></i></a>
                 <a href="#"><i class="fab fa-twitter"></i></a>
                 <a href="#"><i class="fab fa-instagram"></i></a>
                 <a href="#"><i class="fab fa-linkedin"></i></a>
-            </div> -->
+            </div>
         </div>
 
         <!-- Right Side: Page Links -->
-        <div class="footer-right">
-            <!-- <div class="footer-section">
+        <!-- <div class="footer-right">
+            <div class="footer-section">
                 <div class="footer-topic">Connect</div>
                 <a href="https://www.facebook.com/profile.php?id=61566628001672&mibextid=LQQJ4d">Facebook</a>
                 <a href="https://www.instagram.com/whiskeyvalor/#">Instagram</a>
@@ -848,16 +797,15 @@
             </div>
             <div class="footer-section">
                 <div class="footer-topic">Contact Us</div>
-                <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a> -->
-                <!-- <a href="tel:5408981500">540-898-1500 (ext 117)</a> -->
-            <!-- </div> -->
-        <!-- </div> -->
+                <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a>
+                 <a href="tel:5408981500">540-898-1500 (ext 117)</a>
+            </div>
+        </div> -->
     </footer>
-    <p>_</p>
 
     <!-- Font Awesome for Icons -->
     <script src="https://kit.fontawesome.com/yourkit.js" crossorigin="anonymous"></script>
 
 </body>
-<?php endif ?>
+<?php ?>
 </html>
