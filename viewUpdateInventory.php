@@ -1,3 +1,4 @@
+
 <?php
     session_cache_expire(30);
     session_start();
@@ -214,7 +215,7 @@
             <!-- Update Inventory -->
             <div class="report-section">
                 <h2>Inventory Input</h2>              
-                <form method="POST" action="viewUpdateInventory.php">
+                <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewUpdateInventory.php">
                     <div class="basket-row">
                         <label for="date">Inventory Date:</label>
                         <input type="date" name="date" id="date" value="<?php echo date('Y-m-d');?>">
@@ -241,10 +242,41 @@
                     </div>
                     <input type="submit" value="Submit Inventory" />
                 </form>
+                <script>
+                    function validateFormDate() {
+                        const [formYear,formMonth,formDay] = document.forms["invForm"]["date"].value.split("-");
+                        let currDate = new Date();
+                        let compareDates = 0;
+                        if(formYear==currDate.getFullYear()){
+                            if(formMonth == currDate.getMonth()+1){
+                                compareDates = formDay-currDate.getDate();
+                            }
+                            else{
+                                compareDates = formMonth-(currDate.getMonth()+1);
+                            }
+                        }
+                        else{
+                            compareDates = formYear-currDate.getFullYear();
+                        }
+                        
+                        if(compareDates == 0){
+                            return true;
+                        }
+                        else if(compareDates < 0){
+                            return confirm("PAST DATE: "+formMonth+"/"+formDay+"/"+formYear+
+                                            "\nAre you sure you want to submit?");
+                        }
+                        else if(compareDates > 0){
+                            return confirm("FUTURE DATE: "+formMonth+"/"+formDay+"/"+formYear+
+                                            "\nAre you sure you want to submit?");
+                        }                      
+                    }
+                </script>
             </div>
 
         </div>
     </main>
+    
 
 </body>
 </html>
