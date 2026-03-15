@@ -20,8 +20,7 @@ $sql = "
         dic.id,
         dic.name as category_name,
         dic.status,
-        COALESCE(SUM(dbic.quantity), 0) as total_quantity,
-        COUNT(DISTINCT dbic.inventoryEventId) as event_count
+        COALESCE(SUM(dbic.quantity), 0) as total_quantity
     FROM dbItemCategory dic
     LEFT JOIN dbitemcounts dbic ON dic.id = dbic.itemCategoryId
     GROUP BY dic.id, dic.name, dic.status
@@ -133,7 +132,6 @@ if ($result) {
                                 <th>Category</th>
                                 <th>Status</th>
                                 <th>Total Quantity</th>
-                                <th>Events</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -147,12 +145,11 @@ if ($result) {
                                             </span>
                                         </td>
                                         <td><?= htmlspecialchars($item['total_quantity']) ?></td>
-                                        <td><?= htmlspecialchars($item['event_count']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" class="empty-state">No items found.</td>
+                                    <td colspan="3" class="empty-state">No items found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
