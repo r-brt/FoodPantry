@@ -33,7 +33,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="./css/base.css" rel="stylesheet">
-    <title>Whiskey Valor Volunteer Management | Dashboard</title>
+    <title>Catholic Charities Food Pantry | Dashboard</title>
     <style>
         * {
             box-sizing: border-box;
@@ -130,16 +130,15 @@
             max-width: 90%;
         }
 
-        .large-text-sub {
-            position: absolute;
-            /*top: 120px;*/
-            top: 60%;
-            left: 10%;
-            font-size: 22px;
-            font-weight: 700;
-            color: white;
-            max-width: 90%;
-        }
+        .large-text-sub { 
+            position: absolute; /*top: 120px;*/ 
+            top: 60%; 
+            left: 10%; 
+            font-size: 22px; 
+            font-weight: 700; 
+            color: white; 
+            max-width: 90%; 
+            }
 
         .graph-text {
             position: absolute;
@@ -482,8 +481,8 @@
             <img style="border-radius: 5px;" src="images/user_icon.png" alt="User Icon">
         </div>
         
-        <div class="large-text-sub" style="color:white;">User Management</div>
-        <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
+        <div class="large-text-sub" style="color:white;">Audit User</div>
+        <div class="graph-text" style="color:white;">Add, edit, and remove user accounts and permissions.</div>
         <button class="arrow-button">→</button>
     </div>
             </div>
@@ -594,8 +593,8 @@
             <img style="border-radius: 5px;" src="images/create-report.svg" alt="Report Icon">
         </div>
         
-        <div class="large-text-sub"style="color:white;">Generate Report</div>
-        <div class="graph-text"style="color:#3A3A3A;">From this quarter or annual.</div>
+        <div class="large-text-sub"style="color:white;">Inventory insights and analytics</div>
+        <div class="graph-text"style="color:white;">Explore visual reports and analytics for inventory data.</div>
         <button class="arrow-button">→</button>
     </div>
 
@@ -605,8 +604,8 @@
             <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
         </div>
         
-        <div class="large-text-sub" style="color:white;">View Inventory</div>
-        <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
+        <div class="large-text-sub" style="color:white;">Inventory Log</div>
+        <div class="graph-text" style="color:white;">View and edit inventory records.</div>
         <button class="arrow-button">→</button>
     </div>
 
@@ -648,8 +647,8 @@
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Report Icon">
         </div>
-        <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
-        <div class="graph-text" style="color:#3A3A3A;">View weekly inventory.</div>
+        <div class="large-text-sub" style="color:white;">Generate Weekly Inventory Report</div>
+        <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
         <button class="arrow-button">→</button>
     </div>    
 
