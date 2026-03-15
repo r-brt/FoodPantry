@@ -26,19 +26,37 @@
     *  if _POST is not empty, process data from form
     */
     $submit_success = false;
+    $errors = [];
     if (!empty($_POST)) {
         $updatedItems = array();
         foreach($_POST as $name => $value){
             if($name == "location"){
-                $location = $value;               
+                $location = $value;
+                if($location != "Warehouse" && $location != "Pantry"){
+                    $errors[] = 'Invalid Location';
+                }               
             }
             else if($name == "date"){
                 $date = $value;
             }
             else{
-                /* only add items that have updated values to array */
-                if(!empty($value) && $value > 0){
-                    $updatedItems[$name] = $value;
+                /* only add items that have values to array */
+                if(!empty($value)){
+                    /* if error is found, empty the array of items and stop checking */
+                    if(!is_int($value)){
+                        $errors[] = 'Quantities must be in whole numbers';
+                        $updatedItems = array();
+                        break;
+                    }
+                    else if($value < 0){
+                        $errors[] = 'Quantities must be greater than 0';
+                        $updatedItems = array();
+                        break;
+                    }
+                    /* do not add items that have 0 quantity */
+                    else if($value > 0){
+                        $updatedItems[$name] = $value;
+                    }
                 }
             }
         }
@@ -53,6 +71,12 @@
 
             $submit_success = true;
         } 
+        else{
+            /* if errors have already been detected array was emptied. Do no show error for missing data */
+            if(empty($errors)){
+                $errors[] = 'Enter quantity for at least 1 item';
+            }
+        }
     }
 ?>
     
@@ -210,7 +234,14 @@
                 if($submit_success == true){
                     echo("<h4 style=\"color:black;\"><i>Inventory Submitted: ".date("F jS, Y", strtotime($date))."  -  ".$location."</i></h4>");
                 }
-            ?>
+                /* Display errors from submitting inventory */
+                if (!empty($errors)): ?>
+                <ul>
+                    <?php foreach($errors AS $error): ?>
+                        <li><?php echo("<h4 style=\"color:red;\"><i>".$error."</i></h4>"); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
 
             <!-- Update Inventory -->
             <div class="report-section">
@@ -218,11 +249,12 @@
                 <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewUpdateInventory.php">
                     <div class="basket-row">
                         <label for="date">Inventory Date:</label>
-                        <input type="date" name="date" id="date" value="<?php echo date('Y-m-d');?>">
+                        <input type="date" name="date" id="date" 
+                            value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
                         <label for="location">Choose a Location:</label>
                         <select name="location" id="location">
                             <option value="Pantry">Pantry</option>
-                            <option value="Warehouse">Warehouse</option>
+                            <option value="Warehouse" <?php if (!empty($_POST) && $_POST['location'] == "Warehouse") echo("selected");?>>Warehouse</option>
                         </select>
                     </div>
                     <div class="basket-options">
@@ -235,6 +267,7 @@
                                         <?php echo($category->getName());?>
                                 </label>
                                 <input type="number" class="basket-qty" min="0" placeholder="Qty" 
+                                        value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
                                         name="<?php echo($category->getId())?>" 
                                         id="qty_<?php echo($category->getId())?>">
                             </div>
@@ -243,8 +276,20 @@
                     <input type="submit" value="Submit Inventory" />
                 </form>
                 <script>
+                    /* if form Date is in the past or the future, confirm before submitting form */
                     function validateFormDate() {
                         const [formYear,formMonth,formDay] = document.forms["invForm"]["date"].value.split("-");
+                        /* check for invalid input */
+                        if(formYear == null || formMonth == null || formDay == null){
+                            alert("Invalid Date");
+                            return false;
+                        }
+                        /* check for invalid date */
+                        else if(isNaN(new Date(document.forms["invForm"]["date"].value))){
+                            alert("Invalid Date");
+                            return false;
+                        }
+
                         let currDate = new Date();
                         let compareDates = 0;
                         if(formYear==currDate.getFullYear()){
@@ -258,7 +303,7 @@
                         else{
                             compareDates = formYear-currDate.getFullYear();
                         }
-                        
+
                         if(compareDates == 0){
                             return true;
                         }
