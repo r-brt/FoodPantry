@@ -830,13 +830,13 @@ if (date("H:i:s") > "18:19:59") {
 
 <a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/plus-solid.svg">
+    <img src="images/create-report.svg">
     <span>Generate Report</span>
   </div>
 </a>
 <a href="inventory.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/list-solid.svg">
+    <img src="images/clipboard-regular.svg">
     <span>View Inventory</span>
   </div>
 </a>
@@ -848,7 +848,7 @@ if (date("H:i:s") > "18:19:59") {
 </a>
 <a href="viewWeeklyReport.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/clock-regular.svg">
+    <img src="images/file-regular.svg">
     <span>Weekely Inventory Report</span>
   </div>
 </a>
