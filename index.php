@@ -447,10 +447,12 @@
 <!--END TEST-->
 </head>
 
+<!-- all users can see the header -->
+<?php require 'header.php';?>
+
 <!-- ONLY SUPER ADMIN AND ADMIN(S) WILL SEE THIS -->
 <?php if ($_SESSION['access_level'] >= 2): ?>
 <body>
-<?php require 'header.php';?>
 
     <!-- Dummy content to enable scrolling -->
     <div style="margin-top: 0px; padding: 30px 20px;">
