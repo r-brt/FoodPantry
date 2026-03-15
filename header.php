@@ -825,7 +825,7 @@ if (date("H:i:s") > "18:19:59") {
             </div>
                 <!--<a href="viewCheckInOut.php" style="color: white; text-decoration: none;"><div class="date-box">Check In/Out</div></a>-->
             <div class="nav-links">
-                <div class="nav-item">Events
+                <div class="nav-item">Our Food Pantry
                     <div class="dropdown">
 
 <a href="generateReport.php" style="text-decoration: none;">
@@ -843,13 +843,13 @@ if (date("H:i:s") > "18:19:59") {
 <a href="viewUpdateInventory.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/list-solid.svg">
-    <span>Updated Inventory</span>
+    <span>Update Inventory</span>
   </div>
 </a>
 <a href="viewWeeklyReport.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/file-regular.svg">
-    <span>Weekely Inventory Report</span>
+    <span>Weekly Inventory Report</span>
   </div>
 </a>
 
