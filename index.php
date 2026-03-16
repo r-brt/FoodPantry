@@ -148,6 +148,7 @@
             font-weight: 700;
             color: #4d98f3;
             max-width: 90%;
+            margin-top: 20px;
         }
 
         /* Navbar Container */
@@ -242,190 +243,190 @@
         .arrow-button:hover {
             transform: translateX(5px); /* Moves the arrow slightly on hover */
         }
-    .circle-arrow-button {
-        position: absolute;
-        bottom: 30px;
-        right: 18px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: transparent;
-        border: none;
-        font-size: 20px;
-        font-family: Quicksand, sans-serif;
-        font-weight: bold;
-        color: white;
-        cursor: pointer;
-        transition: transform 0.3s ease;
-    }
+                .circle-arrow-button {
+                    position: absolute;
+                    bottom: 30px;
+                    right: 18px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    background: transparent;
+                    border: none;
+                    font-size: 20px;
+                    font-family: Quicksand, sans-serif;
+                    font-weight: bold;
+                    color: white;
+                    cursor: pointer;
+                    transition: transform 0.3s ease;
+                }
 
-    .circle {
-        width: 30px;
-        height: 30px;
-        /*background-color:; /* Blue color */
-        background-color: #4d98f3;
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        transition: transform 0.3s ease;
-    }
+                .circle {
+                    width: 30px;
+                    height: 30px;
+                    /*background-color:; /* Blue color */
+                    background-color: #4d98f3;
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 22px;
+                    transition: transform 0.3s ease;
+                }
 
-    .circle-arrow-button:hover {
-        background-color:transparent !important;
-    }
+                .circle-arrow-button:hover {
+                    background-color:transparent !important;
+                }
 
-    .circle-arrow-button:hover .circle {
-        transform: translateX(5px); /* Moves the circle slightly on hover */
-    }
-.colored-box {
-    display: inline-block; /* Ensures it wraps tightly around the text */
-    background-color: #4d98f3; /* Change to any color */
-    color: white; /* Text color */
-    padding: 1px 5px; /* Adds space inside the box */
-    border-radius: 5px; /* Optional: Rounds the corners */
-    font-weight: bold; /* Optional: Makes text bold */
-}
-
-
-        /* Footer */
-        .footer {
-            width: 100%;
-            background: #4d98f3;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 30px 50px;
-            flex-wrap: wrap;
-        }
-
-        /* Left Section */
-        .footer-left {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .footer-logo {
-            width: 150px; /* Adjust logo size */
-            margin-bottom: 15px;
-        }
-
-        /* Social Media Icons */
-        .social-icons {
-            display: flex;
-            gap: 15px;
-        }
-
-        .social-icons a {
-            color: white;
-            font-size: 20px;
-            transition: color 0.3s ease;
-        }
-
-        .social-icons a:hover {
-            color: #dcdcdc;
-        }
-
-        /* Right Section */
-        .footer-right {
-            display: flex;
-            gap: 50px;
-            flex-wrap: wrap;
-            align-items: flex-start;
-        }
-
-        .footer-section {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 10px;
-            color: #4d98f3;
-            font-family: Inter, sans-serif;
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .footer-topic {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .footer a {
-            color: white;
-            text-decoration: none;
-            transition: background 0.2s ease, color 0.2s ease;
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-
-        .footer a:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #dcdcdc;
-        }
-
-        /* Icon Overlay */
-        .background-image {
-            width: 100%;
-            border-radius: 10px;
-        }
-
-        .icon-overlay {
-            position: absolute;
-            top: 40px; /* Adjust as needed */
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.8); /* Optional background for better visibility */
-            padding: 10px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .icon-overlay img {
-            width: 40px; /* Adjust size as needed */
-            height: 40px;
-            opacity: 0.9;
-        }
-
-        .content-box-test:hover .icon-overlay img {
-            transform: scale(1.1) rotate(5deg);
-            transition: transform 0.5s ease, fill 0.5s ease;
-        }
-
-        
-        
-
-    
-        .content-box-test {
-            position: relative;
-            background-color: #4d98f3;   /* tan background */
-            border-radius: 12px;
-            padding: 20px;
-            color: white;                 /* default text color */
-            flex: 1 1 280px;
-            max-width: 375px;
-            min-height: 250px;            /* keeps all boxes same height even without bg image */
+                .circle-arrow-button:hover .circle {
+                    transform: translateX(5px); /* Moves the circle slightly on hover */
+                }
+            .colored-box {
+                display: inline-block; /* Ensures it wraps tightly around the text */
+                background-color: #4d98f3; /* Change to any color */
+                color: white; /* Text color */
+                padding: 1px 5px; /* Adds space inside the box */
+                border-radius: 5px; /* Optional: Rounds the corners */
+                font-weight: bold; /* Optional: Makes text bold */
             }
 
 
-        .content-box-test .large-text-sub,
-        .content-box-test .graph-text {
-            color: rgb(47, 51, 61);
-            }
+                    /* Footer */
+                    .footer {
+                        width: 100%;
+                        background: #4d98f3;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        padding: 30px 50px;
+                        flex-wrap: wrap;
+                    }
+
+                    /* Left Section */
+                    .footer-left {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+
+                    .footer-logo {
+                        width: 150px; /* Adjust logo size */
+                        margin-bottom: 15px;
+                    }
+
+                    /* Social Media Icons */
+                    .social-icons {
+                        display: flex;
+                        gap: 15px;
+                    }
+
+                    .social-icons a {
+                        color: white;
+                        font-size: 20px;
+                        transition: color 0.3s ease;
+                    }
+
+                    .social-icons a:hover {
+                        color: #dcdcdc;
+                    }
+
+                    /* Right Section */
+                    .footer-right {
+                        display: flex;
+                        gap: 50px;
+                        flex-wrap: wrap;
+                        align-items: flex-start;
+                    }
+
+                    .footer-section {
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        gap: 10px;
+                        color: #4d98f3;
+                        font-family: Inter, sans-serif;
+                        font-size: 16px;
+                        font-weight: 500;
+                    }
+
+                    .footer-topic {
+                        font-size: 18px;
+                        font-weight: bold;
+                    }
+
+                    .footer a {
+                        color: white;
+                        text-decoration: none;
+                        transition: background 0.2s ease, color 0.2s ease;
+                        padding: 5px 10px;
+                        border-radius: 5px;
+                    }
+
+                    .footer a:hover {
+                        background: rgba(255, 255, 255, 0.1);
+                        color: #dcdcdc;
+                    }
+
+                    /* Icon Overlay */
+                    .background-image {
+                        width: 100%;
+                        border-radius: 10px;
+                    }
+
+                    .icon-overlay {
+                        position: absolute;
+                        top: 40px; /* Adjust as needed */
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: rgba(255, 255, 255, 0.8); /* Optional background for better visibility */
+                        padding: 10px;
+                        border-radius: 50%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                    }
+
+                    .icon-overlay img {
+                        width: 40px; /* Adjust size as needed */
+                        height: 40px;
+                        opacity: 0.9;
+                    }
+
+                    .content-box-test:hover .icon-overlay img {
+                        transform: scale(1.1) rotate(5deg);
+                        transition: transform 0.5s ease, fill 0.5s ease;
+                    }
+
+                    
+                    
+
+                
+                    .content-box-test {
+                        position: relative;
+                        background-color: #4d98f3;   /* tan background */
+                        border-radius: 12px;
+                        padding: 20px;
+                        color: white;                 /* default text color */
+                        flex: 1 1 280px;
+                        max-width: 375px;
+                        min-height: 250px;            /* keeps all boxes same height even without bg image */
+                        }
 
 
-        .background-image {
-        display: none;
-        }
+                    .content-box-test .large-text-sub,
+                    .content-box-test .graph-text {
+                        color: rgb(47, 51, 61);
+                        }
 
-        
-        .full-width-bar-sub{
-            background-color:rgb(255, 255, 255) !important;
-            }
+
+                    .background-image {
+                    display: none;
+                    }
+
+                    
+                    .full-width-bar-sub{
+                        background-color:rgb(255, 255, 255) !important;
+                        }
 
 
         /* Responsive Design */
@@ -480,12 +481,11 @@
 <div class="full-width-bar-sub">
  <div class="content-box-test" onclick="window.location.href='volunteerManagement.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/user_icon.png" alt="User Icon">
+            <img style="border-radius: 5px;" src="images/user_group_icon.svg" alt="User Icon">
         </div>
         
         <div class="large-text-sub" style="color:white;">Audit User</div>
         <div class="graph-text" style="color:white;">Add, edit, and remove user accounts and permissions.</div>
-        <button class="arrow-button">→</button>
     </div>
             </div>
 <!--
@@ -698,44 +698,40 @@
     <!-- View Inventory -->
     <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/create-report.svg" alt="Report Icon">
+            <img style="border-radius: 5px;" src="images/document-report.svg" alt="Report Icon">
         </div>
         
-        <div class="large-text-sub"style="color:white;">Inventory insights and analytics</div>
+        <div class="large-text-sub"style="color:white;">Inventory Analytics</div>
         <div class="graph-text"style="color:white;">Explore visual reports and analytics for inventory data.</div>
-        <button class="arrow-button">→</button>
     </div>
 
     <!-- View Inventory -->
     <div class="content-box-test" onclick="window.location.href='inventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
+            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Inventory Icon">
         </div>
         
         <div class="large-text-sub" style="color:white;">View Inventory Log</div>
         <div class="graph-text" style="color:white;">Track inventory changes.</div>
-        <button class="arrow-button">→</button>
     </div>
 
     <!-- Edit Inventory -->
     <div class="content-box-test" onclick="window.location.href='viewUpdateInventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
+            <img style="border-radius: 5px;" src="images/clipboard-checklist.svg" alt="Inventory Icon">
         </div>
         
         <div class="large-text-sub" style="color:white;">Update Inventory Log</div>
         <div class="graph-text" style="color:white;">Add inventory entry.</div>
-        <button class="arrow-button">→</button>
     </div>
     
     <!--Weekly Inventory Report -->
     <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Report Icon">
+            <img style="border-radius: 5px;" src="images/clipboard-arrow-down.svg" alt="Report Icon">
         </div>
         <div class="large-text-sub" style="color:white;">Generate Weekly Inventory Report</div>
         <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
-        <button class="arrow-button">→</button>
     </div>    
     </div>
 
