@@ -825,7 +825,7 @@ if (date("H:i:s") > "18:19:59") {
             </div>
                 <!--<a href="viewCheckInOut.php" style="color: white; text-decoration: none;"><div class="date-box">Check In/Out</div></a>-->
             <div class="nav-links">
-                <div class="nav-item">Our Food Pantry
+                <div class="nav-item">Food Pantry Navigation
                     <div class="dropdown">');
             if ($_SESSION['access_level'] >= 2) {
                 echo('<a href="volunteerManagement.php" style="text-decoration: none;">
