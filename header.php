@@ -754,11 +754,11 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['volunteermanagement.php'] = 2;
         $permission_array['groupmanagement.php'] = 2;
         $permission_array['eventmanagement.php'] = 2;
-        $permission_array['inventory.php'] = 2;
+        $permission_array['inventory.php'] = 1;
         $permission_array['creatediscussion.php'] = 2;
         $permission_array['checkedinvolunteers.php'] = 2;
         $permission_array['deletediscussion.php'] = 2;
-        $permission_array['generatereport.php'] = 2; //adding this to the generate report page
+        $permission_array['generatereport.php'] = 1; //adding this to the generate report page
         $permission_array['generateemaillist.php'] = 2; //adding this to the generate report page
         $permission_array['clockoutbulk.php'] = 2;
         $permission_array['clockOut.php'] = 2;
@@ -791,8 +791,8 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['upload_encrypted_image.php'] = 1;
         $permission_array['createsuggestion.php'] = 1;
         $permission_array['viewsuggestion.php'] = 2;
-        $permission_array['viewweeklyreport.php'] = 2;
-        $permission_array['viewupdateinventory.php'] = 2;
+        $permission_array['viewweeklyreport.php'] = 1;
+        $permission_array['viewupdateinventory.php'] = 1;
         // LOWERCASE
 
 
@@ -815,8 +815,8 @@ if (date("H:i:s") > "18:19:59") {
         
         //they're logged in and session variables are set.
 	//
-	// SUPER ADMIN ONLY HEADER
-        if ($_SESSION['access_level'] >= 2) {
+	// HEADER FOR SUPERADMIN, ADMIN, INVENTORY COUNTER
+        if ($_SESSION['access_level'] >= 1) {
 		echo('<div class="navbar">
         <!-- Left Section: Logo & Nav Links -->
         <div class="left-section">
@@ -826,9 +826,16 @@ if (date("H:i:s") > "18:19:59") {
                 <!--<a href="viewCheckInOut.php" style="color: white; text-decoration: none;"><div class="date-box">Check In/Out</div></a>-->
             <div class="nav-links">
                 <div class="nav-item">Our Food Pantry
-                    <div class="dropdown">
-
-<a href="generateReport.php" style="text-decoration: none;">
+                    <div class="dropdown">');
+            if ($_SESSION['access_level'] >= 2) {
+                echo('<a href="volunteerManagement.php" style="text-decoration: none;">
+                <div class="in-nav">
+                    <img src="images/user_icon.png">
+                    <span>Audit User</span>
+                </div>
+                </a>');
+            }
+echo('<a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/create-report.svg">
     <span>Generate Report</span>
@@ -906,10 +913,10 @@ if (date("H:i:s") > "18:19:59") {
             </div>
         </div>
     </div>');
-	}
+	} 
 
-        // VOLUNTEER ONLY HEADER
-        if ($_SESSION['access_level'] <= 1) {
+        // HEADER FOR ACCESS LEVEL 0
+        else if ($_SESSION['access_level'] <= 0) {
 		echo('<div class="navbar">
         <!-- Left Section: Logo & Nav Links -->
         <div class="left-section">
