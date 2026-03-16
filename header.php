@@ -657,7 +657,7 @@ if (date("H:i:s") > "18:19:59") {
             <div class="nav-links">
                 <div class="nav-item">
                     <div class="icon">
-                        <img src="images/usaicon.png" alt="User Icon" class="icon-img in-nav-img">
+                        <img src="images/user-square.svg" alt="User Icon" class="icon-img in-nav-img">
                         <div class="dropdown">
                             <a href="signup.php" class="dropdown-link"><div>Create Account</div></a>
                             <a href="login.php" class="dropdown-link"><div>Log in</div></a>
@@ -830,33 +830,33 @@ if (date("H:i:s") > "18:19:59") {
             if ($_SESSION['access_level'] >= 2) {
                 echo('<a href="volunteerManagement.php" style="text-decoration: none;">
                 <div class="in-nav">
-                    <img src="images/user_icon.png">
+                    <img src="images/user_group_icon.svg" alt="User Icon">
                     <span>Audit User</span>
                 </div>
                 </a>');
             }
 echo('<a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/create-report.svg">
-    <span>Generate Report</span>
+    <img src="images/document-report.svg" alt="Report Icon">
+    <span>Inventory Analytics</span>
   </div>
 </a>
 <a href="inventory.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/clipboard-regular.svg">
-    <span>View Inventory</span>
+    <img src="images/clipboard-list-alt.svg" alt="Inventory Icon">
+    <span>View Inventory Log</span>
   </div>
 </a>
 <a href="viewUpdateInventory.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/list-solid.svg">
+    <img src="images/clipboard-checklist.svg" alt="Inventory Icon">
     <span>Update Inventory</span>
   </div>
 </a>
 <a href="viewWeeklyReport.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/file-regular.svg">
-    <span>Weekly Inventory Report</span>
+    <img src="images/clipboard-arrow-down.svg" alt="Report Icon">
+    <span>Generate Weekly Inventory Report</span>
   </div>
 </a>
 
@@ -903,7 +903,7 @@ echo('<a href="generateReport.php" style="text-decoration: none;">
             <div class="nav-links">
                 <div class="nav-item">
                     <div class="icon">
-                        <img src="images/usaicon.png" alt="User Icon" class="icon-img in-nav-img">
+                        <img src="images/user-square.svg" alt="User Icon" class="icon-img in-nav-img">
                         <div class="dropdown">
                             <a href="changePassword.php" class="dropdown-link"><div>Change Password</div></a>
                             <a href="logout.php" class="dropdown-link"><div>Log Out</div></a>
@@ -972,7 +972,7 @@ echo('<a href="generateReport.php" style="text-decoration: none;">
             <div class="nav-links">
                 <div class="nav-item" style="outline:none;">
                     <div class="icon">
-                        <img src="images/usaicon.png" alt="User Icon">
+                        <img src="images/user-square.svg" alt="User Icon">
                         <div class="dropdown">
                             <a href="viewProfile.php" style="text-decoration: none;"><div>View Profile</div></a>
                             <a href="editProfile.php" style="text-decoration: none;"><div>Edit Profile</div></a>
