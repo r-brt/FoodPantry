@@ -170,24 +170,50 @@
             padding: 3rem 1rem;
             color: var(--inactive-font-color);
         }
-        .basket-options {
+        .updateInv-optionRow {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            justify-content: left;
+            gap: 1rem;
+        }
+        .updateInv-option {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            width: 45%;
+            gap: 1rem;
+        }
+        .updateInv-optionLabel {
+            text-align: right;
+        }
+        .updateInv-allRows {
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
             margin-bottom: 1.25rem;
+            padding: 2rem 1rem;
         }
-        .basket-row {
+        .updateInv-row {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 1rem;
         }
-        .basket-label {
+        .updateInv-label {
             color: var(--page-font-color);
-            width: 160px;
-            flex-shrink: 0;
+            width: 200px;
+            max-width: 400px;
+            min-width: 6rem;
+            flex-grow: 1;
+            flex-grow: 1;
+            text-align: right;
+            padding: 0rem  .5rem 0rem 0rem;
         }
-        .basket-qty {
+        .updateInv-qty {
             width: 100px;
+            max-width: 200px;
+            margin-right: 30%;
             padding: 0.4rem 0.6rem;
             border: 1px solid var(--shadow-and-border-color);
             border-radius: 0.25rem;
@@ -221,6 +247,24 @@
             div.table-wrapper {
                 overflow-x: auto;
             }
+            .updateInv-optionRow {
+                display: flex;
+                align-items: right;
+                flex-direction: column;
+                justify-content: left;
+                gap: 1rem;
+            }
+            .updateInv-option {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                width: auto;
+                gap: 1rem;
+            }
+            .updateInv-qty {
+                max-width: 7rem;
+                margin-right: 10%;
+            }
         }
     </style>
 </head>
@@ -247,26 +291,30 @@
             <div class="report-section">
                 <h2>Inventory Input</h2>              
                 <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewUpdateInventory.php">
-                    <div class="basket-row">
-                        <label for="date">Inventory Date:</label>
-                        <input type="date" name="date" id="date" 
-                            value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
-                        <label for="location">Choose a Location:</label>
-                        <select name="location" id="location">
-                            <option value="Pantry">Pantry</option>
-                            <option value="Warehouse" <?php if (!empty($_POST) && $_POST['location'] == "Warehouse") echo("selected");?>>Warehouse</option>
-                        </select>
+                    <div class="updateInv-optionRow">
+                        <div class="updateInv-option">
+                            <label class="updateInv-optionLabel" for="date">Inventory Date:</label>
+                            <input type="date" name="date" id="date" 
+                                value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
+                        </div>
+                        <div class="updateInv-option">
+                            <label class="updateInv-optionLabel" for="location">Choose a Location:</label>
+                            <select name="location" id="location">
+                                <option value="Pantry">Pantry</option>
+                                <option value="Warehouse" <?php if (!empty($_POST) && $_POST['location'] == "Warehouse") echo("selected");?>>Warehouse</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="basket-options">
+                    <div class="updateInv-allRows">
                         <?php 
                         $categories = get_all_ItemCategory();
                         foreach($categories AS $category): ?>
-                            <div class="basket-row">
-                                <label class="basket-label" 
+                            <div class="updateInv-row">
+                                <label class="updateInv-label" 
                                         for="qty_<?php echo($category->getId())?>">
                                         <?php echo($category->getName());?>
                                 </label>
-                                <input type="number" class="basket-qty" min="0" placeholder="Qty" 
+                                <input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
                                         value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
                                         name="<?php echo($category->getId())?>" 
                                         id="qty_<?php echo($category->getId())?>">
