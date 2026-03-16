@@ -589,27 +589,8 @@
         <button class="arrow-button">→</button>
     </div> -->
 
-    <!-- Generate Report -->
-    <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/create-report.svg" alt="Report Icon">
-        </div>
-        
-        <div class="large-text-sub"style="color:white;">Inventory insights and analytics</div>
-        <div class="graph-text"style="color:white;">Explore visual reports and analytics for inventory data.</div>
-        <button class="arrow-button">→</button>
-    </div>
 
-    <!-- View Inventory -->
-    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
-        </div>
-        
-        <div class="large-text-sub" style="color:white;">Inventory Log</div>
-        <div class="graph-text" style="color:white;">View and edit inventory records.</div>
-        <button class="arrow-button">→</button>
-    </div>
+   
 
     <!-- View Drafts -->
     <!-- <div class="content-box-test" onclick="window.location.href='viewDrafts.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
@@ -642,17 +623,7 @@
         <div class="large-text-sub" style="color:white;">User Suggestions</div>
         <div class="graph-text" style="color:#3A3A3A;">View user submitted suggestions.</div>
         <button class="arrow-button">→</button>
-    </div> -->
-
-    <!--Weekly Inventory Report -->
-    <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Report Icon">
-        </div>
-        <div class="large-text-sub" style="color:white;">Generate Weekly Inventory Report</div>
-        <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
-        <button class="arrow-button">→</button>
-    </div>    
+    </div> -->    
 
 </div>
     
@@ -723,36 +694,26 @@
         <h2><b>Inventory Management Dashboard</h2>
     </div>
     <div class="full-width-bar-sub">
-        <!-- Generate Report -->
+
+    <!-- View Inventory -->
     <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/create-report.svg" alt="Report Icon">
         </div>
         
-        <div class="large-text-sub"style="color:white;">Generate Report</div>
-        <div class="graph-text"style="color:#3A3A3A;">From this quarter or annual.</div>
-        <button class="arrow-button">→</button>
-    </div>
-
-    <!-- View Inventory -->
-    <div class="content-box-test" onclick="window.location.href='inventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
-        </div>
-        
-        <div class="large-text-sub" style="color:white;">View Inventory</div>
-        <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
+        <div class="large-text-sub"style="color:white;">Inventory insights and analytics</div>
+        <div class="graph-text"style="color:white;">Explore visual reports and analytics for inventory data.</div>
         <button class="arrow-button">→</button>
     </div>
 
     <!-- Update Inventory -->
-    <div class="content-box-test" onclick="window.location.href='viewUpdateInventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/list-solid.svg" alt="Update Inventory Icon">
+            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
         </div>
         
-        <div class="large-text-sub" style="color:white;">Update Inventory</div>
-        <div class="graph-text" style="color:#3A3A3A;">Submit new item counts.</div>
+        <div class="large-text-sub" style="color:white;">Inventory Log</div>
+        <div class="graph-text" style="color:white;">View and edit inventory records.</div>
         <button class="arrow-button">→</button>
     </div>
     
@@ -761,10 +722,10 @@
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Report Icon">
         </div>
-        <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
-        <div class="graph-text" style="color:#3A3A3A;">View weekly inventory.</div>
+        <div class="large-text-sub" style="color:white;">Generate Weekly Inventory Report</div>
+        <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
         <button class="arrow-button">→</button>
-    </div>  
+    </div>    
     </div>
 
 <div style="width: 90%; /* Stops before page ends */
