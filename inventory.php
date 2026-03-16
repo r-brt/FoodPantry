@@ -32,13 +32,13 @@ if ($selectedWeek) {
         SELECT 
             dic.id,
             dic.name as item_name,
-            COALESCE(dbic.boxes, 0) as boxes,
-            COALESCE(dbic.itemsPerBox, 0) as itemsPerBox,
-            COALESCE(dbic.boxes, 0) * COALESCE(dbic.itemsPerBox, 0) as total_count,
+            dbic.quantity as boxes,
+            dic.itemsPerBox,
+            dbic.quantity * dic.itemsPerBox as total_count,
             dbic.inventoryEventId
         FROM dbItemCategory dic
         INNER JOIN dbitemcounts dbic ON dic.id = dbic.itemCategoryId
-        WHERE dic.status = 'active' AND dbic.inventoryEventId <= ?
+        WHERE dic.status = 'Active' AND dbic.inventoryEventId <= ?
         ORDER BY dic.name, dbic.inventoryEventId DESC
     ";
     $stmt = $conn->prepare($sql);
