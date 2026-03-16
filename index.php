@@ -706,14 +706,25 @@
         <button class="arrow-button">→</button>
     </div>
 
-    <!-- Update Inventory -->
-    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+    <!-- View Inventory -->
+    <div class="content-box-test" onclick="window.location.href='inventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
         </div>
         
-        <div class="large-text-sub" style="color:white;">Inventory Log</div>
-        <div class="graph-text" style="color:white;">View and edit inventory records.</div>
+        <div class="large-text-sub" style="color:white;">View Inventory Log</div>
+        <div class="graph-text" style="color:white;">Track inventory changes.</div>
+        <button class="arrow-button">→</button>
+    </div>
+
+    <!-- Edit Inventory -->
+    <div class="content-box-test" onclick="window.location.href='viewUpdateInventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
+        </div>
+        
+        <div class="large-text-sub" style="color:white;">Update Inventory Log</div>
+        <div class="graph-text" style="color:white;">Add inventory entry.</div>
         <button class="arrow-button">→</button>
     </div>
     
