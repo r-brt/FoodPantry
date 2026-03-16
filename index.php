@@ -33,7 +33,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="./css/base.css" rel="stylesheet">
-    <title>Whiskey Valor Volunteer Management | Dashboard</title>
+    <title>Catholic Charities Food Pantry | Dashboard</title>
     <style>
         * {
             box-sizing: border-box;
@@ -130,16 +130,15 @@
             max-width: 90%;
         }
 
-        .large-text-sub {
-            position: absolute;
-            /*top: 120px;*/
-            top: 60%;
-            left: 10%;
-            font-size: 22px;
-            font-weight: 700;
-            color: white;
-            max-width: 90%;
-        }
+        .large-text-sub { 
+            position: absolute; /*top: 120px;*/ 
+            top: 60%; 
+            left: 10%; 
+            font-size: 22px; 
+            font-weight: 700; 
+            color: white; 
+            max-width: 90%; 
+            }
 
         .graph-text {
             position: absolute;
@@ -149,6 +148,7 @@
             font-weight: 700;
             color: #4d98f3;
             max-width: 90%;
+            margin-top: 20px;
         }
 
         /* Navbar Container */
@@ -243,190 +243,190 @@
         .arrow-button:hover {
             transform: translateX(5px); /* Moves the arrow slightly on hover */
         }
-    .circle-arrow-button {
-        position: absolute;
-        bottom: 30px;
-        right: 18px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: transparent;
-        border: none;
-        font-size: 20px;
-        font-family: Quicksand, sans-serif;
-        font-weight: bold;
-        color: white;
-        cursor: pointer;
-        transition: transform 0.3s ease;
-    }
+                .circle-arrow-button {
+                    position: absolute;
+                    bottom: 30px;
+                    right: 18px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    background: transparent;
+                    border: none;
+                    font-size: 20px;
+                    font-family: Quicksand, sans-serif;
+                    font-weight: bold;
+                    color: white;
+                    cursor: pointer;
+                    transition: transform 0.3s ease;
+                }
 
-    .circle {
-        width: 30px;
-        height: 30px;
-        /*background-color:; /* Blue color */
-        background-color: #4d98f3;
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        transition: transform 0.3s ease;
-    }
+                .circle {
+                    width: 30px;
+                    height: 30px;
+                    /*background-color:; /* Blue color */
+                    background-color: #4d98f3;
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 22px;
+                    transition: transform 0.3s ease;
+                }
 
-    .circle-arrow-button:hover {
-        background-color:transparent !important;
-    }
+                .circle-arrow-button:hover {
+                    background-color:transparent !important;
+                }
 
-    .circle-arrow-button:hover .circle {
-        transform: translateX(5px); /* Moves the circle slightly on hover */
-    }
-.colored-box {
-    display: inline-block; /* Ensures it wraps tightly around the text */
-    background-color: #4d98f3; /* Change to any color */
-    color: white; /* Text color */
-    padding: 1px 5px; /* Adds space inside the box */
-    border-radius: 5px; /* Optional: Rounds the corners */
-    font-weight: bold; /* Optional: Makes text bold */
-}
-
-
-        /* Footer */
-        .footer {
-            width: 100%;
-            background: #4d98f3;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 30px 50px;
-            flex-wrap: wrap;
-        }
-
-        /* Left Section */
-        .footer-left {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .footer-logo {
-            width: 150px; /* Adjust logo size */
-            margin-bottom: 15px;
-        }
-
-        /* Social Media Icons */
-        .social-icons {
-            display: flex;
-            gap: 15px;
-        }
-
-        .social-icons a {
-            color: white;
-            font-size: 20px;
-            transition: color 0.3s ease;
-        }
-
-        .social-icons a:hover {
-            color: #dcdcdc;
-        }
-
-        /* Right Section */
-        .footer-right {
-            display: flex;
-            gap: 50px;
-            flex-wrap: wrap;
-            align-items: flex-start;
-        }
-
-        .footer-section {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 10px;
-            color: #4d98f3;
-            font-family: Inter, sans-serif;
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .footer-topic {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .footer a {
-            color: white;
-            text-decoration: none;
-            transition: background 0.2s ease, color 0.2s ease;
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-
-        .footer a:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #dcdcdc;
-        }
-
-        /* Icon Overlay */
-        .background-image {
-            width: 100%;
-            border-radius: 10px;
-        }
-
-        .icon-overlay {
-            position: absolute;
-            top: 40px; /* Adjust as needed */
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.8); /* Optional background for better visibility */
-            padding: 10px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .icon-overlay img {
-            width: 40px; /* Adjust size as needed */
-            height: 40px;
-            opacity: 0.9;
-        }
-
-        .content-box-test:hover .icon-overlay img {
-            transform: scale(1.1) rotate(5deg);
-            transition: transform 0.5s ease, fill 0.5s ease;
-        }
-
-        
-        
-
-    
-        .content-box-test {
-            position: relative;
-            background-color: #4d98f3;   /* tan background */
-            border-radius: 12px;
-            padding: 20px;
-            color: white;                 /* default text color */
-            flex: 1 1 280px;
-            max-width: 375px;
-            min-height: 250px;            /* keeps all boxes same height even without bg image */
+                .circle-arrow-button:hover .circle {
+                    transform: translateX(5px); /* Moves the circle slightly on hover */
+                }
+            .colored-box {
+                display: inline-block; /* Ensures it wraps tightly around the text */
+                background-color: #4d98f3; /* Change to any color */
+                color: white; /* Text color */
+                padding: 1px 5px; /* Adds space inside the box */
+                border-radius: 5px; /* Optional: Rounds the corners */
+                font-weight: bold; /* Optional: Makes text bold */
             }
 
 
-        .content-box-test .large-text-sub,
-        .content-box-test .graph-text {
-            color: rgb(47, 51, 61);
-            }
+                    /* Footer */
+                    .footer {
+                        width: 100%;
+                        background: #4d98f3;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        padding: 30px 50px;
+                        flex-wrap: wrap;
+                    }
+
+                    /* Left Section */
+                    .footer-left {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+
+                    .footer-logo {
+                        width: 150px; /* Adjust logo size */
+                        margin-bottom: 15px;
+                    }
+
+                    /* Social Media Icons */
+                    .social-icons {
+                        display: flex;
+                        gap: 15px;
+                    }
+
+                    .social-icons a {
+                        color: white;
+                        font-size: 20px;
+                        transition: color 0.3s ease;
+                    }
+
+                    .social-icons a:hover {
+                        color: #dcdcdc;
+                    }
+
+                    /* Right Section */
+                    .footer-right {
+                        display: flex;
+                        gap: 50px;
+                        flex-wrap: wrap;
+                        align-items: flex-start;
+                    }
+
+                    .footer-section {
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        gap: 10px;
+                        color: #4d98f3;
+                        font-family: Inter, sans-serif;
+                        font-size: 16px;
+                        font-weight: 500;
+                    }
+
+                    .footer-topic {
+                        font-size: 18px;
+                        font-weight: bold;
+                    }
+
+                    .footer a {
+                        color: white;
+                        text-decoration: none;
+                        transition: background 0.2s ease, color 0.2s ease;
+                        padding: 5px 10px;
+                        border-radius: 5px;
+                    }
+
+                    .footer a:hover {
+                        background: rgba(255, 255, 255, 0.1);
+                        color: #dcdcdc;
+                    }
+
+                    /* Icon Overlay */
+                    .background-image {
+                        width: 100%;
+                        border-radius: 10px;
+                    }
+
+                    .icon-overlay {
+                        position: absolute;
+                        top: 40px; /* Adjust as needed */
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: rgba(255, 255, 255, 0.8); /* Optional background for better visibility */
+                        padding: 10px;
+                        border-radius: 50%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                    }
+
+                    .icon-overlay img {
+                        width: 40px; /* Adjust size as needed */
+                        height: 40px;
+                        opacity: 0.9;
+                    }
+
+                    .content-box-test:hover .icon-overlay img {
+                        transform: scale(1.1) rotate(5deg);
+                        transition: transform 0.5s ease, fill 0.5s ease;
+                    }
+
+                    
+                    
+
+                
+                    .content-box-test {
+                        position: relative;
+                        background-color: #4d98f3;   /* tan background */
+                        border-radius: 12px;
+                        padding: 20px;
+                        color: white;                 /* default text color */
+                        flex: 1 1 280px;
+                        max-width: 375px;
+                        min-height: 250px;            /* keeps all boxes same height even without bg image */
+                        }
 
 
-        .background-image {
-        display: none;
-        }
+                    .content-box-test .large-text-sub,
+                    .content-box-test .graph-text {
+                        color: rgb(47, 51, 61);
+                        }
 
-        
-        .full-width-bar-sub{
-            background-color:rgb(255, 255, 255) !important;
-            }
+
+                    .background-image {
+                    display: none;
+                    }
+
+                    
+                    .full-width-bar-sub{
+                        background-color:rgb(255, 255, 255) !important;
+                        }
 
 
         /* Responsive Design */
@@ -447,10 +447,12 @@
 <!--END TEST-->
 </head>
 
-<!-- ONLY SUPER ADMIN WILL SEE THIS -->
+<!-- all users can see the header -->
+<?php require 'header.php';?>
+
+<!-- ONLY SUPER ADMIN AND ADMIN(S) WILL SEE THIS -->
 <?php if ($_SESSION['access_level'] >= 2): ?>
 <body>
-<?php require 'header.php';?>
 
     <!-- Dummy content to enable scrolling -->
     <div style="margin-top: 0px; padding: 30px 20px;">
@@ -479,12 +481,11 @@
 <div class="full-width-bar-sub">
  <div class="content-box-test" onclick="window.location.href='volunteerManagement.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/user_icon.png" alt="User Icon">
+            <img style="border-radius: 5px;" src="images/user_group_icon.svg" alt="User Icon">
         </div>
         
-        <div class="large-text-sub" style="color:white;">User Management</div>
-        <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
-        <button class="arrow-button">→</button>
+        <div class="large-text-sub" style="color:white;">Audit User</div>
+        <div class="graph-text" style="color:white;">Add, edit, and remove user accounts and permissions.</div>
     </div>
             </div>
 <!--
@@ -588,27 +589,8 @@
         <button class="arrow-button">→</button>
     </div> -->
 
-    <!-- Generate Report -->
-    <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/create-report.svg" alt="Report Icon">
-        </div>
-        
-        <div class="large-text-sub"style="color:white;">Generate Report</div>
-        <div class="graph-text"style="color:#3A3A3A;">From this quarter or annual.</div>
-        <button class="arrow-button">→</button>
-    </div>
 
-    <!-- View Inventory -->
-    <div class="content-box-test" onclick="window.location.href='createEmail.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Inventory Icon">
-        </div>
-        
-        <div class="large-text-sub" style="color:white;">View Inventory</div>
-        <div class="graph-text" style="color:#3A3A3A;">Send new messages to volunteers.</div>
-        <button class="arrow-button">→</button>
-    </div>
+   
 
     <!-- View Drafts -->
     <!-- <div class="content-box-test" onclick="window.location.href='viewDrafts.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
@@ -641,22 +623,9 @@
         <div class="large-text-sub" style="color:white;">User Suggestions</div>
         <div class="graph-text" style="color:#3A3A3A;">View user submitted suggestions.</div>
         <button class="arrow-button">→</button>
-    </div> -->
-
-    <!--Weekly Inventory Report -->
-    <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Report Icon">
-        </div>
-        <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
-        <div class="graph-text" style="color:#3A3A3A;">View weekly inventory.</div>
-        <button class="arrow-button">→</button>
-    </div>    
+    </div> -->    
 
 </div>
-
-
-
     
 
 <div style="width: 90%; /* Stops before page ends */
@@ -668,47 +637,11 @@
 </div>
 
 
-    <footer class="footer" style="margin-top: 100px;">
-        <!-- Left Side: Logo & Socials -->
-        <div class="footer-left">
-            <img src="images/ccda-logo-white.svg" alt="Logo" class="footer-logo">
-            <div class="social-icons">
-                <a href="#"><i class="fab fa-facebook"></i></a>
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fab fa-instagram"></i></a>
-                <a href="#"><i class="fab fa-linkedin"></i></a>
-            </div>
-        </div>
-
-        <!-- Right Side: Page Links -->
-        <!-- <div class="footer-right">
-            <div class="footer-section">
-                <div class="footer-topic">Connect</div>
-                <a href="https://www.facebook.com/profile.php?id=61566628001672&mibextid=LQQJ4d">Facebook</a>
-                <a href="https://www.instagram.com/whiskeyvalor/#">Instagram</a>
-                <a href="https://whiskeyvalor.org">Main Website</a>
-            </div>
-            <div class="footer-section">
-                <div class="footer-topic">Contact Us</div>
-                <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a>
-                 <a href="tel:5408981500">540-898-1500 (ext 117)</a>
-            </div>
-        </div> -->
-    </footer>
-
-    <!-- Font Awesome for Icons -->
-    <script src="https://kit.fontawesome.com/yourkit.js" crossorigin="anonymous"></script>
-
-
 </body>
 <?php endif ?>
 
-<!-- ONLY VOLUNTEERS WILL SEE THIS -->
-<?php if ($notRoot) : ?>
+<?php?>
 <body>
-<?php require 'header.php';?>
-
-  
 
   <!-- Icon Container -->
 <div style="position: absolute; top: 110px; right: 30px; z-index: 999; display: flex; flex-direction: row; gap: 30px; align-items: center; text-align: center;">
@@ -719,14 +652,7 @@
 
 </div>
 
-
-
-    <!-- Dummy content to enable scrolling -->
-    <div style="margin-top: 0px; padding: 30px 20px;">
-        <h2><b>Welcome <?php echo $person->get_first_name() ?>!</b> Let's get started.</h2>
-    </div>
-
-    <div class="full-width-bar">
+    <!-- <div class="full-width-bar">
     <div class="content-box">
     <img src="images/VolM.png" />   
         <div class="small-text">Make a difference.</div>
@@ -762,61 +688,51 @@
     </div>
 
     
-    </div>
+    </div> -->
 
     <div style="margin-top: 50px; padding: 0px 80px;">
-        <h2><b>Your Dashboard</h2>
+        <h2><b>Inventory Management Dashboard</h2>
     </div>
     <div class="full-width-bar-sub">
-        <div class="content-box-test" onclick="window.location.href='calendar.php'">
-            <div class="icon-overlay">
-                <img style="border-radius: 5px;" src="images/view-calendar.svg" alt="Calendar Icon">
-            </div>
-            <img class="background-image" src="images/blank-white-background.jpg" />
-            <div class="large-text-sub">Calendar</div>
-            <div class="graph-text">See upcoming events/trainings.</div>
-            <button class="arrow-button">→</button>
+
+    <!-- View Inventory -->
+    <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/document-report.svg" alt="Report Icon">
         </div>
+        
+        <div class="large-text-sub"style="color:white;">Inventory Analytics</div>
+        <div class="graph-text"style="color:white;">Explore visual reports and analytics for inventory data.</div>
+    </div>
 
-               <?php
-                    require_once('database/dbMessages.php');
-                    $unreadMessageCount = get_user_unread_count($person->get_id());
-                    $inboxIcon = 'inbox.svg';
-                    if ($unreadMessageCount) {
-                        $inboxIcon = 'inbox-unread.svg';
-                    }   
-                ?>  
-
-        <div class="content-box-test" onclick="window.location.href='upload_encrypted_image.php'">
-            <div class="icon-overlay">
-                <img style="border-radius: 5px;" src="images/file-regular.svg" alt="Calendar Icon">
-            </div>
-            <img class="background-image" src="images/blank-white-background.jpg" />
-            <div class="large-text-sub">Documentation Upload</div>
-            <div class="graph-text">Upload an ID for verification.</div>
-            <button class="arrow-button">→</button>
+    <!-- View Inventory -->
+    <div class="content-box-test" onclick="window.location.href='inventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Inventory Icon">
         </div>
+        
+        <div class="large-text-sub" style="color:white;">View Inventory Log</div>
+        <div class="graph-text" style="color:white;">Track inventory changes.</div>
+    </div>
 
-        <div class="content-box-test" onclick="window.location.href='createSuggestion.php'">
-            <div class="icon-overlay">
-                <img style="border-radius: 5px;" src="images/clipboard-regular.svg" alt="Report Icon">
-            </div>
-            <img class="background-image" src="images/blank-white-background.jpg" />
-            <div class="large-text-sub">Suggestions</div>
-            <div class="graph-text">Suggest opportunities for charity events.</div>
-            <button class="arrow-button">→</button>
+    <!-- Edit Inventory -->
+    <div class="content-box-test" onclick="window.location.href='viewUpdateInventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-checklist.svg" alt="Inventory Icon">
         </div>
-
-        <div class="content-box-test" onclick="window.location.href='inbox.php'">
-            <div class="icon-overlay">
-                <img style="border-radius: 5px;" src="images/<?php echo $inboxIcon ?>" alt="Notification Icon">
-            </div>
-            <img class="background-image" src="images/blank-white-background.jpg" />
-            <div class="large-text-sub">Notifications</div>
-            <div class="graph-text">Stay up to date.</div>
-            <button class="arrow-button">→</button>
+        
+        <div class="large-text-sub" style="color:white;">Update Inventory Log</div>
+        <div class="graph-text" style="color:white;">Add inventory entry.</div>
+    </div>
+    
+    <!--Weekly Inventory Report -->
+    <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-arrow-down.svg" alt="Report Icon">
         </div>
-
+        <div class="large-text-sub" style="color:white;">Generate Weekly Inventory Report</div>
+        <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
+    </div>    
     </div>
 
 <div style="width: 90%; /* Stops before page ends */
@@ -830,18 +746,18 @@
     <footer class="footer" style="margin-top: 100px;">
         <!-- Left Side: Logo & Socials -->
         <div class="footer-left">
-            <img src="images/whiskeyLogowhite.png" alt="Logo" class="footer-logo">
-            <!-- <div class="social-icons">
+            <img src="images/ccda-logo-white.svg" alt="Logo" class="footer-logo">
+            <div class="social-icons">
                 <a href="#"><i class="fab fa-facebook"></i></a>
                 <a href="#"><i class="fab fa-twitter"></i></a>
                 <a href="#"><i class="fab fa-instagram"></i></a>
                 <a href="#"><i class="fab fa-linkedin"></i></a>
-            </div> -->
+            </div>
         </div>
 
         <!-- Right Side: Page Links -->
-        <div class="footer-right">
-            <!-- <div class="footer-section">
+        <!-- <div class="footer-right">
+            <div class="footer-section">
                 <div class="footer-topic">Connect</div>
                 <a href="https://www.facebook.com/profile.php?id=61566628001672&mibextid=LQQJ4d">Facebook</a>
                 <a href="https://www.instagram.com/whiskeyvalor/#">Instagram</a>
@@ -849,16 +765,15 @@
             </div>
             <div class="footer-section">
                 <div class="footer-topic">Contact Us</div>
-                <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a> -->
-                <!-- <a href="tel:5408981500">540-898-1500 (ext 117)</a> -->
-            <!-- </div> -->
-        <!-- </div> -->
+                <a href="https://whiskeyvalor.org/pages/contact">Send Us An Email</a>
+                 <a href="tel:5408981500">540-898-1500 (ext 117)</a>
+            </div>
+        </div> -->
     </footer>
-    <p>_</p>
 
     <!-- Font Awesome for Icons -->
     <script src="https://kit.fontawesome.com/yourkit.js" crossorigin="anonymous"></script>
 
 </body>
-<?php endif ?>
+<?php ?>
 </html>

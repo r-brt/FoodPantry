@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 date_default_timezone_set("America/New_York");
 
 // Ensure admin authentication
-if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 2) {
+if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 1) {
     header('Location: login.php');
     die();
 }

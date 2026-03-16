@@ -657,7 +657,7 @@ if (date("H:i:s") > "18:19:59") {
             <div class="nav-links">
                 <div class="nav-item">
                     <div class="icon">
-                        <img src="images/usaicon.png" alt="User Icon" class="icon-img in-nav-img">
+                        <img src="images/user-square.svg" alt="User Icon" class="icon-img in-nav-img">
                         <div class="dropdown">
                             <a href="signup.php" class="dropdown-link"><div>Create Account</div></a>
                             <a href="login.php" class="dropdown-link"><div>Log in</div></a>
@@ -754,10 +754,11 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['volunteermanagement.php'] = 2;
         $permission_array['groupmanagement.php'] = 2;
         $permission_array['eventmanagement.php'] = 2;
+        $permission_array['inventory.php'] = 1;
         $permission_array['creatediscussion.php'] = 2;
         $permission_array['checkedinvolunteers.php'] = 2;
         $permission_array['deletediscussion.php'] = 2;
-        $permission_array['generatereport.php'] = 2; //adding this to the generate report page
+        $permission_array['generatereport.php'] = 1; //adding this to the generate report page
         $permission_array['generateemaillist.php'] = 2; //adding this to the generate report page
         $permission_array['clockoutbulk.php'] = 2;
         $permission_array['clockOut.php'] = 2;
@@ -790,7 +791,8 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['upload_encrypted_image.php'] = 1;
         $permission_array['createsuggestion.php'] = 1;
         $permission_array['viewsuggestion.php'] = 2;
-        $permission_array['viewweeklyreport.php'] = 2;
+        $permission_array['viewweeklyreport.php'] = 1;
+        $permission_array['viewupdateinventory.php'] = 1;
         // LOWERCASE
 
 
@@ -813,8 +815,8 @@ if (date("H:i:s") > "18:19:59") {
         
         //they're logged in and session variables are set.
 	//
-	// SUPER ADMIN ONLY HEADER
-        if ($_SESSION['access_level'] >= 2) {
+	// HEADER FOR SUPERADMIN, ADMIN, INVENTORY COUNTER
+        if ($_SESSION['access_level'] >= 1) {
 		echo('<div class="navbar">
         <!-- Left Section: Logo & Nav Links -->
         <div class="left-section">
@@ -823,25 +825,38 @@ if (date("H:i:s") > "18:19:59") {
             </div>
                 <!--<a href="viewCheckInOut.php" style="color: white; text-decoration: none;"><div class="date-box">Check In/Out</div></a>-->
             <div class="nav-links">
-                <div class="nav-item">Events
-                    <div class="dropdown">
-
-<a href="generateReport.php" style="text-decoration: none;">
+                <div class="nav-item">Food Pantry Navigation
+                    <div class="dropdown">');
+            if ($_SESSION['access_level'] >= 2) {
+                echo('<a href="volunteerManagement.php" style="text-decoration: none;">
+                <div class="in-nav">
+                    <img src="images/user_group_icon.svg" alt="User Icon">
+                    <span>Audit User</span>
+                </div>
+                </a>');
+            }
+echo('<a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/plus-solid.svg">
-    <span>Generate Report</span>
+    <img src="images/document-report.svg" alt="Report Icon">
+    <span>Inventory Analytics</span>
   </div>
 </a>
-<a href="createEmail.php" style="text-decoration: none;">
+<a href="inventory.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/list-solid.svg">
-    <span>View Inventory</span>
+    <img src="images/clipboard-list-alt.svg" alt="Inventory Icon">
+    <span>View Inventory Log</span>
+  </div>
+</a>
+<a href="viewUpdateInventory.php" style="text-decoration: none;">
+  <div class="in-nav">
+    <img src="images/clipboard-checklist.svg" alt="Inventory Icon">
+    <span>Update Inventory</span>
   </div>
 </a>
 <a href="viewWeeklyReport.php" style="text-decoration: none;">
   <div class="in-nav">
-    <img src="images/clock-regular.svg">
-    <span>Weekely Inventory Report</span>
+    <img src="images/clipboard-arrow-down.svg" alt="Report Icon">
+    <span>Generate Weekly Inventory Report</span>
   </div>
 </a>
 
@@ -888,7 +903,7 @@ if (date("H:i:s") > "18:19:59") {
             <div class="nav-links">
                 <div class="nav-item">
                     <div class="icon">
-                        <img src="images/usaicon.png" alt="User Icon" class="icon-img in-nav-img">
+                        <img src="images/user-square.svg" alt="User Icon" class="icon-img in-nav-img">
                         <div class="dropdown">
                             <a href="changePassword.php" class="dropdown-link"><div>Change Password</div></a>
                             <a href="logout.php" class="dropdown-link"><div>Log Out</div></a>
@@ -898,10 +913,10 @@ if (date("H:i:s") > "18:19:59") {
             </div>
         </div>
     </div>');
-	}
+	} 
 
-        // VOLUNTEER ONLY HEADER
-        if ($_SESSION['access_level'] <= 1) {
+        // HEADER FOR ACCESS LEVEL 0
+        else if ($_SESSION['access_level'] <= 0) {
 		echo('<div class="navbar">
         <!-- Left Section: Logo & Nav Links -->
         <div class="left-section">
@@ -957,7 +972,7 @@ if (date("H:i:s") > "18:19:59") {
             <div class="nav-links">
                 <div class="nav-item" style="outline:none;">
                     <div class="icon">
-                        <img src="images/usaicon.png" alt="User Icon">
+                        <img src="images/user-square.svg" alt="User Icon">
                         <div class="dropdown">
                             <a href="viewProfile.php" style="text-decoration: none;"><div>View Profile</div></a>
                             <a href="editProfile.php" style="text-decoration: none;"><div>Edit Profile</div></a>
