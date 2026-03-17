@@ -828,10 +828,10 @@ if (date("H:i:s") > "18:19:59") {
                 <div class="nav-item">Food Pantry Navigation
                     <div class="dropdown">');
             if ($_SESSION['access_level'] >= 2) {
-                echo('<a href="volunteerManagement.php" style="text-decoration: none;">
+                echo('<a href="viewAuditUsers.php" style="text-decoration: none;">
                 <div class="in-nav">
                     <img src="images/user_group_icon.svg" alt="User Icon">
-                    <span>Audit User</span>
+                    <span>Audit Users</span>
                 </div>
                 </a>');
             }
