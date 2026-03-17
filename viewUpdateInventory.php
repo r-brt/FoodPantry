@@ -42,6 +42,15 @@
             else{
                 /* only add items that have values to array */
                 if(!empty($value)){
+
+                    /* try to convert value to a number. If it cannot convert, leave it as a string */
+                    try{
+                        $value = +$value;
+                    }
+                    catch(TypeError  $e){ 
+                        $value = " ";
+                    }
+
                     /* if error is found, empty the array of items and stop checking */
                     if(!is_int($value)){
                         $errors[] = 'Quantities must be in whole numbers';
