@@ -1,8 +1,4 @@
 <?php
-    // Template for new VMS pages. Base your new page on this one
-
-    // Make session information accessible, allowing us to associate
-    // data with the logged-in user.
     session_cache_expire(30);
     session_start();
 
@@ -11,158 +7,212 @@
     $userID = null;
     if (isset($_SESSION['_id'])) {
         $loggedIn = true;
-        // 0 = not logged in, 1 = standard user, 2 = manager (Admin), 3 super admin (TBI)
         $accessLevel = $_SESSION['access_level'];
         $userID = $_SESSION['_id'];
     }
-    // admin-only access
-    if ($accessLevel < 2) {
-        header('Location: index.php');
-        die();
-    }
+
+    require_once('database/dbinfo.php');
+    $con = connect();
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Audit Users | CCDA</title>
-    <link href="css/normal_tw.css" rel="stylesheet">
-<!-- BANDAID FIX FOR HEADER BEING WEIRD -->
-<?php
-$tailwind_mode = true;
-require_once('header.php');
-?>
-<style>
-        .date-box {
-            background: #C9AB81;
-            padding: 7px 30px;
-            border-radius: 50px;
-            box-shadow: -4px 4px 4px rgba(0, 0, 0, 0.25) inset;
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-        }   
-        .dropdown {
-            padding-right: 50px;
-        }   
-
-        body, main {
-        background-color: #1F1F21;
-        }
-
-        .text-blue-700,
-        .text-blue-700:visited {
-        color: black !important;
-        }   
-
-        .info-section .info-text {
-         color: #C9AB81 !important;
-        }
-
-        .blue-div {
-        background-color: #C9AB81 !important;
-        }
-
-        .main-content-box label {
-        color: #000000 !important;
-        }
-        
-        .text-blue-700 {
-        color: #000000 !important;
-        }
-        .sub-text {
-        color: black !important;
-        }
-
-        .main-content-box table,
-        .main-content-box table thead,
-        .main-content-box table tbody,
-        .main-content-box table tr,
-        .main-content-box table th,
-        .main-content-box table td {
-            background-color: #1F1F21 !important;
-            color: #C9AB81 !important;
-            border: 1px solid #C9AB81 !important;
-        }
-
-        .main-content-box table a.text-blue-700,
-        .main-content-box table a.text-blue-700:visited {
-            color: #C9AB81 !important;
-            }
-
-        .main-content-box table thead.bg-blue-400 th {
-            background-color: #1F1F21 !important;
-        }
-
-        .main-content-box table a.text-blue-700,
-        .main-content-box table a.text-blue-700:visited {
-            color: #C9AB81 !important;
-        }
     
-</style>
-<!-- BANDAID END, REMOVE ONCE SOME GENIUS FIXES -->
+<!DOCTYPE html>
+<html>
+<head>
+    <?php require_once('universal.inc') ?>
+    <title>Weekly Inventory Report | Whiskey Valor Foundation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .report-container {
+            max-width: 1100px;
+            margin: 0 auto 4rem auto;
+            padding: 1rem;
+        }
+        .report-section {
+            background-color: rgba(0,0,0,0.15);
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .report-section h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .report-table th,
+        .report-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--shadow-and-border-color);
+            color: var(--page-font-color);
+        }
+        .report-table th {
+            background-color: var(--main-color);
+            color: var(--button-font-color);
+            font-weight: 500;
+        }
+        .report-table tr:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        .low-stock-badge {
+            display: inline-block;
+            background-color: var(--error-toast-background-color);
+            color: var(--error-toast-font-color);
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .expired-text {
+            color: var(--error-toast-background-color);
+            font-weight: 600;
+        }
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .chart-controls button {
+            padding: 0.4rem 1rem;
+            border: 2px solid var(--accent-color);
+            border-radius: 0.25rem;
+            background-color: transparent;
+            color: var(--page-font-color);
+            cursor: pointer;
+            font-weight: 500;
+            width: auto;
+            font-size: 0.85rem;
+        }
+        .chart-controls button.active,
+        .chart-controls button:hover {
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--inactive-font-color);
+        }
+        .basket-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+        .basket-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .basket-label {
+            color: var(--page-font-color);
+            width: 160px;
+            flex-shrink: 0;
+        }
+        .basket-qty {
+            width: 100px;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            font-size: 0.9rem;
+        }
+        .generate-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            width: auto;
+        }
+        .generate-btn:hover {
+            opacity: 0.85;
+        }
+        @media only screen and (max-width: 768px) {
+            .report-table th,
+            .report-table td {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+            .report-container {
+                padding: 0.5rem;
+            }
+            div.table-wrapper {
+                overflow-x: auto;
+            }
+        }
+    </style>
 </head>
 <body>
+    <?php require_once('header.php'); ?>
+    <main>
+        <div class="report-container">
+            <h1 style="color:black;">Audit Users</h1>
 
-<header class="hero-header">
-    <div class="center-header">
-        <h1>Audit Users</h1>
-    </div>
-</header>
-
-<main>
-    <div class="main-content-box w-[80%] p-8">
-
-        <?php
-                    require_once('database/dbPersons.php');
-                    $persons = getall_persons();
-                    require_once('include/output.php');
-
-                    if (count($persons) > 0) {
-                        echo '
-                        <div class="overflow-x-auto">
-                            <table>
-                                <thead class="bg-blue-400">
-                                    <tr>
-                                        <th>First</th>
-                                        <th>Last</th>
-                                        <th>Username</th>
-                                        <th>Role</th>
-                                        <th>Status</th>
-                                        <th>Profile</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>';
-                        foreach ($persons as $person) {
-                            echo '
-                                    <tr>
-                                        <td>' . $person->get_first_name() . '</td>
-                                        <td>' . $person->get_last_name() . '</td>
-                                        <td><a href="mailto:' . $person->get_id() . '" class="text-blue-700 underline">' . $person->get_id() . '</a></td>
-                                        <td>' . ucfirst($person->get_type()) . '</td>
-                                        <td>' . ucfirst($person->get_status()) . '</td>
-                                        <td><a href="viewProfile.php?id=' . $person->get_id() . '" class="text-blue-700 underline">Profile</a></td>
-                                        <td><a href="modifyUserRole.php?id=' . $person->get_id() . '" class="text-blue-700 underline">Update Status</a></td>
-                                    </tr>';
-                        }
-                        echo '
-                                </tbody>
-                            </table>
-                        </div>';
-
-                    } else {
-                        echo '<div class="error-block">Your search returned no results.</div>';
-                    }
-        ?>
-    </div>
-
-    <div class="text-center mt-6">
-        <a href="index.php" class="return-button">Return to Dashboard</a>
-    </div>
-
-</main>
+            <!-- User Accounts -->
+            <div class="report-section">
+                <h2>User Accounts</h2>
+                <div class="table-wrapper">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>First</th>
+                                <th>Last</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Profile</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                                require_once('database/dbPersons.php');
+                                $persons = getall_persons();
+                                if (count($persons) > 0) {
+                                    foreach ($persons as $person) {
+                                        echo '
+                                        <tr>
+                                            <td>' . $person->get_first_name() . '</td>
+                                            <td>' . $person->get_last_name() . '</td>
+                                            <td><a href="mailto:' . $person->get_id() . '" class="text-blue-700 underline">' . $person->get_id() . '</a></td>
+                                            <td>' . ucfirst($person->get_type()) . '</td>
+                                            <td>' . ucfirst($person->get_status()) . '</td>
+                                            <td><a href="viewProfile.php?id=' . $person->get_id() . '" class="text-blue-700 underline">Profile</a></td>
+                                            <td><a href="modifyUserRole.php?id=' . $person->get_id() . '" class="text-blue-700 underline">Update Status</a></td>
+                                        </tr>';
+                                    }
+                                }
+                                else{
+                                    echo '
+                                        <tr>
+                                            <td colspan="6" class="empty-state">No items updated this week.</td>
+                                        </tr>';
+                                }
+                            ?>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
 
 </body>
 </html>
-
