@@ -47,7 +47,6 @@
         .report-table th,
         .report-table td {
             padding: 0.75rem 1rem;
-            text-align: left;
             border-bottom: 1px solid var(--shadow-and-border-color);
             color: var(--page-font-color);
         }
@@ -55,6 +54,10 @@
             background-color: var(--main-color);
             color: var(--button-font-color);
             font-weight: 500;
+            text-align:center;
+        }
+        .report-table td {
+            text-align: left;
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -130,7 +133,7 @@
             color: var(--page-font-color);
             font-size: 0.9rem;
         }
-        .generate-btn {
+        .modify-btn {
             padding: 0.5rem 1.5rem;
             background-color: var(--accent-color);
             color: var(--button-font-color);
@@ -141,9 +144,12 @@
             font-weight: 500;
             width: auto;
         }
-        .generate-btn:hover {
+        .modify-btn:hover {
             opacity: 0.85;
         }
+        div.table-wrapper {
+                overflow-x: auto;
+            }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -153,9 +159,6 @@
             .report-container {
                 padding: 0.5rem;
             }
-            div.table-wrapper {
-                overflow-x: auto;
-            }
         }
     </style>
 </head>
@@ -164,46 +167,73 @@
     <main>
         <div class="report-container">
             <h1 style="color:black;">Audit Users</h1>
-
-            <!-- User Accounts -->
+            
+            <?php 
+                require_once('database/dbPersons.php');
+                $persons = getall_persons(); 
+            ?>
+            <!-- Active User Accounts -->
             <div class="report-section">
-                <h2>User Accounts</h2>
+                <h2>Active User Accounts</h2>
                 <div class="table-wrapper">
                     <table class="report-table">
                         <thead>
                             <tr>
+                                <th>Username</th>
                                 <th>First</th>
                                 <th>Last</th>
-                                <th>Username</th>
+                                <th>Email</th>
                                 <th>Role</th>
-                                <th>Status</th>
-                                <th>Profile</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php 
-                                require_once('database/dbPersons.php');
-                                $persons = getall_persons();
-                                if (count($persons) > 0) {
-                                    foreach ($persons as $person) {
+                                foreach ($persons as $person) {
+                                    $num_active = 0;
+                                    if($person->get_status() == "Active"){
+                                        $num_active += 1;
+
+                                        $username = $person->get_id();
+                                        if (strlen($username) > 15)
+                                            $username = substr($username, 0, 12) . '...';
+
+                                        $first = $person->get_first_name();
+                                        if (strlen($first) > 15)
+                                            $first = substr($first, 0, 12) . '...';
+                                        else if (empty($first))
+                                            $first = "  -  ";
+
+                                        $last = $person->get_last_name();
+                                        if (strlen($last) > 15)
+                                            $last = substr($last, 0, 12) . '...';
+                                        else if (empty($last))
+                                            $last = "  -  ";
+
+                                        $email = $person->get_email();
+                                        if (strlen($email) > 15)
+                                            $email = substr($email, 0, 12) . '...';
+
                                         echo '
                                         <tr>
-                                            <td>' . $person->get_first_name() . '</td>
-                                            <td>' . $person->get_last_name() . '</td>
-                                            <td><a href="mailto:' . $person->get_id() . '" class="text-blue-700 underline">' . $person->get_id() . '</a></td>
+                                            <td>' . $username . '</td>
+                                            <td>' . $first . '</td>
+                                            <td>' . $last . '</td>';
+                                        if(empty($email))
+                                            echo '<td>  -  </td>';
+                                        else
+                                            echo '<td><a href="mailto:' . $person->get_email() . '" class="text-blue-700 underline">' . $email . '</a></td>';
+                                        echo ' 
                                             <td>' . ucfirst($person->get_type()) . '</td>
-                                            <td>' . ucfirst($person->get_status()) . '</td>
-                                            <td><a href="viewProfile.php?id=' . $person->get_id() . '" class="text-blue-700 underline">Profile</a></td>
-                                            <td><a href="modifyUserRole.php?id=' . $person->get_id() . '" class="text-blue-700 underline">Update Status</a></td>
+                                            <td><a href="modifyUserRole.php?id=' . $person->get_id() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
                                         </tr>';
                                     }
                                 }
-                                else{
+                                if($num_active == 0){
                                     echo '
-                                        <tr>
-                                            <td colspan="6" class="empty-state">No items updated this week.</td>
-                                        </tr>';
+                                    <tr>
+                                        <td colspan="7" class="empty-state">No Active Accounts</td>
+                                    </tr>';
                                 }
                             ?>
                             
