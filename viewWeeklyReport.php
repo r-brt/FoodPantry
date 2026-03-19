@@ -165,9 +165,9 @@
         <div class="report-container">
             <h1 style="color:white;">Weekly Inventory Report</h1>
 
-            <!-- Items Updated -->
+            <!-- Weekly Items -->
             <div class="report-section">
-                <h2>Items Updated</h2>
+                <h2>Weekly Items</h2>
                 <div class="table-wrapper">
                     <table class="report-table">
                         <thead>
@@ -184,33 +184,7 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="6" class="empty-state">No items updated this week.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Items at Risk -->
-            <div class="report-section">
-                <h2>Items at Risk</h2>
-                <div class="table-wrapper">
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>Days Left</th>
-                                <th>Previous Boxes</th>
-                                <th>Previous Items Per Box</th>
-                                <th>Current Boxes</th>
-                                <th>Current Items Per Box</th>
-                                <th>Weeks Left</th>
-                                <th>Months Left</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="5" class="empty-state">No items at risk.</td>
+                                <td colspan="8" class="empty-state">No weekly items to display.</td>
                             </tr>
                         </tbody>
                     </table>
