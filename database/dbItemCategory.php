@@ -6,10 +6,11 @@ include_once(dirname(__FILE__).'/../domain/ItemCategory.php');
 /*
  * Add a item Category to dbItemCategory table: return id
  */
-function add_itemCategory($name, $itemsPerBox, $status) {
+function add_itemCategory($name, $bananaBox, $itemsPerBox, $status) {
     $con=connect();
-    mysqli_query($con,'INSERT INTO dbItemCategory (name, itemsPerBox, status) VALUES("' .
+    mysqli_query($con,'INSERT INTO dbItemCategory (name, bananaBox, itemsPerBox, status) VALUES("' .
             $name . '","' . 
+            $bananaBox . '","' . 
             $itemsPerBox . '","' . 
             $status . '");');							
     $id = mysqli_insert_id($con);
@@ -19,20 +20,57 @@ function add_itemCategory($name, $itemsPerBox, $status) {
 }
 
 /*
- * Remove a group from dbGroups table. If not there, return false
+ * set status to Active for given Item Category id
  */
-function remove_ItemCategory($category) {
-    $con = connect();
-    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $category . '"';
-    $result = mysqli_query($con, $query);
+
+function activate_person($id) {
+    $con=connect();
+    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
+    $result = mysqli_query($con,$query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
-    $query = 'DELETE FROM dbItemCategory WHERE id = "' . $category . '"';
-    $result = mysqli_query($con, $query);
+    $query = "UPDATE dbItemCategory SET status = 'Active' WHERE id = '$id'";
+    $result = mysqli_query($con,$query);
     mysqli_close($con);
-    return $result ? true : false;
+    return true;
+}
+
+/*
+ * set status to Inactive for given Item Category id
+ */
+
+function deactivate_person($id) {
+    $con=connect();
+    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
+    $result = mysqli_query($con,$query);
+    if ($result == null || mysqli_num_rows($result) == 0) {
+        mysqli_close($con);
+        return false;
+    }
+    $query = "UPDATE dbItemCategory SET status = 'Inactive' WHERE id = '$id'";
+    $result = mysqli_query($con,$query);
+    mysqli_close($con);
+    return true;
+}
+
+/*
+ * set status to Deleted for given Item Category id
+ */
+
+function delete_itemCategory($id) {
+    $con=connect();
+    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
+    $result = mysqli_query($con,$query);
+    if ($result == null || mysqli_num_rows($result) == 0) {
+        mysqli_close($con);
+        return false;
+    }
+    $query = "UPDATE dbItemCategory SET status = 'Deleted' WHERE id = '$id'";
+    $result = mysqli_query($con,$query);
+    mysqli_close($con);
+    return true;
 }
 
 /*
@@ -48,7 +86,7 @@ function retrieve_ItemCategory($category) {
         return false;
     }
     $result_row = mysqli_fetch_assoc($result);
-    $theCategory = new ItemCategory($result_row['id'], $result_row['name'], $result_row['itemsPerBox'], $result_row['status']);
+    $theCategory = new ItemCategory($result_row['id'], $result_row['name'], $result_row['bananaBox'], $result_row['itemsPerBox'], $result_row['status']);
     mysqli_close($con);
     return $theCategory;
 }
@@ -66,7 +104,7 @@ function retrieve_ItemCategory_by_name($name) {
         return false;
     }
     $result_row = mysqli_fetch_assoc($result);
-    $theCategory = new ItemCategory($result_row['id'], $result_row['name'], $result_row['itemsPerBox'], $result_row['status']);
+    $theCategory = new ItemCategory($result_row['id'], $result_row['name'], $result_row['bananaBox'], $result_row['itemsPerBox'], $result_row['status']);
     mysqli_close($con);
     return $theCategory;
 }
@@ -86,7 +124,7 @@ function get_all_ItemCategory() {
     $categories = [];
     if ($result && mysqli_num_rows($result) > 0) {
         while ($row = mysqli_fetch_assoc($result)) {
-            $categories[] = new ItemCategory($row['id'], $row['name'], $row['itemsPerBox'], $row['status']);
+            $categories[] = new ItemCategory($row['id'], $row['name'], $row['bananaBox'], $row['itemsPerBox'], $row['status']);
         //$category[] = $category;
         }
     }
