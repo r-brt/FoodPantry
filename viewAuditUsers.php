@@ -19,7 +19,7 @@
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>Weekly Inventory Report | Whiskey Valor Foundation</title>
+    <title>Audit Users | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .report-container {
@@ -58,6 +58,7 @@
         }
         .report-table td {
             text-align: left;
+            border: 1px solid var(--shadow-and-border-color);
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -170,49 +171,51 @@
             
             <?php 
                 require_once('database/dbPersons.php');
-                $persons = getall_persons(); 
-            ?>
-            <!-- Active User Accounts -->
-            <div class="report-section">
-                <h2>Active User Accounts</h2>
-                <div class="table-wrapper">
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>First</th>
-                                <th>Last</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
+                /* display table of accounts with a given status (Active/Inactive/Deleted) */
+                $display_accounts_by_status = function($status){
+                    echo '
+                    <div class="report-section">
+                        <h2>'.$status.' User Accounts</h2>
+                        <div class="table-wrapper">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>First</th>
+                                        <th>Last</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody> ';
+
+                            
+                                $num_active = 0;
+                                $persons = getall_persons();
                                 foreach ($persons as $person) {
-                                    $num_active = 0;
-                                    if($person->get_status() == "Active"){
+                                    if($person->get_status() == $status){
                                         $num_active += 1;
 
                                         $username = $person->get_id();
-                                        if (strlen($username) > 15)
-                                            $username = substr($username, 0, 12) . '...';
+                                        if (strlen($username) > 20)
+                                            $username = substr($username, 0, 17) . '...';
 
                                         $first = $person->get_first_name();
-                                        if (strlen($first) > 15)
-                                            $first = substr($first, 0, 12) . '...';
+                                        if (strlen($first) > 20)
+                                            $first = substr($first, 0, 17) . '...';
                                         else if (empty($first))
                                             $first = "  -  ";
 
                                         $last = $person->get_last_name();
-                                        if (strlen($last) > 15)
-                                            $last = substr($last, 0, 12) . '...';
+                                        if (strlen($last) > 20)
+                                            $last = substr($last, 0, 17) . '...';
                                         else if (empty($last))
                                             $last = "  -  ";
 
                                         $email = $person->get_email();
-                                        if (strlen($email) > 15)
-                                            $email = substr($email, 0, 12) . '...';
+                                        if (strlen($email) > 20)
+                                            $email = substr($email, 0, 17) . '...';
 
                                         echo '
                                         <tr>
@@ -225,22 +228,30 @@
                                             echo '<td><a href="mailto:' . $person->get_email() . '" class="text-blue-700 underline">' . $email . '</a></td>';
                                         echo ' 
                                             <td>' . ucfirst($person->get_type()) . '</td>
-                                            <td><a href="modifyUserRole.php?id=' . $person->get_id() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
+                                            <td><a href="modifyUserRole.php?id=' . $person->get_personId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
                                         </tr>';
                                     }
                                 }
                                 if($num_active == 0){
                                     echo '
                                     <tr>
-                                        <td colspan="7" class="empty-state">No Active Accounts</td>
+                                        <td colspan="7" class="empty-state">No '.$status.' Accounts</td>
                                     </tr>';
                                 }
-                            ?>
+
+                    echo '
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>';
+                            }; ?>
+
+                            <!-- Display Table of accounts for each Status -->
+                            <?php 
+                            $display_accounts_by_status("Active");
+                            $display_accounts_by_status("Inactive");
+                             //$display_accounts_by_status("Deleted"); ?>
                             
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </main>
 
