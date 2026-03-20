@@ -228,7 +228,7 @@
                                             echo '<td><a href="mailto:' . $person->get_email() . '" class="text-blue-700 underline">' . $email . '</a></td>';
                                         echo ' 
                                             <td>' . ucfirst($person->get_type()) . '</td>
-                                            <td><a href="modifyUserRole.php?id=' . $person->get_personId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
+                                            <td><a href="viewModifyUser.php?id=' . $person->get_personId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
                                         </tr>';
                                     }
                                 }
@@ -250,7 +250,7 @@
                             <?php 
                             $display_accounts_by_status("Active");
                             $display_accounts_by_status("Inactive");
-                             //$display_accounts_by_status("Deleted"); ?>
+                            $display_accounts_by_status("Deleted"); ?>
                             
         </div>
     </main>
