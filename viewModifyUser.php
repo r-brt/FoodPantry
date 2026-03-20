@@ -68,7 +68,22 @@
             die();
         }
         else if(isset($_POST["save_button"])){
-            echo("SAVE CHANGES");
+            if(update_person_by_personId(
+                $thePerson->get_personId(),
+                $_POST["id"],
+                $_POST["fname"],
+                $_POST["lname"],
+                $_POST["email"],
+                $_POST["role"]
+            )){
+                header('Location: viewAuditUsers.php');
+                die();
+            }
+            else{
+                if(retrieve_person($_POST["id"])){
+                    $errors[] = "Username already exists";
+                }
+            }
         }
     }
 ?>
@@ -227,7 +242,8 @@
         .modify-save-btn,
         .modify-cancel-btn,
         .modify-delete-btn,
-        .modify-activate-btn {
+        .modify-activate-btn,
+        .modify-deactivate-btn {
             padding: 0.5rem 1.5rem;
             background-color: var(--accent-color);
             color: var(--button-font-color);
@@ -242,9 +258,11 @@
             background-color: darkred;
             color: var(--button-font-color);
         }
+        .modify-deactivate-btn {
+            color: red;
+        }
         .modify-activate-btn {
-            width: auto;
-            max-width: 500px;
+            color: green;
         }
         .modify-delete-btn:hover{
             opacity: 0.75;
@@ -262,7 +280,6 @@
             justify-content: center;
             gap: 0.75rem;
             margin-bottom: 1.25rem;
-            padding: 2rem 1rem;
         }
         @media only screen and (max-width: 768px) {
             .report-table th,
@@ -322,11 +339,11 @@
                 <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewModifyUser.php?id=<?php echo $thePerson->get_personId();?>">
                     <div class="updateInv-allRows">
                         <div class="updateInv-row">
-                            <label class="updateInv-label" for="username">Username: </label>
+                            <label class="updateInv-label" for="id">Username: </label>
                             <input type="text" class="updateInv-qty" 
                                 value="<?php echo($thePerson->get_id())?>"
-                                name="username" 
-                                id="username">
+                                name="id" 
+                                id="id">
                         </div>
                         <div class="updateInv-row">
                             <label class="updateInv-label" for="fname">First Name: </label>
@@ -381,24 +398,23 @@
                                 }
                             ?>
                         </div>
-                        <div class="updateInv-row">
-                            <?php
-                                if($thePerson->get_status() == "Active"){
-                                    echo '
-                                        <button name="deactivate_button" class="modify-activate-btn">Deactivate</button>
-                                    ';
-                                }
-                                else {
-                                    echo '
-                                        <button name="activate_button" class="modify-activate-btn">Activate</button>
-                                    ';
-                                }
-                            ?>
-                        </div>
                     </div>
                     <div class="modifyUsers-formBtns">
                         <button name="save_button" class="modify-save-btn">Save Changes</button>
                         <button name="cancel_button" class="modify-cancel-btn">Cancel</button>
+                        <hr>
+                        <?php
+                            if($thePerson->get_status() == "Active"){
+                                echo '
+                                    <button name="deactivate_button" class="modify-deactivate-btn">Deactivate</button>
+                                ';
+                            }
+                            else {
+                                echo '
+                                    <button name="activate_button" class="modify-activate-btn">Activate</button>
+                                ';
+                            }
+                        ?>
                         <hr>
                         <button name="delete_button" name="delete_button" class="modify-delete-btn" 
                             onclick="return confirm('Are you sure you want to\nDELETE USER: <?php echo $thePerson->get_id();?>?')"

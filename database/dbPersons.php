@@ -274,6 +274,36 @@ function update_status_by_personId($personId, $status){
 }
 
 /*
+ * add a person to dbPersons table: if already there, return false
+ */
+
+function update_person_by_personId($personId, $id, $first_name, $last_name, $email, $type) {
+    // username already exists
+    $person = retrieve_person($id);
+    if($person && $person->get_personId() != $personId){
+        return false;
+    }
+    $con = connect();
+    // Prepare the update query
+    $update_query = "UPDATE `dbpersons` SET 
+       `id` = '$id', 
+       `first_name` = '$first_name', 
+       `last_name` = '$last_name', 
+       `email` = '$email', 
+       `type` = '$type' 
+    where `personId` = '$personId' ";
+
+    // Perform the insert
+    if (mysqli_query($con, $update_query)) {
+        mysqli_close($con);
+        return true;
+    } else {
+        mysqli_close($con);
+        return false;
+    }    
+}
+
+/*
  * return a new Person object created from a row of the dbperson table
  */
 

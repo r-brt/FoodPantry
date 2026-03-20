@@ -250,7 +250,11 @@
                             <?php 
                             $display_accounts_by_status("Active");
                             $display_accounts_by_status("Inactive");
-                            $display_accounts_by_status("Deleted"); ?>
+                            /* Superadmin can see deleted accounts */
+                            if($accessLevel > 2){
+                                $display_accounts_by_status("Deleted");
+                            }
+                            ?>
                             
         </div>
     </main>
