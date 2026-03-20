@@ -12,7 +12,116 @@
     }
 
     require_once('database/dbinfo.php');
-    $con = connect();
+    require_once('database/dbInventoryEvent.php');
+    require_once('database/dbItemCategory.php');
+    require_once('database/dbItemCounts.php');
+
+    // Consumption rates (items per day) - This is the available list for the moment.
+    $consumptionRates = [
+        'Pancake' => 15.73,
+        'Oatmeal' => 15.73,
+        'Mixed Veg' => 32.03,
+        'Chicken' => 18.31,
+        'Cereal' => 31.47,
+        'Fruit' => 32.03,
+        'Snacks' => 31.47,
+        'Pasta' => 25.17,
+        'Tomato - Canned' => 36.05,
+        'Corn' => 49.21,
+        'Beans - Canned' => 81.80,
+        'Beans - Dry' => 81.80,
+        'Tuna' => 50.33,
+        'Ramen' => 71.54,
+        'M&C' => 71.54,
+        'Green Beans' => 49.21,
+        'Canned Meals' => 18.87,
+        'Spaghetti' => 24.61,
+        'Soup' => 49.21,
+        'Peanut Butter' => 17.75,
+        'Jelly' => 17.75,
+        'Oil' => 17.75
+    ];
+
+    // Get all inventory events
+    $allEventObjects = get_all_inventoryEvents();
+    $events = array();
+    foreach($allEventObjects as $event){
+        $events[] = $event->getId();
+    }
+    rsort($events);
+
+    // Get the selected week from query params, default to latest
+    $selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0] : null);
+
+    // Find the previous week
+    $previousWeek = null;
+    foreach ($events as $index => $eventId) {
+        if ($eventId == $selectedWeek && isset($events[$index + 1])) {
+            $previousWeek = $events[$index + 1];
+            break;
+        }
+    }
+
+    // Get current week item counts
+    $currentCounts = array();
+    if ($selectedWeek) {
+        $currentCountObjects = get_most_recent_counts_up_to_event($selectedWeek);
+        foreach($currentCountObjects as $count){
+            $currentCounts[$count->getItemCategory()] = $count;
+        }
+    }
+
+    // Get previous week item counts
+    $previousCounts = array();
+    if ($previousWeek) {
+        $previousCountObjects = get_most_recent_counts_up_to_event($previousWeek);
+        foreach($previousCountObjects as $count){
+            $previousCounts[$count->getItemCategory()] = $count;
+        }
+    }
+
+    // Get all item categories
+    $allCategories = get_all_ItemCategory();
+
+    // Build weekly items array
+    $weeklyItems = array();
+    foreach ($allCategories as $category) {
+        if ($category->getStatus() != 'Active') continue;
+
+        $categoryId = $category->getId();
+        $itemName = $category->getName();
+        $itemsPerBox = $category->getItemsPerBox();
+
+        // Get current week data
+        $currentBoxes = isset($currentCounts[$categoryId]) ? $currentCounts[$categoryId]->getQuantity() : 0;
+        $totalItems = $currentBoxes * $itemsPerBox;
+
+        // Get previous week data
+        $previousBoxes = isset($previousCounts[$categoryId]) ? $previousCounts[$categoryId]->getQuantity() : null;
+
+        // Calculate time remaining
+        $daysLeft = "N/A";
+        $weeksLeft = "N/A";
+        $monthsLeft = "N/A";
+
+        if (isset($consumptionRates[$itemName]) && $consumptionRates[$itemName] > 0 && $totalItems > 0) {
+            $rate = $consumptionRates[$itemName];
+            $daysLeft = round($totalItems / $rate);
+            $weeksLeft = round($daysLeft / 7);
+            $monthsLeft = round($weeksLeft / 4);
+        }
+
+        $weeklyItems[] = array(
+            'item_name' => $itemName,
+            'days_left' => $daysLeft,
+            'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
+            'previous_items_per_box' => $itemsPerBox,
+            'current_boxes' => $currentBoxes,
+            'current_items_per_box' => $itemsPerBox,
+            'weeks_left' => $weeksLeft,
+            'months_left' => $monthsLeft
+        );
+    }
 ?>
     
 <!DOCTYPE html>
@@ -105,6 +214,28 @@
             padding: 3rem 1rem;
             color: var(--inactive-font-color);
         }
+        .week-selector {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .week-selector label {
+            color: var(--page-font-color);
+            font-weight: 500;
+        }
+        .week-selector select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            min-width: 200px;
+        }
+        .week-selector select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
         .basket-options {
             display: flex;
             flex-direction: column;
@@ -168,6 +299,20 @@
             <!-- Weekly Items -->
             <div class="report-section">
                 <h2>Weekly Items</h2>
+
+                <div class="week-selector">
+                    <label for="weekSelect">View Week:</label>
+                    <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
+                        <?php if (count($events) > 0): ?>
+                            <?php foreach ($events as $index => $eventId): ?>
+                                <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
+                                    Week <?= htmlspecialchars($eventId) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                </div>
+
                 <div class="table-wrapper">
                     <table class="report-table">
                         <thead>
@@ -183,9 +328,24 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="8" class="empty-state">No weekly items to display.</td>
-                            </tr>
+                            <?php if (count($weeklyItems) > 0): ?>
+                                <?php foreach ($weeklyItems as $item): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($item['item_name']) ?></td>
+                                        <td><?= htmlspecialchars($item['days_left']) ?></td>
+                                        <td><?= htmlspecialchars($item['previous_boxes']) ?></td>
+                                        <td><?= htmlspecialchars($item['previous_items_per_box']) ?></td>
+                                        <td><?= htmlspecialchars($item['current_boxes']) ?></td>
+                                        <td><?= htmlspecialchars($item['current_items_per_box']) ?></td>
+                                        <td><?= htmlspecialchars($item['weeks_left']) ?></td>
+                                        <td><?= htmlspecialchars($item['months_left']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="8" class="empty-state">No weekly items to display.</td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -244,3 +404,4 @@
 
 </body>
 </html>
+
