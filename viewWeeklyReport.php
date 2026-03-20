@@ -12,9 +12,11 @@
     }
 
     require_once('database/dbinfo.php');
-    $con = connect();
+    require_once('database/dbInventoryEvent.php');
+    require_once('database/dbItemCategory.php');
+    require_once('database/dbItemCounts.php');
 
-    // Hardcoded Consumption rates (items per day)
+    // Consumption rates (items per day) - This is the available list for the moment.
     $consumptionRates = [
         'Pancake' => 15.73,
         'Oatmeal' => 15.73,
@@ -40,14 +42,13 @@
         'Oil' => 17.75
     ];
 
-    // Get all distinct inventory event IDs
-    $eventResult = $con->query("SELECT DISTINCT inventoryEventId FROM dbitemcounts ORDER BY inventoryEventId DESC");
-    $events = [];
-    if ($eventResult) {
-        while ($row = $eventResult->fetch_assoc()) {
-            $events[] = $row['inventoryEventId'];
-        }
+    // Get all inventory events
+    $allEventObjects = get_all_inventoryEvents();
+    $events = array();
+    foreach($allEventObjects as $event){
+        $events[] = $event->getId();
     }
+    rsort($events);
 
     // Get the selected week from query params, default to latest
     $selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0] : null);
@@ -61,83 +62,42 @@
         }
     }
 
-    // Fetch current week inventory data
-    $currentWeekData = [];
+    // Get current week item counts
+    $currentCounts = array();
     if ($selectedWeek) {
-        $sql = "
-            SELECT
-                dic.id,
-                dic.name as item_name,
-                dbic.quantity as boxes,
-                dic.itemsPerBox,
-                dbic.quantity * dic.itemsPerBox as total_count,
-                dbic.inventoryEventId
-            FROM dbItemCategory dic
-            INNER JOIN dbitemcounts dbic ON dic.id = dbic.itemCategoryId
-            WHERE dic.status = 'Active' AND dbic.inventoryEventId <= ?
-            ORDER BY dic.name, dbic.inventoryEventId DESC
-        ";
-        $stmt = $con->prepare($sql);
-        $stmt->bind_param("i", $selectedWeek);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        // Get most recent entry for each item
-        while ($row = $result->fetch_assoc()) {
-            if (!isset($currentWeekData[$row['item_name']])) {
-                $currentWeekData[$row['item_name']] = $row;
-            }
+        $currentCountObjects = get_most_recent_counts_up_to_event($selectedWeek);
+        foreach($currentCountObjects as $count){
+            $currentCounts[$count->getItemCategory()] = $count;
         }
     }
 
-    // Fetch previous week inventory data
-    $previousWeekData = [];
+    // Get previous week item counts
+    $previousCounts = array();
     if ($previousWeek) {
-        $sql = "
-            SELECT
-                dic.id,
-                dic.name as item_name,
-                dbic.quantity as boxes,
-                dic.itemsPerBox,
-                dbic.inventoryEventId
-            FROM dbItemCategory dic
-            INNER JOIN dbitemcounts dbic ON dic.id = dbic.itemCategoryId
-            WHERE dic.status = 'Active' AND dbic.inventoryEventId <= ?
-            ORDER BY dic.name, dbic.inventoryEventId DESC
-        ";
-        $stmt = $con->prepare($sql);
-        $stmt->bind_param("i", $previousWeek);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        // Get most recent entry for each item
-        while ($row = $result->fetch_assoc()) {
-            if (!isset($previousWeekData[$row['item_name']])) {
-                $previousWeekData[$row['item_name']] = $row;
-            }
+        $previousCountObjects = get_most_recent_counts_up_to_event($previousWeek);
+        foreach($previousCountObjects as $count){
+            $previousCounts[$count->getItemCategory()] = $count;
         }
     }
 
-    // Get all active items
-    $allItems = [];
-    $allItemsQuery = "SELECT id, name, itemsPerBox FROM dbItemCategory WHERE status = 'Active' ORDER BY name";
-    $allItemsResult = $con->query($allItemsQuery);
-    while ($row = $allItemsResult->fetch_assoc()) {
-        $allItems[] = $row;
-    }
+    // Get all item categories
+    $allCategories = get_all_ItemCategory();
 
     // Build weekly items array
-    $weeklyItems = [];
-    foreach ($allItems as $item) {
-        $itemName = $item['name'];
-        $itemsPerBox = $item['itemsPerBox'];
+    $weeklyItems = array();
+    foreach ($allCategories as $category) {
+        if ($category->getStatus() != 'Active') continue;
+
+        $categoryId = $category->getId();
+        $itemName = $category->getName();
+        $itemsPerBox = $category->getItemsPerBox();
 
         // Get current week data
-        $currentBoxes = isset($currentWeekData[$itemName]) ? $currentWeekData[$itemName]['boxes'] : 0;
-        $totalItems = isset($currentWeekData[$itemName]) ? $currentWeekData[$itemName]['total_count'] : 0;
+        $currentBoxes = isset($currentCounts[$categoryId]) ? $currentCounts[$categoryId]->getQuantity() : 0;
+        $totalItems = $currentBoxes * $itemsPerBox;
 
         // Get previous week data
-        $previousBoxes = isset($previousWeekData[$itemName]) ? $previousWeekData[$itemName]['boxes'] : null;
+        $previousBoxes = isset($previousCounts[$categoryId]) ? $previousCounts[$categoryId]->getQuantity() : null;
 
         // Calculate time remaining
         $daysLeft = "N/A";
@@ -151,7 +111,7 @@
             $monthsLeft = round($weeksLeft / 4);
         }
 
-        $weeklyItems[] = [
+        $weeklyItems[] = array(
             'item_name' => $itemName,
             'days_left' => $daysLeft,
             'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
@@ -160,7 +120,7 @@
             'current_items_per_box' => $itemsPerBox,
             'weeks_left' => $weeksLeft,
             'months_left' => $monthsLeft
-        ];
+        );
     }
 ?>
     

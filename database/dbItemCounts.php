@@ -108,3 +108,26 @@ function update_quantity($id, $quantity){
     mysqli_close($con);
     return true;
 }
+
+/*
+ * get most recent itemCount for each category where inventoryEventId <= given maxEventId
+ */
+
+function get_most_recent_counts_up_to_event($maxEventId){
+    $con=connect();
+    $query = 'SELECT * FROM dbitemcounts WHERE inventoryEventId <= "' . $maxEventId . '" ORDER BY itemCategoryId, inventoryEventId DESC';
+    $sql_result = mysqli_query($con,$query);
+    $array_result = mysqli_fetch_all($sql_result, MYSQLI_ASSOC);
+    $itemCount_array = array();
+    $seen_categories = array();
+
+    foreach($array_result as $result){
+        $categoryId = $result['itemCategoryId'];
+        if(!in_array($categoryId, $seen_categories)){
+            $itemCount_array[] = new ItemCount($result['id'],$result['inventoryEventId'],$result['itemCategoryId'],$result['quantity']);
+            $seen_categories[] = $categoryId;
+        }
+    }
+    mysqli_close($con);
+    return $itemCount_array;
+}
