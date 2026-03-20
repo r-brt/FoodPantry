@@ -23,7 +23,7 @@ function add_itemCategory($name, $bananaBox, $itemsPerBox, $status) {
  * set status to Active for given Item Category id
  */
 
-function activate_person($id) {
+function activate_itemCategory($id) {
     $con=connect();
     $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
@@ -41,7 +41,7 @@ function activate_person($id) {
  * set status to Inactive for given Item Category id
  */
 
-function deactivate_person($id) {
+function deactivate_itemCategory($id) {
     $con=connect();
     $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
