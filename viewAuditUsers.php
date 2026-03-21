@@ -172,7 +172,7 @@
             <?php 
                 require_once('database/dbPersons.php');
                 /* display table of accounts with a given status (Active/Inactive/Deleted) */
-                $display_accounts_by_status = function($status){
+                $display_accounts_by_status = function($status, $accessLevel){
                     echo '
                     <div class="report-section">
                         <h2>'.$status.' User Accounts</h2>
@@ -194,7 +194,7 @@
                                 $num_active = 0;
                                 $persons = getall_persons();
                                 foreach ($persons as $person) {
-                                    if($person->get_status() == $status){
+                                    if($person->get_status() == $status && $person->get_access_level() <= $accessLevel){
                                         $num_active += 1;
 
                                         $username = $person->get_id();
@@ -248,11 +248,11 @@
 
                             <!-- Display Table of accounts for each Status -->
                             <?php 
-                            $display_accounts_by_status("Active");
-                            $display_accounts_by_status("Inactive");
+                            $display_accounts_by_status("Active", $accessLevel);
+                            $display_accounts_by_status("Inactive", $accessLevel);
                             /* Superadmin can see deleted accounts */
-                            if($accessLevel > 2){
-                                $display_accounts_by_status("Deleted");
+                            if($accessLevel >= 3){
+                                $display_accounts_by_status("Deleted", $accessLevel);
                             }
                             ?>
                             
