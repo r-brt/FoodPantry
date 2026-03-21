@@ -42,39 +42,36 @@
         'Oil' => 17.75
     ];
 
-    // Get all inventory events
+    // Get all inventory events sorted by date (newest first), then by ID (highest first)
     $allEventObjects = get_all_inventoryEvents();
+    usort($allEventObjects, function($a, $b) {
+        $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
+        if ($dateDiff != 0) {
+            return $dateDiff;
+        }
+        return $b->getId() - $a->getId();
+    });
     $events = array();
     foreach($allEventObjects as $event){
         $events[] = $event->getId();
     }
-    rsort($events);
 
     // Get the selected week from query params, default to latest
     $selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0] : null);
 
-    // Find the previous week
-    $previousWeek = null;
-    foreach ($events as $index => $eventId) {
-        if ($eventId == $selectedWeek && isset($events[$index + 1])) {
-            $previousWeek = $events[$index + 1];
-            break;
-        }
-    }
-
-    // Get current week item counts
+    // Get current week item counts (combined Warehouse + Pantry)
     $currentCounts = array();
     if ($selectedWeek) {
-        $currentCountObjects = get_most_recent_counts_up_to_event($selectedWeek);
+        $currentCountObjects = get_current_counts_by_event($selectedWeek);
         foreach($currentCountObjects as $count){
             $currentCounts[$count->getItemCategory()] = $count;
         }
     }
 
-    // Get previous week item counts
+    // Get previous week item counts (hybrid: same-day progression or previous event)
     $previousCounts = array();
-    if ($previousWeek) {
-        $previousCountObjects = get_most_recent_counts_up_to_event($previousWeek);
+    if ($selectedWeek) {
+        $previousCountObjects = get_previous_counts_by_event($selectedWeek);
         foreach($previousCountObjects as $count){
             $previousCounts[$count->getItemCategory()] = $count;
         }
@@ -107,7 +104,7 @@
         if (isset($consumptionRates[$itemName]) && $consumptionRates[$itemName] > 0 && $totalItems > 0) {
             $rate = $consumptionRates[$itemName];
             $daysLeft = round($totalItems / $rate);
-            $weeksLeft = round($daysLeft / 7);
+            $weeksLeft = round($daysLeft / 4);
             $monthsLeft = round($weeksLeft / 4);
         }
 
@@ -304,9 +301,9 @@
                     <label for="weekSelect">View Week:</label>
                     <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
                         <?php if (count($events) > 0): ?>
-                            <?php foreach ($events as $index => $eventId): ?>
-                                <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
-                                    Week <?= htmlspecialchars($eventId) ?>
+                            <?php foreach ($allEventObjects as $event): ?>
+                                <option value="<?= htmlspecialchars($event->getId()) ?>" <?= ($event->getId() == $selectedWeek) ? 'selected' : '' ?>>
+                                    <?= date('M j, Y', strtotime($event->getDate())) ?> - Event <?= htmlspecialchars($event->getId()) ?> (<?= htmlspecialchars($event->getLocation()) ?>)
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
