@@ -14,17 +14,23 @@ require_once(__DIR__ . '/database/dbinfo.php');
 
 $conn = connect();
 
-// Get all distinct inventory event IDs
-$eventResult = $conn->query("SELECT DISTINCT inventoryEventId FROM dbitemcounts ORDER BY inventoryEventId DESC");
+// Get all distinct inventory events with their dates
+$eventResult = $conn->query("
+    SELECT ie.date, MAX(ic.inventoryEventId) as inventoryEventId
+    FROM dbitemcounts ic
+    LEFT JOIN dbinventoryevent ie ON ic.inventoryEventId = ie.id
+    GROUP BY ie.date
+    ORDER BY MAX(ic.inventoryEventId) DESC
+");
 $events = [];
 if ($eventResult) {
     while ($row = $eventResult->fetch_assoc()) {
-        $events[] = $row['inventoryEventId'];
+        $events[] = $row;
     }
 }
 
 // Get the selected week from query params, default to latest
-$selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0] : null);
+$selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0]['inventoryEventId'] : null);
 
 // Fetch inventory items with box information for the selected week and all prior weeks
 if ($selectedWeek) {
@@ -35,11 +41,20 @@ if ($selectedWeek) {
             dbic.quantity as boxes,
             dic.itemsPerBox,
             dbic.quantity * dic.itemsPerBox as total_count,
-            dbic.inventoryEventId
+            dbic.inventoryEventId,
+            ie.location,
+            dic.bananaBox
         FROM dbItemCategory dic
         INNER JOIN dbitemcounts dbic ON dic.id = dbic.itemCategoryId
-        WHERE dic.status = 'Active' AND dbic.inventoryEventId <= ?
-        ORDER BY dic.name, dbic.inventoryEventId DESC
+        INNER JOIN dbinventoryevent ie ON dbic.inventoryEventId = ie.id
+        INNER JOIN (
+            SELECT itemCategoryId, MAX(inventoryEventId) as maxEventId
+            FROM dbitemcounts
+            WHERE inventoryEventId <= ?
+            GROUP BY itemCategoryId
+        ) latest ON dbic.itemCategoryId = latest.itemCategoryId AND dbic.inventoryEventId = latest.maxEventId
+        WHERE dic.status = 'Active'
+        ORDER BY dic.name
     ";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $selectedWeek);
@@ -63,7 +78,7 @@ if ($result) {
 <html>
 <head>
     <?php require_once('universal.inc'); ?>
-    <title>Inventory | Whiskey Valor Foundation</title>
+    <title>Inventory | CCDA</title>
     <link rel="stylesheet" href="css/base.css">
     <style>
         .report-container {
@@ -149,7 +164,7 @@ if ($result) {
     <?php require_once('header.php'); ?>
     <main>
         <div class="report-container">
-            <h1 style="color: white;">Inventory</h1>
+            <h1 style="color: black;">Inventory</h1>
 
             <div class="report-section">
                 <h2>Food Items</h2>
@@ -158,9 +173,9 @@ if ($result) {
                     <label for="weekSelect">View Inventory:</label>
                     <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
                         <?php if (count($events) > 0): ?>
-                            <?php foreach ($events as $index => $eventId): ?>
-                                <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
-                                    Week <?= htmlspecialchars($eventId) ?>
+                            <?php foreach ($events as $event): ?>
+                                <option value="<?= htmlspecialchars($event['inventoryEventId']) ?>" <?= ($event['inventoryEventId'] == $selectedWeek) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($event['date'] ?? 'Unknown Date') ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -175,6 +190,8 @@ if ($result) {
                                 <th>Boxes</th>
                                 <th>Items Per Box</th>
                                 <th>Total Count</th>
+                                <th>Location</th>
+                                <th>Banana Box</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -185,11 +202,13 @@ if ($result) {
                                         <td><?= htmlspecialchars($item['boxes']) ?></td>
                                         <td><?= htmlspecialchars($item['itemsPerBox']) ?></td>
                                         <td><?= htmlspecialchars($item['total_count']) ?></td>
+                                        <td><?= htmlspecialchars($item['location'] ?? 'Unknown') ?></td>
+                                        <td><?= $item['bananaBox'] == 1 ? '✓' : '' ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" class="empty-state">No items found.</td>
+                                    <td colspan="6" class="empty-state">No items found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
