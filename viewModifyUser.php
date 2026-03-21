@@ -25,9 +25,11 @@
         header('Location: index.php');
         die();
     }
+    
+    require_once('include/input-validation.php');
+    require_once('database/dbPersons.php');
 
     // Does the person exist?
-    require_once('database/dbPersons.php');
     $thePerson = retrieve_person_by_personId($_GET['id']);
     if (!$thePerson) {
         echo "That user does not exist";
@@ -53,9 +55,15 @@
             die();
         }
         else if(isset($_POST["deactivate_button"])){
-            deactivate_person($thePerson->get_personId());
-            header('Location: viewAuditUsers.php');
-            die();
+            if($thePerson->get_Id() == $userID){
+                $errors[] = "Unable to Deactivate your own account while in use";
+            }
+            else{
+                deactivate_person($thePerson->get_personId());
+                header('Location: viewAuditUsers.php');
+                die();
+            }
+            
         }
         else if(isset($_POST["activate_button"])){
             activate_person($thePerson->get_personId());
@@ -63,27 +71,41 @@
             die();
         }
         else if(isset($_POST["delete_button"])){
-            delete_person($thePerson->get_personId());
-            header('Location: viewAuditUsers.php');
-            die();
-        }
-        else if(isset($_POST["save_button"])){
-            if(update_person_by_personId(
-                $thePerson->get_personId(),
-                $_POST["id"],
-                $_POST["fname"],
-                $_POST["lname"],
-                $_POST["email"],
-                $_POST["role"]
-            )){
+            if($thePerson->get_Id() == $userID){
+                $errors[] = "Unable to Delete your own account while in use";
+            }
+            else{
+                delete_person($thePerson->get_personId());
                 header('Location: viewAuditUsers.php');
                 die();
             }
-            else{
-                if(retrieve_person($_POST["id"])){
-                    $errors[] = "Username already exists";
+            
+        }
+        else if(isset($_POST["save_button"])){
+            $id = $_POST["id"];
+            $first_name = $_POST["fname"];
+            $last_name = $_POST["lname"];
+            $email = $_POST["email"];
+            $type = $_POST["role"];
+            if($thePerson->get_id() != $id && retrieve_person($_POST["id"])){
+                $errors[] = "Username already exists";
+            }
+            if(!validateEmail($email) && !empty($email)){
+                $errors[] = "Invalid email";
+            }
+            if($accessLevel < 3 && $type == "Superadmin"){
+                $errors[] = "Unable to change role";
+            }
+            if(empty($errors)){
+                if(update_person_by_personId($thePerson->get_personId(), $id, $first_name, $last_name, $email, $type)){
+                    header('Location: viewAuditUsers.php');
+                    die();
+                }
+                else{
+                    $errors[] = "Unable to update information";
                 }
             }
+            
         }
     }
 ?>
@@ -328,7 +350,7 @@
                 if (!empty($errors)): ?>
                 <ul>
                     <?php foreach($errors AS $error): ?>
-                        <li><?php echo("<h4 style=\"color:red;\"><i>".$error."</i></h4>"); ?></li>
+                        <li><?php echo("<h4 style=\"color:red;\"><i>Error: ".$error."</i></h4>"); ?></li>
                     <?php endforeach; ?>
                 </ul>
             <?php endif; ?>
@@ -368,14 +390,17 @@
                         </div>
                         <div class="updateInv-row">
                             <label class="updateInv-label" for="role">Role: </label>
-                            <select name="role" class="modify-role-select" id="role">
-                                <option value="superadmin">superadmin</option>
-                                <option value="admin"
-                                    <?php if ($thePerson->get_type() == "admin") echo("selected");?>
-                                    >admin</option>
-                                <option value="inventory_counter" 
-                                    <?php if ($thePerson->get_type() == "inventory_counter") echo("selected");?>
-                                    >inventory_counter</option>
+                            <select name="role" class="modify-role-select" id="role" 
+                                <?php if ($thePerson->get_id() == $userID) echo("disabled");?>>
+                                <?php if ($accessLevel >= 3):?> 
+                                    <option value="Superadmin">Superadmin</option>
+                                <?php endif;?>
+                                <option value="Admin"
+                                    <?php if ($thePerson->get_type() == "Admin") echo("selected");?>
+                                    >Admin</option>
+                                <option value="Inventory_counter" 
+                                    <?php if ($thePerson->get_type() == "Inventory_counter") echo("selected");?>
+                                    >Inventory_counter</option>
                             </select>
                         </div>
                         <div class="updateInv-row">
