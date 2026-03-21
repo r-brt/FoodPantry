@@ -221,9 +221,9 @@
         }
         .updateInv-qty {
             width: 100px;
-            max-width: 200px;
-            margin-right: 30%;
-            padding: 0.4rem 0.6rem;
+            max-width: 100px;
+            margin-bottom: 0rem !important;
+            padding: 0.4rem 0.6rem !important;
             border: 1px solid var(--shadow-and-border-color);
             border-radius: 0.25rem;
             background-color: rgba(0,0,0,0.2);
@@ -302,33 +302,52 @@
                 <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewUpdateInventory.php">
                     <div class="updateInv-optionRow">
                         <div class="updateInv-option">
-                            <label class="updateInv-optionLabel" for="date">Inventory Date:</label>
-                            <input type="date" name="date" id="date" 
-                                value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
-                        </div>
-                        <div class="updateInv-option">
                             <label class="updateInv-optionLabel" for="location">Choose a Location:</label>
                             <select name="location" id="location">
                                 <option value="Pantry">Pantry</option>
                                 <option value="Warehouse" <?php if (!empty($_POST) && $_POST['location'] == "Warehouse") echo("selected");?>>Warehouse</option>
                             </select>
                         </div>
+                        <div class="updateInv-option">
+                            <label class="updateInv-optionLabel" for="date">Inventory Date:</label>
+                            <input type="date" name="date" id="date" 
+                                value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
+                        </div>
                     </div>
-                    <div class="updateInv-allRows">
-                        <?php 
+                        <div class="table-wrapper">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Label</th>
+                                        <th>Quantity</th>
+                                        <th>Previous Total<br>00/00/9999</th>
+                                        <th>Banana Box</th>
+                                        <th>Items Per Box</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
                         $categories = get_all_ItemCategory();
                         foreach($categories AS $category): ?>
-                            <div class="updateInv-row">
-                                <label class="updateInv-label" 
-                                        for="qty_<?php echo($category->getId())?>">
-                                        <?php echo($category->getName());?>
-                                </label>
-                                <input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
-                                        value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
-                                        name="<?php echo($category->getId())?>" 
-                                        id="qty_<?php echo($category->getId())?>">
-                            </div>
+                            <tr>
+                                <div class="updateInv-row">
+                                    <td><label class="updateInv-label" 
+                                            for="qty_<?php echo($category->getId())?>">
+                                            <?php echo($category->getName());?>
+                                    </label></td>
+                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
+                                            value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
+                                            name="<?php echo($category->getId())?>" 
+                                            id="qty_<?php echo($category->getId())?>"></td>
+                                    <td>previousTotal</td>
+                                    <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
+                                    <td style="text-align: center;"><?php echo($category->getItemsPerBox())?></td>
+                                </div>
+                            </tr>  
                         <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <input type="submit" value="Submit Inventory" />
                 </form>
