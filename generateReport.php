@@ -29,77 +29,51 @@ $fiscalYearEnd = $fiscalYearStart + 1;
     <?php require_once('header.php'); ?>
 </head>
 <body>
-    <?php require_once('database/dbEvents.php');?>
+    <?php require_once('database/dbInventoryEvent.php');?>
     <?php require_once('database/dbPersons.php');?>
 
     <!-- Hero Section with Title -->
         <div class="center-header">
-            <h1 style="color:white;">Generate Attendance Report</h1>
+            <h1 style="color:black;">Generate Inventory Report</h1>
         </div>
                 <!-- Info Section -->
         <section class="section-box">
             <p style="margin-top: 1rem;text-align:center;">
-                Use this tool to generate monthly or annual reports on volunteer activity. Reports are available in Excel or CSV format.
+                Use this tool to generate weekly reports on food inventory.
             </p>
         </section>
 
     <main>
-        <?php $events = get_all_events_sorted_by_date_not_archived();?>
+        <?php require_once('database/dbInventoryEvent.php')?>
 
         <div class="main-content-box">
             <!--<div class="text-center">
                 <p style="font-size: 18px; color: #c2c2c2ff; margin-top: 0.5rem; margin-bottom: 0.5rem;">Fiscal Year: <?= $fiscalYearStart ?> - <?= $fiscalYearEnd ?></p>
             </div>-->
 
-            <form method="POST" action="processReport.php">
-                <!-- Event ID -->
+            <form method="POST" action="processInventoryReport.php">
+                <!-- Date Range -->
                 <div style="margin-bottom: 1.5rem;">
-                    <label for="eventID" style="font-weight: 600;">Select Event</label>
-                    <select name="eventID" id="eventID">
-                        <?php foreach ($events as $event) {
-                            $eventID = $event->getID();
-                            $eventName = $event->getName();
-                            echo "<option value='$eventID'>$eventName (ID: $eventID)</option>";
-                        }
+                    <label for="week" style="font-weight: 600;">Select Week</label>
+                    <input name="week" id="week" required>
+                    <option value="">-- Select Week --</option>
+                    <?php
+                    require_once('database/dbinfo.php');
+                    $conn = connect();
+
+                    $result = $conn->query("
+                        SELECT DISTINCT inventoryEventId
+                        FROM dbitemcounts
+                        ORDER BY inventoryEventId DESC
+                    ");
+
+                    while ($row = $result->fetch_assoc()) {
+                        $week = htmlspecialchars($row['inventoryEventId']);
+                        echo "<option value='$week'>$week</option>";
+                    }
                         ?>
                     </select>
                 </div>
-
-                <!-- Month (conditionally hidden)
-                <div id="monthField">
-                    <label for="month" class="font-semibold">Select Month:</label>
-                    <select name="month" id="month">
-                        <?php
-                        $months = [
-                            '10' => 'October', '11' => 'November', '12' => 'December', '01' => 'January',
-                            '02' => 'February', '03' => 'March', '04' => 'April', '05' => 'May',
-                            '06' => 'June', '07' => 'July', '08' => 'August', '09' => 'September'
-                        ];
-                        foreach ($months as $num => $name) {
-                            echo "<option value='$num'>$name</option>";
-                        }
-                        ?>
-                    </select>
-                </div> -->
-
-                <!-- Content Select -->
-
-                    <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600; color: var(--accent-color);">Field Selector</h4>
-                    <p style="font-size: 16px; color: #c2c2c2ff; margin-top: 0.5rem; margin-bottom: 0.5rem;">If any fields are selected, the report will include all users who signed up and whether they attended.</p>
-                    <div id="field-picker">
-                            <div class="checkbox-grouping">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="user" name="user" id="user" checked> Username</label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="name" name="name" id="name" checked> Full Name</label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="branch" name="branch" id="branch"> Branch</label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="affiliation" name="affiliation" id="affiliation"> Affiliation</label>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- Format -->
                 <div style="margin-bottom: 1.5rem; margin-top: 1.5rem;">
                     <label for="format" style="font-weight: 600;">File Format</label>
@@ -124,14 +98,6 @@ $fiscalYearEnd = $fiscalYearStart + 1;
 
     </main>
 
-    <script>
-        function toggleDateFields() {
-            const eventID = document.getElementById("eventID").value;
-            // const monthField = document.getElementById("monthField");
-            // monthField.style.display = reportType === "annually" ? "none" : "block";
-        }
-        document.addEventListener("DOMContentLoaded", toggleDateFields);
-    </script>
 </body>
 </html>
 
