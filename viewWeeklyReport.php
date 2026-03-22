@@ -234,6 +234,24 @@
         .week-selector select:hover {
             background-color: rgba(0,0,0,0.3);
         }
+        .row-green {
+            background-color: rgba(34, 197, 94, 0.15) !important;
+        }
+        .row-green:hover {
+            background-color: rgba(34, 197, 94, 0.25) !important;
+        }
+        .row-yellow {
+            background-color: rgba(234, 179, 8, 0.15) !important;
+        }
+        .row-yellow:hover {
+            background-color: rgba(234, 179, 8, 0.25) !important;
+        }
+        .row-red {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+        }
+        .row-red:hover {
+            background-color: rgba(239, 68, 68, 0.25) !important;
+        }
         .basket-options {
             display: flex;
             flex-direction: column;
@@ -328,7 +346,28 @@
                         <tbody>
                             <?php if (count($weeklyItems) > 0): ?>
                                 <?php foreach ($weeklyItems as $item): ?>
-                                    <tr>
+                                    <?php
+                                        // Combined-days algorithm:
+                                        // 1 week = 7 days, 1 month = 4 weeks = 28 days
+                                        // totalColorDays = (months × 28) + (weeks × 7) + days
+                                        $rowClass = '';
+                                        $daysVal   = is_numeric($item['days_left'])   ? (int)$item['days_left']   : null;
+                                        $weeksVal  = is_numeric($item['weeks_left'])  ? (int)$item['weeks_left']  : null;
+                                        $monthsVal = is_numeric($item['months_left']) ? (int)$item['months_left'] : null;
+
+                                        if ($daysVal !== null) {
+                                            $totalColorDays = ($monthsVal * 28) + ($weeksVal * 7) + $daysVal;
+
+                                            if ($totalColorDays >= 120) {
+                                                $rowClass = 'row-green';   // multiple months left
+                                            } elseif ($totalColorDays >= 50) {
+                                                $rowClass = 'row-yellow';  // a few weeks left
+                                            } else {
+                                                $rowClass = 'row-red';     // 1 week and a few days left
+                                            }
+                                        }
+                                    ?>
+                                    <tr class="<?= $rowClass ?>">
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= htmlspecialchars($item['days_left']) ?></td>
                                         <td><?= htmlspecialchars($item['previous_boxes']) ?></td>
