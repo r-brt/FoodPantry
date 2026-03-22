@@ -317,7 +317,7 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 style="color:white;">Weekly Inventory Report</h1>
+            <h1 style="color:var(--accent-color);">Weekly Inventory Report</h1>
 
             <!-- Weekly Items -->
             <div class="report-section">
