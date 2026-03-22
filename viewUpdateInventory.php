@@ -342,8 +342,8 @@
                             <table class="report-table">
                                 <thead>
                                     <tr>
-                                        <th>Label</th>
-                                        <th>Quantity</th>
+                                        <th>Item Name</th>
+                                        <th>Boxes</th>
                                         <th>Previous Total<br>
                                             <?php if($previous_event_pair[0])
                                                     echo(date("m/d/Y", strtotime($previous_event_pair[0]->getDate())))?>
