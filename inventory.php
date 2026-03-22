@@ -32,28 +32,27 @@ if ($eventResult) {
 // Get the selected week from query params, default to latest
 $selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0]['inventoryEventId'] : null);
 
-// Fetch inventory items with box information for the selected week and all prior weeks
+// Fetch inventory items with box information for the selected date
 if ($selectedWeek) {
     $sql = "
         SELECT 
             dic.id,
             dic.name as item_name,
-            dbic.quantity as boxes,
             dic.itemsPerBox,
-            dbic.quantity * dic.itemsPerBox as total_count,
-            dbic.inventoryEventId,
-            ie.location,
-            dic.bananaBox
+            dic.bananaBox,
+            COALESCE(SUM(CASE WHEN ie.location = 'Warehouse' THEN dbic.quantity ELSE 0 END), 0) as warehouse_boxes,
+            COALESCE(SUM(CASE WHEN ie.location = 'Pantry' THEN dbic.quantity ELSE 0 END), 0) as pantry_boxes,
+            COALESCE(SUM(dbic.quantity), 0) as total_boxes
         FROM dbItemCategory dic
         INNER JOIN dbitemcounts dbic ON dic.id = dbic.itemCategoryId
         INNER JOIN dbinventoryevent ie ON dbic.inventoryEventId = ie.id
-        INNER JOIN (
-            SELECT itemCategoryId, MAX(inventoryEventId) as maxEventId
-            FROM dbitemcounts
-            WHERE inventoryEventId <= ?
-            GROUP BY itemCategoryId
-        ) latest ON dbic.itemCategoryId = latest.itemCategoryId AND dbic.inventoryEventId = latest.maxEventId
         WHERE dic.status = 'Active'
+          AND DATE(ie.date) = (
+            SELECT DATE(ie2.date)
+            FROM dbinventoryevent ie2
+            WHERE ie2.id = ?
+          )
+        GROUP BY dic.id, dic.name, dic.itemsPerBox, dic.bananaBox
         ORDER BY dic.name
     ";
     $stmt = $conn->prepare($sql);
@@ -187,11 +186,12 @@ if ($result) {
                         <thead>
                             <tr>
                                 <th>Item Name</th>
-                                <th>Boxes</th>
-                                <th>Items Per Box</th>
-                                <th>Total Count</th>
-                                <th>Location</th>
+                                <th>Warehouse</th>
+                                <th>Pantry</th>
+                                <th>Total Boxes</th>
                                 <th>Banana Box</th>
+                                <th>Items Per Box</th>
+                                <th>Total Items</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -199,16 +199,17 @@ if ($result) {
                                 <?php foreach ($items as $item): ?>
                                     <tr>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
-                                        <td><?= htmlspecialchars($item['boxes']) ?></td>
-                                        <td><?= htmlspecialchars($item['itemsPerBox']) ?></td>
-                                        <td><?= htmlspecialchars($item['total_count']) ?></td>
-                                        <td><?= htmlspecialchars($item['location'] ?? 'Unknown') ?></td>
+                                        <td><?= $item['warehouse_boxes'] > 0 ? htmlspecialchars($item['warehouse_boxes']) : '-' ?></td>
+                                        <td><?= $item['pantry_boxes'] > 0 ? htmlspecialchars($item['pantry_boxes']) : '-' ?></td>
+                                        <td><?= htmlspecialchars($item['total_boxes']) ?></td>
                                         <td><?= $item['bananaBox'] == 1 ? '✓' : '' ?></td>
+                                        <td><?= htmlspecialchars($item['itemsPerBox']) ?></td>
+                                        <td><?= htmlspecialchars($item['total_boxes'] * $item['itemsPerBox']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" class="empty-state">No items found.</td>
+                                    <td colspan="7" class="empty-state">No items found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
