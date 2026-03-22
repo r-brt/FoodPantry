@@ -52,13 +52,20 @@
         }
         return $b->getId() - $a->getId();
     });
-    $events = array();
+
+    // Group events by date and keep only the latest event ID per date
+    $dateToEventMap = array();
+    $uniqueDates = array();
     foreach($allEventObjects as $event){
-        $events[] = $event->getId();
+        $date = $event->getDate();
+        if(!isset($dateToEventMap[$date])){
+            $dateToEventMap[$date] = $event->getId(); // First one is latest (already sorted by ID DESC)
+            $uniqueDates[] = $date;
+        }
     }
 
     // Get the selected week from query params, default to latest
-    $selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0] : null);
+    $selectedWeek = $_GET['week'] ?? (count($dateToEventMap) > 0 ? reset($dateToEventMap) : null);
 
     // Get current week item counts (combined Warehouse + Pantry)
     $currentCounts = array();
@@ -301,10 +308,11 @@
                 <div class="week-selector">
                     <label for="weekSelect">View Week:</label>
                     <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
-                        <?php if (count($events) > 0): ?>
-                            <?php foreach ($allEventObjects as $event): ?>
-                                <option value="<?= htmlspecialchars($event->getId()) ?>" <?= ($event->getId() == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= date('M j, Y', strtotime($event->getDate())) ?> - Event <?= htmlspecialchars($event->getId()) ?> (<?= htmlspecialchars($event->getLocation()) ?>)
+                        <?php if (count($dateToEventMap) > 0): ?>
+                            <?php foreach ($uniqueDates as $date): ?>
+                                <?php $eventId = $dateToEventMap[$date]; ?>
+                                <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
+                                    <?= date('M j, Y', strtotime($date)) ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
