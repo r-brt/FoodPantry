@@ -87,6 +87,30 @@
             }
         }
     }
+
+    /* get the previous inventory event pair (warehouse and pantry) before the today's date */
+    $previous_event_pair = get_previous_inventoryEvent_pair(new InventoryEvent(0, 0, 0, date('Y-m-d')));
+
+    /* if previous inventory was found, get item counts for the pair (warehouse and pantry) */
+    $prev_item_counts = array();
+    if($previous_event_pair[0]){
+        $prev_item_counts = get_itemCounts_by_inventoryEvent($previous_event_pair[0]->getId());
+    }
+    /* its possible there is only 1 event in the pair. For example: The pantry may not have had anything this week */
+    if($previous_event_pair[1]){
+        $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($previous_event_pair[1]->getId()));
+    }
+
+    /* get the total for each category (warehouse + pantry = total) */
+    $prev_totals = array();
+    foreach($prev_item_counts as $item){
+        if(isset($prev_totals[$item->getItemCategory()]))
+            $prev_totals[$item->getItemCategory()] += $item->getQuantity();
+        else
+            $prev_totals[$item->getItemCategory()] = $item->getQuantity();
+    }
+    
+
 ?>
     
 <!DOCTYPE html>
@@ -221,9 +245,9 @@
         }
         .updateInv-qty {
             width: 100px;
-            max-width: 200px;
-            margin-right: 30%;
-            padding: 0.4rem 0.6rem;
+            max-width: 100px;
+            margin-bottom: 0rem !important;
+            padding: 0.4rem 0.6rem !important;
             border: 1px solid var(--shadow-and-border-color);
             border-radius: 0.25rem;
             background-color: rgba(0,0,0,0.2);
@@ -302,33 +326,56 @@
                 <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewUpdateInventory.php">
                     <div class="updateInv-optionRow">
                         <div class="updateInv-option">
-                            <label class="updateInv-optionLabel" for="date">Inventory Date:</label>
-                            <input type="date" name="date" id="date" 
-                                value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
-                        </div>
-                        <div class="updateInv-option">
                             <label class="updateInv-optionLabel" for="location">Choose a Location:</label>
                             <select name="location" id="location">
                                 <option value="Pantry">Pantry</option>
                                 <option value="Warehouse" <?php if (!empty($_POST) && $_POST['location'] == "Warehouse") echo("selected");?>>Warehouse</option>
                             </select>
                         </div>
+                        <div class="updateInv-option">
+                            <label class="updateInv-optionLabel" for="date">Inventory Date:</label>
+                            <input type="date" name="date" id="date" 
+                                value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
+                        </div>
                     </div>
-                    <div class="updateInv-allRows">
-                        <?php 
+                        <div class="table-wrapper">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item Name</th>
+                                        <th>Boxes</th>
+                                        <th>Previous Total<br>
+                                            <?php if($previous_event_pair[0])
+                                                    echo(date("m/d/Y", strtotime($previous_event_pair[0]->getDate())))?>
+                                        </th>
+                                        <th>Banana Box</th>
+                                        <th>Items Per Box</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
                         $categories = get_all_ItemCategory();
                         foreach($categories AS $category): ?>
-                            <div class="updateInv-row">
-                                <label class="updateInv-label" 
-                                        for="qty_<?php echo($category->getId())?>">
-                                        <?php echo($category->getName());?>
-                                </label>
-                                <input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
-                                        value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
-                                        name="<?php echo($category->getId())?>" 
-                                        id="qty_<?php echo($category->getId())?>">
-                            </div>
+                            <tr>
+                                <div class="updateInv-row">
+                                    <td><label class="updateInv-label" 
+                                            for="qty_<?php echo($category->getId())?>">
+                                            <?php echo($category->getName());?>
+                                    </label></td>
+                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
+                                            value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
+                                            name="<?php echo($category->getId())?>" 
+                                            id="qty_<?php echo($category->getId())?>"></td>
+                                    <td><?php if(isset($prev_totals[$category->getId()]))
+                                                    echo($prev_totals[$category->getId()])?></td>
+                                    <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
+                                    <td style="text-align: center;"><?php echo($category->getItemsPerBox())?></td>
+                                </div>
+                            </tr>  
                         <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <input type="submit" value="Submit Inventory" />
                 </form>
