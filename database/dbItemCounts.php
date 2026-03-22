@@ -238,12 +238,13 @@ function get_previous_counts_by_event($eventId){
                         ORDER BY die.id DESC
                         LIMIT 1 OFFSET 1';
         } else {
-            // Only 1 or 0 events on same date - get from previous event ID
+            // Only 1 or 0 events on same date - get from previous event ID (exclude current date)
             $whQuery = 'SELECT dic.quantity FROM dbitemcounts dic
                         INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
                         WHERE dic.itemCategoryId = "' . $categoryId . '"
                           AND die.location = "Warehouse"
                           AND die.id < "' . $eventId . '"
+                          AND die.date < "' . $selectedDate . '"
                         ORDER BY die.date DESC, die.id DESC
                         LIMIT 1';
         }
@@ -274,12 +275,13 @@ function get_previous_counts_by_event($eventId){
                             ORDER BY die.id DESC
                             LIMIT 1 OFFSET 1';
         } else {
-            // Only 1 or 0 events on same date - get from previous event ID
+            // Only 1 or 0 events on same date - get from previous event ID (exclude current date)
             $pantryQuery = 'SELECT dic.quantity FROM dbitemcounts dic
                             INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
                             WHERE dic.itemCategoryId = "' . $categoryId . '"
                               AND die.location = "Pantry"
                               AND die.id < "' . $eventId . '"
+                              AND die.date < "' . $selectedDate . '"
                             ORDER BY die.date DESC, die.id DESC
                             LIMIT 1';
         }
