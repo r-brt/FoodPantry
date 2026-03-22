@@ -87,6 +87,30 @@
             }
         }
     }
+
+    /* get the previous inventory event pair (warehouse and pantry) before the today's date */
+    $previous_event_pair = get_previous_inventoryEvent_pair(new InventoryEvent(0, 0, 0, date('Y-m-d')));
+
+    /* if previous inventory was found, get item counts for the pair (warehouse and pantry) */
+    $prev_item_counts = array();
+    if($previous_event_pair[0]){
+        $prev_item_counts = get_itemCounts_by_inventoryEvent($previous_event_pair[0]->getId());
+    }
+    /* its possible there is only 1 event in the pair. For example: The pantry may not have had anything this week */
+    if($previous_event_pair[1]){
+        $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($previous_event_pair[1]->getId()));
+    }
+
+    /* get the total for each category (warehouse + pantry = total) */
+    $prev_totals = array();
+    foreach($prev_item_counts as $item){
+        if(isset($prev_totals[$item->getItemCategory()]))
+            $prev_totals[$item->getItemCategory()] += $item->getQuantity();
+        else
+            $prev_totals[$item->getItemCategory()] = $item->getQuantity();
+    }
+    
+
 ?>
     
 <!DOCTYPE html>
@@ -320,7 +344,10 @@
                                     <tr>
                                         <th>Label</th>
                                         <th>Quantity</th>
-                                        <th>Previous Total<br>00/00/9999</th>
+                                        <th>Previous Total<br>
+                                            <?php if($previous_event_pair[0])
+                                                    echo(date("m/d/Y", strtotime($previous_event_pair[0]->getDate())))?>
+                                        </th>
                                         <th>Banana Box</th>
                                         <th>Items Per Box</th>
                                     </tr>
@@ -339,7 +366,8 @@
                                             value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
                                             name="<?php echo($category->getId())?>" 
                                             id="qty_<?php echo($category->getId())?>"></td>
-                                    <td>previousTotal</td>
+                                    <td><?php if(isset($prev_totals[$category->getId()]))
+                                                    echo($prev_totals[$category->getId()])?></td>
                                     <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
                                     <td style="text-align: center;"><?php echo($category->getItemsPerBox())?></td>
                                 </div>
