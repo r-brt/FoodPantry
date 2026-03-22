@@ -123,11 +123,12 @@ function get_all_inventoryEvents() {
 
 /*
  * return an array of all the Inventory Events with a given date
+ * Events are ordered Newest to Oldest
  */
 
  function get_all_inventoryEvents_by_date($date) {
     $con=connect();
-    $query = "SELECT * FROM dbInventoryEvent WHERE date = '" . $date . "'";
+    $query = "SELECT * FROM dbInventoryEvent WHERE date = '" . $date . "' ORDER BY id DESC";
     $result = mysqli_query($con,$query);
     $theEvents = array();
     while ($result_row = mysqli_fetch_assoc($result)) {
@@ -189,7 +190,7 @@ function get_all_inventoryEvents() {
         else if(count($matching_events) > 1){
             /* if multiple inventory events match the given event
              * pick the first in the array.
-             * We can smarter event matching in the future
+             * We can write smarter event matching in the future
              */
             return $matching_events[0];
         }    
@@ -222,7 +223,7 @@ function get_previous_inventoryEvent_pair($current_event){
     $prev_pair = array();
 
     /* loop backwards, 1 day at a time, looking for an inventory event */
-    for($i = 1; $i < $MAX_DAYS_LOOK_BACK; $i++){
+    for($i = 0; $i < $MAX_DAYS_LOOK_BACK; $i++){
         $past_date = date_create($current_date);
         date_sub($past_date, date_interval_create_from_date_string($i.' days')); 
         $past_events = get_all_inventoryEvents_by_date(date_format($past_date, 'Y-m-d'));
