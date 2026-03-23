@@ -120,9 +120,9 @@
             'item_name' => $itemName,
             'days_left' => $daysLeft,
             'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
-            'previous_items_per_box' => $itemsPerBox,
             'current_boxes' => $currentBoxes,
             'current_items_per_box' => $itemsPerBox,
+            'total_items' => $totalItems,
             'weeks_left' => $weeksLeft,
             'months_left' => $monthsLeft
         );
@@ -344,9 +344,9 @@
                                 <th>Item Name</th>
                                 <th>Days Left</th>
                                 <th>Previous Boxes</th>
-                                <th>Previous Items Per Box</th>
                                 <th>Current Boxes</th>
                                 <th>Current Items Per Box</th>
+                                <th>Total Items</th>
                                 <th>Weeks Left</th>
                                 <th>Months Left</th>
                             </tr>
@@ -379,9 +379,9 @@
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= htmlspecialchars($item['days_left']) ?></td>
                                         <td><?= htmlspecialchars($item['previous_boxes']) ?></td>
-                                        <td><?= htmlspecialchars($item['previous_items_per_box']) ?></td>
                                         <td><?= htmlspecialchars($item['current_boxes']) ?></td>
                                         <td><?= htmlspecialchars($item['current_items_per_box']) ?></td>
+                                        <td><?= htmlspecialchars($item['total_items']) ?></td>
                                         <td><?= htmlspecialchars($item['weeks_left']) ?></td>
                                         <td><?= htmlspecialchars($item['months_left']) ?></td>
                                     </tr>
