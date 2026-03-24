@@ -234,15 +234,15 @@ nav {
 }
 
 a {
-    color: white;
+    /*color: white;*/
 }
 
 a:visited {
-    color: rgb(226, 226, 226);
+    /*color: rgb(226, 226, 226);*/
 }
 
 a:hover {
-    color: hsl(from var(--accent-color) h s calc(l+.2));
+    /*color: hsl(from var(--accent-color) h s calc(l+.2));*/
 }
 
 #vms-logo {
