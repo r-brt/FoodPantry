@@ -804,17 +804,23 @@ if (date("H:i:s") > "18:19:59") {
 
 
         //Check if they're at a valid page for their access level.
-        $current_page = strtolower(substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], '/') + 1));
-        $current_page = substr($current_page, strpos($current_page,"/"));
+        //$current_page = strtolower(substr($_SERVER['PHP_SELF'], strrpos($_SERVER['PHP_SELF'], '/') + 1));
+        //$current_page = substr($current_page, strpos($current_page,"/"));
         
-        if($permission_array[$current_page]>$_SESSION['access_level']){
+        $current_page = strtolower(basename($_SERVER['PHP_SELF']));
+
+        if (isset($permission_array[$current_page]) && $permission_array[$current_page]>$_SESSION['access_level']) {
+            echo "<script>window.location = 'index.php';</script>";
+            die();
+        }
+        /*if($permission_array[$current_page]>$_SESSION['access_level']){
             //in this case, the user doesn't have permission to view this page.
             //we redirect them to the index page.
             echo "<script type=\"text/javascript\">window.location = \"index.php\";</script>";
             //note: if javascript is disabled for a user's browser, it would still show the page.
             //so we die().
             die();
-        }
+        }*/
         //This line gives us the path to the html pages in question, useful if the server isn't installed @ root.
         $path = strrev(substr(strrev($_SERVER['SCRIPT_NAME']), strpos(strrev($_SERVER['SCRIPT_NAME']), '/')));
 		$venues = array("portland"=>"RMH Portland"); // Is this used anywhere? Do we need it? -Blue
@@ -838,6 +844,12 @@ if (date("H:i:s") > "18:19:59") {
                 <div class="in-nav">
                     <img src="images/user_group_icon.svg" alt="User Icon">
                     <span>Audit Users</span>
+                </div>
+                </a>');
+                echo('<a href="createUser.php" style="text-decoration: none;">
+                <div class="in-nav">
+                    <img src="images/user_group_icon.svg" alt="User Icon">
+                    <span>Add User</span>
                 </div>
                 </a>');
             }
