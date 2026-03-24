@@ -12,7 +12,121 @@
     }
 
     require_once('database/dbinfo.php');
-    $con = connect();
+    require_once('database/dbInventoryEvent.php');
+    require_once('database/dbItemCategory.php');
+    require_once('database/dbItemCounts.php');
+
+    // Consumption rates (items per day) - This is the available list for the moment.
+    $consumptionRates = [
+        'Pancake' => 10.97,
+        'Oatmeal' => 10.97,
+        'Mixed Veg' => 22.17,
+        'Chicken' => 13.49,
+        'Cereal' => 13.49,
+        'Fruit' => 22.17,
+        'Snacks' => 21.93,
+        'Pasta' => 17.83,
+        'Tomato - Canned' => 26.75,
+        'Spaghetti Sauce' => 13.49,
+        'Corn' => 35.19,
+        'Beans - Canned' => 38.19,
+        'Beans - Dry' => 22.41,
+        'Tuna' => 26.75,
+        'Ramen' => 53.25,
+        'M&C' => 53.25,
+        'Green Beans' => 35.19,
+        'Canned Meals' => 13.73,
+        'Spaghetti' => 17.59,
+        'Soup' => 35.19,
+        'Peanut Butter' => 13.25,
+        'Jelly' => 13.25,
+        'Oil' => 13.25
+    ];
+
+    // Get all inventory events sorted by date (newest first), then by ID (highest first)
+    $allEventObjects = get_all_inventoryEvents();
+    usort($allEventObjects, function($a, $b) {
+        $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
+        if ($dateDiff != 0) {
+            return $dateDiff;
+        }
+        return $b->getId() - $a->getId();
+    });
+
+    // Group events by date and keep only the latest event ID per date
+    $dateToEventMap = array();
+    $uniqueDates = array();
+    foreach($allEventObjects as $event){
+        $date = $event->getDate();
+        if(!isset($dateToEventMap[$date])){
+            $dateToEventMap[$date] = $event->getId(); // First one is latest (already sorted by ID DESC)
+            $uniqueDates[] = $date;
+        }
+    }
+
+    // Get the selected week from query params, default to latest
+    $selectedWeek = $_GET['week'] ?? (count($dateToEventMap) > 0 ? reset($dateToEventMap) : null);
+
+    // Get current week item counts (combined Warehouse + Pantry)
+    $currentCounts = array();
+    if ($selectedWeek) {
+        $currentCountObjects = get_current_counts_by_event($selectedWeek);
+        foreach($currentCountObjects as $count){
+            $currentCounts[$count->getItemCategory()] = $count;
+        }
+    }
+
+    // Get previous week item counts (hybrid: same-day progression or previous event)
+    $previousCounts = array();
+    if ($selectedWeek) {
+        $previousCountObjects = get_previous_counts_by_event($selectedWeek);
+        foreach($previousCountObjects as $count){
+            $previousCounts[$count->getItemCategory()] = $count;
+        }
+    }
+
+    // Get all item categories
+    $allCategories = get_all_ItemCategory();
+
+    // Build weekly items array
+    $weeklyItems = array();
+    foreach ($allCategories as $category) {
+        if ($category->getStatus() != 'Active') continue;
+
+        $categoryId = $category->getId();
+        $itemName = $category->getName();
+        $itemsPerBox = $category->getItemsPerBox();
+
+        // Get current week data
+        $currentBoxes = isset($currentCounts[$categoryId]) ? $currentCounts[$categoryId]->getQuantity() : 0;
+        $totalItems = $currentBoxes * $itemsPerBox;
+
+        // Get previous week data
+        $previousBoxes = isset($previousCounts[$categoryId]) ? $previousCounts[$categoryId]->getQuantity() : null;
+
+        // Calculate time remaining
+        $daysLeft = "N/A";
+        $weeksLeft = "N/A";
+        $monthsLeft = "N/A";
+
+        if (isset($consumptionRates[$itemName]) && $consumptionRates[$itemName] > 0 && $totalItems > 0) {
+            $rate = $consumptionRates[$itemName];
+            $daysLeft = round($totalItems / $rate);
+            $weeksLeft = round($daysLeft / 4);
+            $monthsLeft = round($weeksLeft / 4);
+        }
+
+        $weeklyItems[] = array(
+            'item_name' => $itemName,
+            'days_left' => $daysLeft,
+            'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
+            'current_boxes' => $currentBoxes,
+            'current_items_per_box' => $itemsPerBox,
+            'total_items' => $totalItems,
+            'weeks_left' => $weeksLeft,
+            'months_left' => $monthsLeft
+        );
+    }
 ?>
     
 <!DOCTYPE html>
@@ -105,6 +219,46 @@
             padding: 3rem 1rem;
             color: var(--inactive-font-color);
         }
+        .week-selector {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .week-selector label {
+            color: var(--page-font-color);
+            font-weight: 500;
+        }
+        .week-selector select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            min-width: 200px;
+        }
+        .week-selector select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .row-green {
+            background-color: rgba(34, 197, 94, 0.15) !important;
+        }
+        .row-green:hover {
+            background-color: rgba(34, 197, 94, 0.25) !important;
+        }
+        .row-yellow {
+            background-color: rgba(234, 179, 8, 0.15) !important;
+        }
+        .row-yellow:hover {
+            background-color: rgba(234, 179, 8, 0.25) !important;
+        }
+        .row-red {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+        }
+        .row-red:hover {
+            background-color: rgba(239, 68, 68, 0.25) !important;
+        }
         .basket-options {
             display: flex;
             flex-direction: column;
@@ -163,37 +317,26 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 style="color:white;">Weekly Inventory Report</h1>
+            <h1 style="color:var(--accent-color);">Weekly Inventory Report</h1>
 
-            <!-- Items Updated -->
+            <!-- Weekly Items -->
             <div class="report-section">
-                <h2>Items Updated</h2>
-                <div class="table-wrapper">
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>Days Left</th>
-                                <th>Previous Boxes</th>
-                                <th>Previous Items Per Box</th>
-                                <th>Current Boxes</th>
-                                <th>Current Items Per Box</th>
-                                <th>Weeks Left</th>
-                                <th>Months Left</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="6" class="empty-state">No items updated this week.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <h2>Weekly Items</h2>
+
+                <div class="week-selector">
+                    <label for="weekSelect">View Week:</label>
+                    <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
+                        <?php if (count($dateToEventMap) > 0): ?>
+                            <?php foreach ($uniqueDates as $date): ?>
+                                <?php $eventId = $dateToEventMap[$date]; ?>
+                                <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
+                                    <?= date('M j, Y', strtotime($date)) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
                 </div>
-            </div>
 
-            <!-- Items at Risk -->
-            <div class="report-section">
-                <h2>Items at Risk</h2>
                 <div class="table-wrapper">
                     <table class="report-table">
                         <thead>
@@ -201,17 +344,53 @@
                                 <th>Item Name</th>
                                 <th>Days Left</th>
                                 <th>Previous Boxes</th>
-                                <th>Previous Items Per Box</th>
                                 <th>Current Boxes</th>
                                 <th>Current Items Per Box</th>
+                                <th>Total Items</th>
                                 <th>Weeks Left</th>
                                 <th>Months Left</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="5" class="empty-state">No items at risk.</td>
-                            </tr>
+                            <?php if (count($weeklyItems) > 0): ?>
+                                <?php foreach ($weeklyItems as $item): ?>
+                                    <?php
+                                        // Combined-days algorithm:
+                                        // 1 week = 7 days, 1 month = 4 weeks = 28 days
+                                        // totalColorDays = (months × 28) + (weeks × 7) + days
+                                        $rowClass = '';
+                                        $daysVal   = is_numeric($item['days_left'])   ? (int)$item['days_left']   : null;
+                                        $weeksVal  = is_numeric($item['weeks_left'])  ? (int)$item['weeks_left']  : null;
+                                        $monthsVal = is_numeric($item['months_left']) ? (int)$item['months_left'] : null;
+
+                                        if ($daysVal !== null) {
+                                            $totalColorDays = ($monthsVal * 28) + ($weeksVal * 7) + $daysVal;
+
+                                            if ($totalColorDays >= 120) {
+                                                $rowClass = 'row-green';   // multiple months left
+                                            } elseif ($totalColorDays >= 50) {
+                                                $rowClass = 'row-yellow';  // a few weeks left
+                                            } else {
+                                                $rowClass = 'row-red';     // 1 week and a few days left
+                                            }
+                                        }
+                                    ?>
+                                    <tr class="<?= $rowClass ?>">
+                                        <td><?= htmlspecialchars($item['item_name']) ?></td>
+                                        <td><?= htmlspecialchars($item['days_left']) ?></td>
+                                        <td><?= htmlspecialchars($item['previous_boxes']) ?></td>
+                                        <td><?= htmlspecialchars($item['current_boxes']) ?></td>
+                                        <td><?= htmlspecialchars($item['current_items_per_box']) ?></td>
+                                        <td><?= htmlspecialchars($item['total_items']) ?></td>
+                                        <td><?= htmlspecialchars($item['weeks_left']) ?></td>
+                                        <td><?= htmlspecialchars($item['months_left']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="8" class="empty-state">No weekly items to display.</td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -270,3 +449,4 @@
 
 </body>
 </html>
+

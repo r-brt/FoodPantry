@@ -243,7 +243,7 @@ if (date("H:i:s") > "18:19:59") {
             top: 150%;
             left: -10%;
             background-color: #4d98f3;
-            border: 1px solid #4d98f3;
+            border: 2px solid #f5ce7aff;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             border-radius: 5px;
             min-width: 150px;
@@ -484,6 +484,10 @@ if (date("H:i:s") > "18:19:59") {
         }
 	.in-nav span {
 	    font-size:24px;
+        overflow-wrap: break-word;
+        overflow: visible;
+        word-wrap: break-word;
+        text-wrap: balance;
 	}
 
 	.in-nav img {
@@ -793,6 +797,8 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['viewsuggestion.php'] = 2;
         $permission_array['viewweeklyreport.php'] = 1;
         $permission_array['viewupdateinventory.php'] = 1;
+        $permission_array['viewauditusers.php'] = 2;
+        $permission_array['viewmodifyuser.php'] = 2;
         // LOWERCASE
 
 
@@ -828,10 +834,10 @@ if (date("H:i:s") > "18:19:59") {
                 <div class="nav-item">Food Pantry Navigation
                     <div class="dropdown">');
             if ($_SESSION['access_level'] >= 2) {
-                echo('<a href="volunteerManagement.php" style="text-decoration: none;">
+                echo('<a href="viewAuditUsers.php" style="text-decoration: none;">
                 <div class="in-nav">
                     <img src="images/user_group_icon.svg" alt="User Icon">
-                    <span>Audit User</span>
+                    <span>Audit Users</span>
                 </div>
                 </a>');
             }

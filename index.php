@@ -479,12 +479,12 @@
     <h2><b>Admin Dashboard</b></h2>
 </div>
 <div class="full-width-bar-sub">
- <div class="content-box-test" onclick="window.location.href='volunteerManagement.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+ <div class="content-box-test" onclick="window.location.href='viewAuditUsers.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/user_group_icon.svg" alt="User Icon">
         </div>
         
-        <div class="large-text-sub" style="color:white;">Audit User</div>
+        <div class="large-text-sub" style="color:white;">Audit Users</div>
         <div class="graph-text" style="color:white;">Add, edit, and remove user accounts and permissions.</div>
     </div>
             </div>

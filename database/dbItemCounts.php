@@ -108,3 +108,322 @@ function update_quantity($id, $quantity){
     mysqli_close($con);
     return true;
 }
+
+/*
+ * get most recent itemCount for each category where inventoryEventId <= given maxEventId
+ */
+
+function get_most_recent_counts_up_to_event($maxEventId){
+    $con=connect();
+    $dateQuery = 'SELECT date FROM dbinventoryevent WHERE id = "' . $maxEventId . '"';
+    $dateResult = mysqli_query($con, $dateQuery);
+    $dateRow = mysqli_fetch_assoc($dateResult);
+    $maxDate = $dateRow['date'];
+
+    $query = 'SELECT dic.* FROM dbitemcounts dic
+              INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+              WHERE die.date <= "' . $maxDate . '"
+              ORDER BY dic.itemCategoryId, die.date DESC, dic.inventoryEventId DESC';
+    $sql_result = mysqli_query($con,$query);
+    $array_result = mysqli_fetch_all($sql_result, MYSQLI_ASSOC);
+    $itemCount_array = array();
+    $seen_categories = array();
+
+    foreach($array_result as $result){
+        $categoryId = $result['itemCategoryId'];
+        if(!in_array($categoryId, $seen_categories)){
+            $itemCount_array[] = new ItemCount($result['id'],$result['inventoryEventId'],$result['itemCategoryId'],$result['quantity']);
+            $seen_categories[] = $categoryId;
+        }
+    }
+    mysqli_close($con);
+    return $itemCount_array;
+}
+
+/*
+ * get most recent itemCount per location for each category up to given event
+ */
+
+function get_current_counts_by_event($eventId){
+    $con=connect();
+
+    // Get date for the selected event
+    $dateQuery = 'SELECT date FROM dbinventoryevent WHERE id = "' . $eventId . '"';
+    $dateResult = mysqli_query($con, $dateQuery);
+    $dateRow = mysqli_fetch_assoc($dateResult);
+    $selectedDate = $dateRow['date'];
+
+    // Check if Warehouse and Pantry events exist on this date
+    $whEventExistsQuery = 'SELECT id FROM dbinventoryevent
+                           WHERE date = "' . $selectedDate . '"
+                           AND location = "Warehouse"
+                           LIMIT 1';
+    $whEventExistsResult = mysqli_query($con, $whEventExistsQuery);
+    $whEventExists = (mysqli_num_rows($whEventExistsResult) > 0);
+
+    $pantryEventExistsQuery = 'SELECT id FROM dbinventoryevent
+                               WHERE date = "' . $selectedDate . '"
+                               AND location = "Pantry"
+                               LIMIT 1';
+    $pantryEventExistsResult = mysqli_query($con, $pantryEventExistsQuery);
+    $pantryEventExists = (mysqli_num_rows($pantryEventExistsResult) > 0);
+
+    // Get all categories
+    $categories = get_all_ItemCategory();
+    $itemCount_array = array();
+
+    foreach($categories as $category){
+        $categoryId = $category->getId();
+        $totalQuantity = 0;
+
+        // Get Warehouse count for this item on selected date
+        $whSameDateQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                            INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                            WHERE dic.itemCategoryId = "' . $categoryId . '"
+                              AND die.location = "Warehouse"
+                              AND die.date = "' . $selectedDate . '"
+                            ORDER BY die.id DESC
+                            LIMIT 1';
+        $whSameDateResult = mysqli_query($con, $whSameDateQuery);
+
+        if($whSameDateRow = mysqli_fetch_assoc($whSameDateResult)){
+            // Found on selected date
+            $totalQuantity += $whSameDateRow['quantity'];
+        } else if($whEventExists){
+            // Warehouse event exists on this date but item not found = assume 0
+            $totalQuantity += 0;
+        } else {
+            // No Warehouse event on this date, look back to previous date
+            $whPrevQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                            INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                            WHERE dic.itemCategoryId = "' . $categoryId . '"
+                              AND die.location = "Warehouse"
+                              AND die.date < "' . $selectedDate . '"
+                            ORDER BY die.date DESC, die.id DESC
+                            LIMIT 1';
+            $whPrevResult = mysqli_query($con, $whPrevQuery);
+            if($whPrevRow = mysqli_fetch_assoc($whPrevResult)){
+                $totalQuantity += $whPrevRow['quantity'];
+            }
+        }
+
+        // Get Pantry count for this item on selected date
+        $pantrySameDateQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                                INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                                WHERE dic.itemCategoryId = "' . $categoryId . '"
+                                  AND die.location = "Pantry"
+                                  AND die.date = "' . $selectedDate . '"
+                                ORDER BY die.id DESC
+                                LIMIT 1';
+        $pantrySameDateResult = mysqli_query($con, $pantrySameDateQuery);
+
+        if($pantrySameDateRow = mysqli_fetch_assoc($pantrySameDateResult)){
+            // Found on selected date
+            $totalQuantity += $pantrySameDateRow['quantity'];
+        } else if($pantryEventExists){
+            // Pantry event exists on this date but item not found = assume 0
+            $totalQuantity += 0;
+        } else {
+            // No Pantry event on this date, look back to previous date
+            $pantryPrevQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                                INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                                WHERE dic.itemCategoryId = "' . $categoryId . '"
+                                  AND die.location = "Pantry"
+                                  AND die.date < "' . $selectedDate . '"
+                                ORDER BY die.date DESC, die.id DESC
+                                LIMIT 1';
+            $pantryPrevResult = mysqli_query($con, $pantryPrevQuery);
+            if($pantryPrevRow = mysqli_fetch_assoc($pantryPrevResult)){
+                $totalQuantity += $pantryPrevRow['quantity'];
+            }
+        }
+
+        // Create ItemCount with combined quantity
+        $itemCount_array[] = new ItemCount(0, $eventId, $categoryId, $totalQuantity);
+    }
+
+    mysqli_close($con);
+    return $itemCount_array;
+}
+
+/*
+ * get previous itemCount per location for each category (hybrid: same-day progression or previous event)
+ */
+
+function get_previous_counts_by_event($eventId){
+    $con=connect();
+
+    // Get date for the selected event
+    $dateQuery = 'SELECT date FROM dbinventoryevent WHERE id = "' . $eventId . '"';
+    $dateResult = mysqli_query($con, $dateQuery);
+    $dateRow = mysqli_fetch_assoc($dateResult);
+    $selectedDate = $dateRow['date'];
+
+    // Find the previous date that has inventory events
+    $prevDateQuery = 'SELECT DISTINCT date FROM dbinventoryevent
+                      WHERE date < "' . $selectedDate . '"
+                      ORDER BY date DESC
+                      LIMIT 1';
+    $prevDateResult = mysqli_query($con, $prevDateQuery);
+    $prevDateRow = mysqli_fetch_assoc($prevDateResult);
+    $previousDate = $prevDateRow ? $prevDateRow['date'] : null;
+
+    // Check if Warehouse and Pantry events exist on the previous date
+    $whPrevEventExists = false;
+    $pantryPrevEventExists = false;
+    if($previousDate){
+        $whPrevExistsQuery = 'SELECT id FROM dbinventoryevent
+                              WHERE date = "' . $previousDate . '"
+                              AND location = "Warehouse"
+                              LIMIT 1';
+        $whPrevEventExists = (mysqli_num_rows(mysqli_query($con, $whPrevExistsQuery)) > 0);
+
+        $pantryPrevExistsQuery = 'SELECT id FROM dbinventoryevent
+                                  WHERE date = "' . $previousDate . '"
+                                  AND location = "Pantry"
+                                  LIMIT 1';
+        $pantryPrevEventExists = (mysqli_num_rows(mysqli_query($con, $pantryPrevExistsQuery)) > 0);
+    }
+
+    // Get all categories
+    $categories = get_all_ItemCategory();
+    $itemCount_array = array();
+
+    foreach($categories as $category){
+        $categoryId = $category->getId();
+        $totalQuantity = 0;
+        $foundAny = false;
+
+        // Warehouse: Check if 2+ events on selected date, else use previous date
+        $whCountQuery = 'SELECT COUNT(*) as cnt FROM dbitemcounts dic
+                         INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                         WHERE dic.itemCategoryId = "' . $categoryId . '"
+                           AND die.location = "Warehouse"
+                           AND die.date = "' . $selectedDate . '"
+                           AND die.id <= "' . $eventId . '"';
+        $whCountResult = mysqli_query($con, $whCountQuery);
+        $whCountRow = mysqli_fetch_assoc($whCountResult);
+
+        if($whCountRow['cnt'] >= 2){
+            // 2+ events on same date - get second-to-last from same date
+            $whQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                        INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                        WHERE dic.itemCategoryId = "' . $categoryId . '"
+                          AND die.location = "Warehouse"
+                          AND die.date = "' . $selectedDate . '"
+                          AND die.id <= "' . $eventId . '"
+                        ORDER BY die.id DESC
+                        LIMIT 1 OFFSET 1';
+            $whResult = mysqli_query($con, $whQuery);
+            if($whRow = mysqli_fetch_assoc($whResult)){
+                $totalQuantity += $whRow['quantity'];
+                $foundAny = true;
+            }
+        } else {
+            // Get from previous date, treat missing items as 0
+            if($previousDate){
+                // Check if item exists on previous date
+                $whPrevItemQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                                    INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                                    WHERE dic.itemCategoryId = "' . $categoryId . '"
+                                      AND die.location = "Warehouse"
+                                      AND die.date = "' . $previousDate . '"
+                                    ORDER BY die.id DESC
+                                    LIMIT 1';
+                $whPrevItemResult = mysqli_query($con, $whPrevItemQuery);
+                if($whPrevItemRow = mysqli_fetch_assoc($whPrevItemResult)){
+                    $totalQuantity += $whPrevItemRow['quantity'];
+                    $foundAny = true;
+                } else if($whPrevEventExists){
+                    // Warehouse event exists on previous date but item not found = assume 0
+                    $totalQuantity += 0;
+                    $foundAny = true;
+                } else {
+                    // No Warehouse event on previous date, look back further
+                    $whFallbackQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                                        INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                                        WHERE dic.itemCategoryId = "' . $categoryId . '"
+                                          AND die.location = "Warehouse"
+                                          AND die.date < "' . $previousDate . '"
+                                        ORDER BY die.date DESC, die.id DESC
+                                        LIMIT 1';
+                    $whFallbackResult = mysqli_query($con, $whFallbackQuery);
+                    if($whFallbackRow = mysqli_fetch_assoc($whFallbackResult)){
+                        $totalQuantity += $whFallbackRow['quantity'];
+                        $foundAny = true;
+                    }
+                }
+            }
+        }
+
+        // Pantry: Check if 2+ events on selected date, else use previous date
+        $pantryCountQuery = 'SELECT COUNT(*) as cnt FROM dbitemcounts dic
+                             INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                             WHERE dic.itemCategoryId = "' . $categoryId . '"
+                               AND die.location = "Pantry"
+                               AND die.date = "' . $selectedDate . '"
+                               AND die.id <= "' . $eventId . '"';
+        $pantryCountResult = mysqli_query($con, $pantryCountQuery);
+        $pantryCountRow = mysqli_fetch_assoc($pantryCountResult);
+
+        if($pantryCountRow['cnt'] >= 2){
+            // 2+ events on same date - get second-to-last from same date
+            $pantryQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                            INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                            WHERE dic.itemCategoryId = "' . $categoryId . '"
+                              AND die.location = "Pantry"
+                              AND die.date = "' . $selectedDate . '"
+                              AND die.id <= "' . $eventId . '"
+                            ORDER BY die.id DESC
+                            LIMIT 1 OFFSET 1';
+            $pantryResult = mysqli_query($con, $pantryQuery);
+            if($pantryRow = mysqli_fetch_assoc($pantryResult)){
+                $totalQuantity += $pantryRow['quantity'];
+                $foundAny = true;
+            }
+        } else {
+            // Get from previous date, treat missing items as 0
+            if($previousDate){
+                // Check if item exists on previous date
+                $pantryPrevItemQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                                        INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                                        WHERE dic.itemCategoryId = "' . $categoryId . '"
+                                          AND die.location = "Pantry"
+                                          AND die.date = "' . $previousDate . '"
+                                        ORDER BY die.id DESC
+                                        LIMIT 1';
+                $pantryPrevItemResult = mysqli_query($con, $pantryPrevItemQuery);
+                if($pantryPrevItemRow = mysqli_fetch_assoc($pantryPrevItemResult)){
+                    $totalQuantity += $pantryPrevItemRow['quantity'];
+                    $foundAny = true;
+                } else if($pantryPrevEventExists){
+                    // Pantry event exists on previous date but item not found = assume 0
+                    $totalQuantity += 0;
+                    $foundAny = true;
+                } else {
+                    // No Pantry event on previous date, look back further
+                    $pantryFallbackQuery = 'SELECT dic.quantity FROM dbitemcounts dic
+                                            INNER JOIN dbinventoryevent die ON dic.inventoryEventId = die.id
+                                            WHERE dic.itemCategoryId = "' . $categoryId . '"
+                                              AND die.location = "Pantry"
+                                              AND die.date < "' . $previousDate . '"
+                                            ORDER BY die.date DESC, die.id DESC
+                                            LIMIT 1';
+                    $pantryFallbackResult = mysqli_query($con, $pantryFallbackQuery);
+                    if($pantryFallbackRow = mysqli_fetch_assoc($pantryFallbackResult)){
+                        $totalQuantity += $pantryFallbackRow['quantity'];
+                        $foundAny = true;
+                    }
+                }
+            }
+        }
+
+        // Only add if we found at least one previous count
+        if($foundAny){
+            $itemCount_array[] = new ItemCount(0, $eventId, $categoryId, $totalQuantity);
+        }
+    }
+
+    mysqli_close($con);
+    return $itemCount_array;
+}
