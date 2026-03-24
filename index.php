@@ -488,6 +488,17 @@
         <div class="graph-text" style="color:white;">Add, edit, and remove user accounts and permissions.</div>
     </div>
             </div>
+            </div>
+<div class="full-width-bar-sub">
+ <div class="content-box-test" onclick="window.location.href='createUser.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/user_group_icon.svg" alt="User Icon">
+        </div>
+        
+        <div class="large-text-sub" style="color:white;">Add User</div>
+        <div class="graph-text" style="color:white;">Add user and set permissions.</div>
+    </div>
+            </div>
 <!--
         <div class="nav-buttons">
             <button class="nav-button" onclick="window.location.href='personSearch.php'">

@@ -39,7 +39,15 @@
             }*/ else if (password_verify($password, $user->get_password())) {
                 $_SESSION['logged_in'] = true;
 
-                $_SESSION['access_level'] = $user->get_access_level();
+                //$_SESSION['access_level'] = $user->get_access_level();
+
+                $role = $user->get_type();
+                $roleMap = [
+                    "Superadmin" => 3,
+                    "Adim" => 2,
+                    "Inventory_counter" => 1
+                ];
+                $_SESSION['access_level'] = $roleMap[$role] ?? 1;
                 $_SESSION['f_name'] = $user->get_first_name();
                 $_SESSION['l_name'] = $user->get_last_name();
 
