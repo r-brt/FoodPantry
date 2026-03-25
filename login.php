@@ -44,7 +44,7 @@
                 $role = $user->get_type();
                 $roleMap = [
                     "Superadmin" => 3,
-                    "Adim" => 2,
+                    "Adin" => 2,
                     "Inventory_counter" => 1
                 ];
                 $_SESSION['access_level'] = $roleMap[$role] ?? 1;
@@ -52,7 +52,7 @@
                 $_SESSION['l_name'] = $user->get_last_name();
 
                 
-                $_SESSION['type'] = 'admin';
+                $_SESSION['type'] = $role;
                 $_SESSION['_id'] = $user->get_id();
                 
                  //hard code root privileges
