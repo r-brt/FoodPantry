@@ -85,14 +85,19 @@
     <title>Modify User | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        .title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--secondary-accent-color); 
+        }
         .report-container {
             max-width: 1100px;
             margin: 0 auto 4rem auto;
             padding: 1rem;
         }
         .report-section {
-            background-color: rgba(0,0,0,0.15);
-            border: 1px solid var(--shadow-and-border-color);
+            background-color: white;
+            /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
@@ -101,7 +106,7 @@
             font-size: 1.5rem;
             font-weight: 500;
             margin-bottom: 1rem;
-            color: var(--accent-color);
+            color: var(--secondary-accent-color);
         }
         .report-table {
             width: 100%;
@@ -308,7 +313,7 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 style="color:black;">Create User</h1>
+            <h1 class="title">Add User</h1>
             <?php 
                 /* Display errors from submitting inventory */
                 if (!empty($errors)): ?>
