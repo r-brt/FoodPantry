@@ -61,7 +61,7 @@
             if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
                 $errors[] = "Invalid email";
             }
-            if($accessLevel < 3 && $type == "Superadmin"){
+            if($accessLevel < 3 && $type == "superadmin"){
                 $errors[] = "Unable to change role";
             }
             if(empty($errors)){
@@ -344,10 +344,10 @@
                             <label class="updateInv-label" for="role">Role: </label>
                             <select name="role" class="modify-role-select" required>
                                 <?php if ($accessLevel >= 3):?>
-                                    <option value="Superadmin">Superadmin</option>
+                                    <option value="superadmin">superadmin</option>
                                 <?php endif;?>
-                                <option value="Admin">Admin</option>
-                                <option value="Inventory_counter">Inventory_counter</option>
+                                <option value="admin">admin</option>
+                                <option value="inventory_counter">inventory_counter</option>
                             </select>
                         </div>
                         <div class="updateInv-row">

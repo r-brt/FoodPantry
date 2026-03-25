@@ -665,7 +665,7 @@
 
     <!-- <div class="full-width-bar">
     <div class="content-box">
-    <img src="images/VolM.png" />   
+    <img src="images/VolM.png" />
         <div class="small-text">Make a difference.</div>
         <div class="large-text">My Profile</div>
         <div class="nav-buttons">
