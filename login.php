@@ -158,7 +158,7 @@
           <a href="#" class="text-[#22654D] text-sm hover:underline">Forgot password?</a>
           <!--<a href="https://whiskeyvalor.org" class="text-[#22654D] text-sm hover:underline">Whiskey Valor Website</a> -->
         </div>
-        <button class="cursor-pointer w-full bg-[#C9AB81] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition duration-300">Login</button>
+        <button class="cursor-pointer w-full bg-[#F6C445] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition duration-300">Login</button>
       </form>
 
       <!-- Divider -->
