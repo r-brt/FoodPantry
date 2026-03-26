@@ -139,23 +139,34 @@
     <title>Weekly Inventory Report | Whiskey Valor Foundation</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        .title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--secondary-accent-color);
+        }
         .report-container {
             max-width: 1100px;
             margin: 0 auto 4rem auto;
             padding: 1rem;
         }
         .report-section {
-            background-color: rgba(0,0,0,0.15);
-            border: 1px solid var(--shadow-and-border-color);
+            background-color: white;
+            /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+        }
+        .report-section h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--secondary-accent-color);
         }
         .report-section h2 {
             font-size: 1.5rem;
             font-weight: 500;
             margin-bottom: 1rem;
-            color: var(--accent-color);
+            color: var(--secondary-accent-color);
         }
         .report-table {
             width: 100%;
@@ -301,6 +312,9 @@
         .generate-btn:hover {
             opacity: 0.85;
         }
+        .select {
+            background-color: white !important;
+        }
         .table-toolbar {
             display: flex;
             justify-content: space-between;
@@ -390,7 +404,7 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 style="color:var(--accent-color);">Weekly Inventory Report</h1>
+            <h1 class="title">Weekly Inventory Report</h1>
 
             <!-- Weekly Items -->
             <div class="report-section">
@@ -398,12 +412,12 @@
 
                 <div class="week-selector">
                     <label for="weekSelect">View Week:</label>
-                    <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
+                    <select class="select" id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
                         <?php if (count($dateToEventMap) > 0): ?>
                             <?php foreach ($uniqueDates as $date): ?>
                                 <?php $eventId = $dateToEventMap[$date]; ?>
                                 <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($date) ?>
+                                    <?= date('M j, Y', strtotime($date)) ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
