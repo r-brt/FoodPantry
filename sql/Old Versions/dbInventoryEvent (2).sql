@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 26, 2026 at 09:09 PM
+-- Generation Time: Mar 12, 2026 at 04:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -40,12 +40,10 @@ CREATE TABLE `dbinventoryevent` (
 --
 
 INSERT INTO `dbinventoryevent` (`id`, `personId`, `location`, `date`) VALUES
-(1049, '7', 'Warehouse', '2026-01-20'),
-(1050, '7', 'Pantry', '2026-01-20'),
-(1051, '7', 'Warehouse', '2026-03-20'),
-(1052, '7', 'Pantry', '2026-03-20'),
-(1053, '7', 'Warehouse', '2026-02-04'),
-(1054, '7', 'Pantry', '2026-02-04');
+(1001, '3', 'Warehouse', '2026-01-20'),
+(1002, '3', 'Pantry', '2026-01-20'),
+(1003, '2', 'Warehouse', '2026-02-04'),
+(1004, '2', 'Pantry', '2026-02-04');
 
 --
 -- Indexes for dumped tables
@@ -65,7 +63,7 @@ ALTER TABLE `dbinventoryevent`
 -- AUTO_INCREMENT for table `dbinventoryevent`
 --
 ALTER TABLE `dbinventoryevent`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1055;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1005;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
