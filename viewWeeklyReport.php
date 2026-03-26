@@ -116,16 +116,19 @@
             $monthsLeft = round($weeksLeft / 4);
         }
 
-        $weeklyItems[] = array(
-            'item_name' => $itemName,
-            'days_left' => $daysLeft,
-            'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
-            'current_boxes' => $currentBoxes,
-            'current_items_per_box' => $itemsPerBox,
-            'total_items' => $totalItems,
-            'weeks_left' => $weeksLeft,
-            'months_left' => $monthsLeft
-        );
+        // Only show items with current inventory > 0
+        if ($currentBoxes > 0) {
+            $weeklyItems[] = array(
+                'item_name' => $itemName,
+                'days_left' => $daysLeft,
+                'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
+                'current_boxes' => $currentBoxes,
+                'current_items_per_box' => $itemsPerBox,
+                'total_items' => $totalItems,
+                'weeks_left' => $weeksLeft,
+                'months_left' => $monthsLeft
+            );
+        }
     }
 ?>
     
@@ -139,7 +142,7 @@
         .title {
             font-size: 2rem;
             font-weight: 600;
-            color: var(--secondary-accent-color); 
+            color: var(--secondary-accent-color);
         }
         .report-container {
             max-width: 1100px;
@@ -312,6 +315,64 @@
         .select {
             background-color: white !important;
         }
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toolbar-select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            min-width: 180px;
+        }
+        .toolbar-select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .toolbar-search {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            min-width: 200px;
+        }
+        .toolbar-search::placeholder {
+            color: var(--inactive-font-color);
+        }
+        .toolbar-btn-clear {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .toolbar-btn-clear:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .row-number {
+            text-align: center;
+            color: var(--inactive-font-color);
+            font-weight: 500;
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -323,6 +384,18 @@
             }
             div.table-wrapper {
                 overflow-x: auto;
+            }
+            .table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .toolbar-left,
+            .toolbar-right {
+                width: 100%;
+            }
+            .toolbar-select,
+            .toolbar-search {
+                width: 100%;
             }
         }
     </style>
@@ -339,7 +412,7 @@
 
                 <div class="week-selector">
                     <label for="weekSelect">View Week:</label>
-                    <select class ="select" id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
+                    <select class="select" id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
                         <?php if (count($dateToEventMap) > 0): ?>
                             <?php foreach ($uniqueDates as $date): ?>
                                 <?php $eventId = $dateToEventMap[$date]; ?>
@@ -351,10 +424,29 @@
                     </select>
                 </div>
 
+                <!-- Toolbar: Sort and Search -->
+                <div class="table-toolbar">
+                    <div class="toolbar-left">
+                        <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
+                        <select id="sortSelect" class="toolbar-select">
+                            <option value="default">Default</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="days-asc">Days Left (Low to High)</option>
+                            <option value="days-desc">Days Left (High to Low)</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-right">
+                        <input type="text" id="searchInput" class="toolbar-search" placeholder="Search items...">
+                        <button type="button" id="clearSearch" class="toolbar-btn-clear">Clear</button>
+                    </div>
+                </div>
+
                 <div class="table-wrapper">
-                    <table class="report-table">
+                    <table class="report-table" id="weeklyItemsTable">
                         <thead>
                             <tr>
+                                <th style="width: 50px;">#</th>
                                 <th>Item Name</th>
                                 <th>Days Left</th>
                                 <th>Previous Boxes</th>
@@ -390,6 +482,7 @@
                                         }
                                     ?>
                                     <tr class="<?= $rowClass ?>">
+                                        <td class="row-number"></td>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= htmlspecialchars($item['days_left']) ?></td>
                                         <td><?= htmlspecialchars($item['previous_boxes']) ?></td>
@@ -402,7 +495,7 @@
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="8" class="empty-state">No weekly items to display.</td>
+                                    <td colspan="9" class="empty-state">No weekly items to display.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -460,6 +553,110 @@
 
         </div>
     </main>
+
+    <script>
+        $(function() {
+            // Update row numbers
+            function updateRowNumbers() {
+                $('#weeklyItemsTable tbody tr:visible').each(function(index) {
+                    $(this).find('.row-number').text(index + 1);
+                });
+            }
+
+            // Initialize row numbers on page load
+            updateRowNumbers();
+
+            // Sorting functionality
+            $('#sortSelect').change(function() {
+                var sortValue = $(this).val();
+                var $tbody = $('#weeklyItemsTable tbody');
+                var $rows = $tbody.find('tr').get();
+
+                if (sortValue === 'default') {
+                    // Restore original order - no sorting
+                    $rows.sort(function(a, b) {
+                        return $(a).data('original-index') - $(b).data('original-index');
+                    });
+                } else if (sortValue === 'name-asc') {
+                    // Sort by name A-Z
+                    $rows.sort(function(a, b) {
+                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        return nameA.localeCompare(nameB);
+                    });
+                } else if (sortValue === 'name-desc') {
+                    // Sort by name Z-A
+                    $rows.sort(function(a, b) {
+                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        return nameB.localeCompare(nameA);
+                    });
+                } else if (sortValue === 'days-asc') {
+                    // Sort by days left (low to high) - items at risk first
+                    $rows.sort(function(a, b) {
+                        var daysA = $(a).find('td').eq(2).text();
+                        var daysB = $(b).find('td').eq(2).text();
+
+                        // Handle N/A values - put them at the end
+                        if (daysA === 'N/A') return 1;
+                        if (daysB === 'N/A') return -1;
+
+                        return parseInt(daysA) - parseInt(daysB);
+                    });
+                } else if (sortValue === 'days-desc') {
+                    // Sort by days left (high to low)
+                    $rows.sort(function(a, b) {
+                        var daysA = $(a).find('td').eq(2).text();
+                        var daysB = $(b).find('td').eq(2).text();
+
+                        // Handle N/A values - put them at the end
+                        if (daysA === 'N/A') return 1;
+                        if (daysB === 'N/A') return -1;
+
+                        return parseInt(daysB) - parseInt(daysA);
+                    });
+                }
+
+                // Re-append rows in new order
+                $.each($rows, function(index, row) {
+                    $tbody.append(row);
+                });
+
+                // Update row numbers after sorting
+                updateRowNumbers();
+            });
+
+            // Search functionality
+            $('#searchInput').on('input', function() {
+                var searchTerm = $(this).val().toLowerCase();
+
+                $('#weeklyItemsTable tbody tr').each(function() {
+                    var itemName = $(this).find('td').eq(1).text().toLowerCase();
+
+                    if (itemName.indexOf(searchTerm) > -1) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+
+                // Update row numbers after filtering
+                updateRowNumbers();
+            });
+
+            // Clear search button
+            $('#clearSearch').click(function() {
+                $('#searchInput').val('');
+                $('#weeklyItemsTable tbody tr').show();
+                updateRowNumbers();
+            });
+
+            // Store original order for default sorting
+            $('#weeklyItemsTable tbody tr').each(function(index) {
+                $(this).data('original-index', index);
+            });
+        });
+    </script>
 
 </body>
 </html>

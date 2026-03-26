@@ -62,14 +62,25 @@
                         $updatedItems = array();
                         break;
                     }
-                    /* do not add items that have 0 quantity */
-                    else if($value > 0){
+                    /* accept items with 0 or greater quantity */
+                    else if($value >= 0){
                         $updatedItems[$name] = $value;
                     }
                 }
             }
         }
-        
+
+        /* auto-fill missing items with 0 for complete analytics data */
+        if(empty($errors)){
+            $allCategories = get_all_ItemCategory();
+            foreach($allCategories as $category){
+                $categoryId = $category->getId();
+                if(!isset($updatedItems[$categoryId])){
+                    $updatedItems[$categoryId] = 0;
+                }
+            }
+        }
+
         /* if at least 1 item was updated, create inventory event and add items to database */
         if(count($updatedItems) > 0){
             $personId = retrieve_person($userID)->get_personId();
