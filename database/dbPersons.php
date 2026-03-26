@@ -146,6 +146,24 @@ function retrieve_person_by_personId($personId) {
     return $thePerson;
 }
 
+function create_person($id, $first_name, $last_name, $email, $type, $password) {
+    $con = connect();
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    $query = "INSERT INTO dbpersons (id, first_name, last_name, email, type, password, status)
+    VALUES (
+        '" . mysqli_real_escape_string($con, $id) . "' ,
+        '" . mysqli_real_escape_string($con, $first_name) . "' ,
+        '" . mysqli_real_escape_string($con, $last_name) . "' ,
+        '" . mysqli_real_escape_string($con, $email) . "' ,
+        '" . mysqli_real_escape_string($con, $type) . "' ,
+        '" . mysqli_real_escape_string($con, $hashedPassword) . "' ,
+        'Active'
+    )";
+    $result = mysqli_query($con, $query);
+    mysqli_close($con);
+    return $result;
+}
+
 function change_password($id, $newPass) {
     $con=connect();
     $query = 'UPDATE dbpersons SET password = "' . $newPass . '", force_password_change="0" WHERE id = "' . $id . '"';
