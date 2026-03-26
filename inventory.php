@@ -53,6 +53,7 @@ if ($selectedWeek) {
             WHERE ie2.id = ?
           )
         GROUP BY dic.id, dic.name, dic.itemsPerBox, dic.bananaBox
+        HAVING total_boxes > 0
         ORDER BY dic.name
     ";
     $stmt = $conn->prepare($sql);
@@ -134,6 +135,18 @@ if ($result) {
             div.table-wrapper {
                 overflow-x: auto;
             }
+            .table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .toolbar-left,
+            .toolbar-right {
+                width: 100%;
+            }
+            .toolbar-select,
+            .toolbar-search {
+                width: 100%;
+            }
         }
         .week-selector {
             margin-bottom: 1.5rem;
@@ -156,6 +169,64 @@ if ($result) {
         }
         .week-selector select:hover {
             background-color: rgba(0,0,0,0.3);
+        }
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toolbar-select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            min-width: 180px;
+        }
+        .toolbar-select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .toolbar-search {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            min-width: 200px;
+        }
+        .toolbar-search::placeholder {
+            color: var(--inactive-font-color);
+        }
+        .toolbar-btn-clear {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .toolbar-btn-clear:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .row-number {
+            text-align: center;
+            color: var(--inactive-font-color);
+            font-weight: 500;
         }
     </style>
 </head>
@@ -181,10 +252,26 @@ if ($result) {
                     </select>
                 </div>
 
+                <div class="table-toolbar">
+                    <div class="toolbar-left">
+                        <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
+                        <select id="sortSelect" class="toolbar-select">
+                            <option value="default">Default</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-right">
+                        <input type="text" id="searchInput" class="toolbar-search" placeholder="Search items...">
+                        <button type="button" id="clearSearch" class="toolbar-btn-clear">Clear</button>
+                    </div>
+                </div>
+
                 <div class="table-wrapper">
-                    <table class="report-table">
+                    <table class="report-table" id="inventoryTable">
                         <thead>
                             <tr>
+                                <th style="width: 50px;">#</th>
                                 <th>Item Name</th>
                                 <th>Warehouse</th>
                                 <th>Pantry</th>
@@ -198,6 +285,7 @@ if ($result) {
                             <?php if (count($items) > 0): ?>
                                 <?php foreach ($items as $item): ?>
                                     <tr>
+                                        <td class="row-number"></td>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= $item['warehouse_boxes'] > 0 ? htmlspecialchars($item['warehouse_boxes']) : '-' ?></td>
                                         <td><?= $item['pantry_boxes'] > 0 ? htmlspecialchars($item['pantry_boxes']) : '-' ?></td>
@@ -209,7 +297,7 @@ if ($result) {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="7" class="empty-state">No items found.</td>
+                                    <td colspan="8" class="empty-state">No items found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -219,6 +307,87 @@ if ($result) {
 
         </div>
     </main>
+
+    <script>
+        $(function() {
+            // Update row numbers
+            function updateRowNumbers() {
+                $('#inventoryTable tbody tr:visible').each(function(index) {
+                    $(this).find('.row-number').text(index + 1);
+                });
+            }
+
+            // Initialize row numbers on page load
+            updateRowNumbers();
+
+            // Sorting functionality
+            $('#sortSelect').change(function() {
+                var sortValue = $(this).val();
+                var $tbody = $('#inventoryTable tbody');
+                var $rows = $tbody.find('tr').get();
+
+                if (sortValue === 'default') {
+                    // Restore original order - no sorting
+                    $rows.sort(function(a, b) {
+                        return $(a).data('original-index') - $(b).data('original-index');
+                    });
+                } else if (sortValue === 'name-asc') {
+                    // Sort by name A-Z
+                    $rows.sort(function(a, b) {
+                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        return nameA.localeCompare(nameB);
+                    });
+                } else if (sortValue === 'name-desc') {
+                    // Sort by name Z-A
+                    $rows.sort(function(a, b) {
+                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        return nameB.localeCompare(nameA);
+                    });
+                }
+
+                // Re-append rows in new order
+                $.each($rows, function(index, row) {
+                    $tbody.append(row);
+                });
+
+                // Update row numbers after sorting
+                updateRowNumbers();
+            });
+
+            // Search functionality
+            $('#searchInput').on('input', function() {
+                var searchTerm = $(this).val().toLowerCase();
+
+                $('#inventoryTable tbody tr').each(function() {
+                    var itemName = $(this).find('td').eq(1).text().toLowerCase();
+
+                    if (itemName.indexOf(searchTerm) > -1) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+
+                // Update row numbers after filtering
+                updateRowNumbers();
+            });
+
+            // Clear search button
+            $('#clearSearch').click(function() {
+                $('#searchInput').val('');
+                $('#inventoryTable tbody tr').show();
+                updateRowNumbers();
+            });
+
+            // Store original order for default sorting
+            $('#inventoryTable tbody tr').each(function(index) {
+                $(this).data('original-index', index);
+            });
+        });
+    </script>
+
 </body>
 </html>
 
