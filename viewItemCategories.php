@@ -186,8 +186,8 @@
                                 <thead>
                                     <tr>
                                         <th>Name</th>
-                                        <th>Items Per Box</th>
                                         <th>Banana Box</th>
+                                        <th>Items Per Box</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -206,8 +206,8 @@
                                         echo '
                                         <tr>
                                             <td>' . $name . '</td>
-                                            <td>' . $itemsPerBox . '</td>
-                                            <td style="text-align: center;">' . $bananaBox . '</td>';
+                                            <td style="text-align: center;">' . $bananaBox . '</td>
+                                            <td>' . $itemsPerBox . '</td>';
                                         echo ' 
                                             <td><a href="viewModifyItemCategory.php?id=' . $category->getId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
                                         </tr>';

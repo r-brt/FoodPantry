@@ -136,6 +136,36 @@ function get_all_ItemCategory() {
     mysqli_close($con);
     return $categories;
 }
+
+/*
+ * Update an exisint item Category with a new name, bananaBox, and itemsPerBox
+ */
+function update_itemCategory($id, $name, $bananaBox, $itemsPerBox) {
+    $con=connect();
+    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
+    $result = mysqli_query($con,$query);
+    if ($result == null || mysqli_num_rows($result) == 0) {
+        mysqli_close($con);
+        return false;
+    }
+
+    $update_query = "UPDATE `dbItemCategory` SET 
+       `name` = '$name', 
+       `bananaBox` = '$bananaBox', 
+       `itemsPerBox` = '$itemsPerBox' 
+    where `id` = '$id' ";
+
+    // Perform the insert
+    if (mysqli_query($con, $update_query)) {
+        mysqli_close($con);
+        return true;
+    } else {
+        mysqli_close($con);
+        return false;
+    }   
+}
+
+
 /*
 add a user to a volunteer group
 */
