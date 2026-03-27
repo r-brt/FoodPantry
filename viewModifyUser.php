@@ -251,6 +251,25 @@
             color: var(--page-font-color);
             font-size: 0.9rem;
         }
+        .modify-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .modify-table-label {
+            padding: 0.75rem 1rem;
+            text-align: right;
+            color: var(--page-font-color);
+        }
+        .modify-table-input{
+            padding: 0.75rem 1rem;
+            text-align: left;
+            color: var(--page-font-color);
+        }
+        .modify-table th {
+            background-color: var(--main-color);
+            color: var(--button-font-color);
+            font-weight: 500;
+        }
         .modify-role-select {
             max-width: 300px;
             margin-right: 30%;
@@ -292,7 +311,8 @@
         }
         .modify-save-btn:hover,
         .modify-cancel-btn:hover,
-        .modify-activate-btn:hover {
+        .modify-activate-btn:hover,
+        .modify-deactivate-btn:hover {
             opacity: 0.85;
         }
         .modifyUsers-formBtns{
@@ -359,71 +379,88 @@
             <div class="report-section">
                 <h2>User: <?php echo $thePerson->get_id();?></h2>              
                 <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewModifyUser.php?id=<?php echo $thePerson->get_personId();?>">
-                    <div class="updateInv-allRows">
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="id">Username: </label>
-                            <input type="text" class="updateInv-qty" 
-                                value="<?php echo($thePerson->get_id())?>"
-                                name="id" 
-                                id="id">
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="fname">First Name: </label>
-                            <input type="text" class="updateInv-qty" 
-                                value="<?php echo($thePerson->get_first_name())?>"
-                                name="fname" 
-                                id="fname">
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="lname">Last Name: </label>
-                            <input type="text" class="updateInv-qty" 
-                                value="<?php echo($thePerson->get_last_name())?>"
-                                name="lname" 
-                                id="lname">
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="email">Email: </label>
-                            <input type="text" class="updateInv-qty" 
-                                value="<?php echo($thePerson->get_email())?>"
-                                name="email" 
-                                id="email">
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="role">Role: </label>
-                            <select name="role" class="modify-role-select" id="role" 
-                                <?php if ($thePerson->get_id() == $userID) echo("disabled");?>>
-                                <?php if ($accessLevel >= 3):?> 
-                                    <option value="Superadmin">Superadmin</option>
-                                <?php endif;?>
-                                <option value="Admin"
-                                    <?php if ($thePerson->get_type() == "Admin") echo("selected");?>
-                                    >Admin</option>
-                                <option value="Inventory_counter" 
-                                    <?php if ($thePerson->get_type() == "Inventory_counter") echo("selected");?>
-                                    >Inventory_counter</option>
-                            </select>
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label">Status: </label>
-                            <?php
-                                if($thePerson->get_status() == "Active"){
-                                    echo '
-                                        <label name="status_label" class="modify-status-label" style="color: green;font-weight: 500;">Active</label>
-                                    ';
-                                }
-                                else if($thePerson->get_status() == "Inactive"){
-                                    echo '
-                                        <label name="status_label" class="modify-status-label" style="color: red;font-weight: 500;">Inactive</label>
-                                    ';
-                                }
-                                else if($thePerson->get_status() == "Deleted"){
-                                    echo '
-                                        <label name="status_label" class="modify-status-label" style="color: black;font-weight: 500;">Deleted</label>
-                                    ';
-                                }
-                            ?>
-                        </div>
+                    <div class="updateInv-row">
+                        <table class="modify-table">
+                            <tbody>
+                                <tr>
+                                    <td class="modify-table-label"><label class="updateInv-label" for="id">Username: </label></td>
+                                    <td class="modify-table-input">
+                                        <input type="text" class="updateInv-qty" 
+                                            value="<?php echo($thePerson->get_id())?>"
+                                            name="id" 
+                                            id="id"
+                                            required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="modify-table-label"><label class="updateInv-label" for="fname">First Name: </label></td>
+                                    <td class="modify-table-input"><input type="text" class="updateInv-qty" 
+                                        value="<?php echo($thePerson->get_first_name())?>"
+                                        name="fname" 
+                                        id="fname"
+                                        required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="modify-table-label"><label class="updateInv-label" for="lname">Last Name: </label></td>
+                                    <td class="modify-table-input"><input type="text" class="updateInv-qty" 
+                                        value="<?php echo($thePerson->get_last_name())?>"
+                                        name="lname" 
+                                        id="lname"
+                                        required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="modify-table-label"><label class="updateInv-label" for="email">Email: </label></td>
+                                    <td class="modify-table-input"><input type="text" class="updateInv-qty" 
+                                        value="<?php echo($thePerson->get_email())?>"
+                                        name="email" 
+                                        id="email"
+                                        required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="modify-table-label"><label class="updateInv-label" for="role">Role: </label></td>
+                                    <td class="modify-table-input"><select name="role" class="modify-role-select" id="role" 
+                                            <?php if ($thePerson->get_id() == $userID) echo("disabled");?>>
+                                            <?php if ($accessLevel >= 3):?> 
+                                                <option value="Superadmin">Superadmin</option>
+                                            <?php endif;?>
+                                            <option value="Admin"
+                                                <?php if ($thePerson->get_type() == "Admin") echo("selected");?>
+                                                >Admin</option>
+                                            <option value="Inventory_counter" 
+                                                <?php if ($thePerson->get_type() == "Inventory_counter") echo("selected");?>
+                                                >Inventory_counter</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="modify-table-label"><label class="updateInv-label">Status: </label></td>
+                                    <td class="modify-table-input">
+                                        <?php
+                                            if($thePerson->get_status() == "Active"){
+                                                echo '
+                                                    <label name="status_label" class="modify-status-label" style="color: green;font-weight: 500;">Active</label>
+                                                ';
+                                            }
+                                            else if($thePerson->get_status() == "Inactive"){
+                                                echo '
+                                                    <label name="status_label" class="modify-status-label" style="color: red;font-weight: 500;">Inactive</label>
+                                                ';
+                                            }
+                                            else if($thePerson->get_status() == "Deleted"){
+                                                echo '
+                                                    <label name="status_label" class="modify-status-label" style="color: black;font-weight: 500;">Deleted</label>
+                                                ';
+                                            }
+                                        ?>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
+                    <div style="margin-bottom: 4rem;"></div>
                     <div class="modifyUsers-formBtns">
                         <button name="save_button" class="modify-save-btn">Save Changes</button>
                         <button name="cancel_button" class="modify-cancel-btn">Cancel</button>
