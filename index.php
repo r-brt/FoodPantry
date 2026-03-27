@@ -495,6 +495,14 @@
         <div class="large-text-sub" style="color:white;">Add User</div>
         <div class="graph-text" style="color:white;">Add user and set permissions.</div>
     </div>
+    <div class="content-box-test" onclick="window.location.href='viewItemCategories.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/list-solid.svg" alt="Categories Icon">
+        </div>
+        
+        <div class="large-text-sub" style="color:white;">Manage Item Categories</div>
+        <div class="graph-text" style="color:white;">Add, edit, and delete item categories.</div>
+    </div>
             </div>
 <!--
         <div class="nav-buttons">

@@ -799,6 +799,8 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['viewupdateinventory.php'] = 1;
         $permission_array['viewauditusers.php'] = 2;
         $permission_array['viewmodifyuser.php'] = 2;
+        $permission_array['viewitemcategories.php'] = 1;
+        $permission_array['viewmodifyitemcategory.php'] = 1;
         // LOWERCASE
 
 
@@ -850,6 +852,12 @@ if (date("H:i:s") > "18:19:59") {
                 <div class="in-nav">
                     <img src="images/user_group_icon.svg" alt="User Icon">
                     <span>Add User</span>
+                </div>
+                </a>');
+                echo('<a href="viewItemCategories.php" style="text-decoration: none;">
+                <div class="in-nav">
+                    <img src="images/list-solid.svg" alt="User Icon">
+                    <span>Manage Item Categories</span>
                 </div>
                 </a>');
             }
