@@ -357,7 +357,7 @@
                     </div>
                     <div class="modifyUsers-formBtns">
                         <button name="create_button" class="modify-save-btn">Create</button>
-                        <button name="cancel_button" class="modify-cancel-btn">Cancel</button>
+                        <button name="cancel_button" formnovalidate>Cancel</button>
                         <hr>
                         <hr>
                     </div>
