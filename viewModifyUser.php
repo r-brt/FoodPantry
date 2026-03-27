@@ -323,6 +323,7 @@
         .modify-save-btn:hover,
         .modify-cancel-btn:hover,
         .modify-activate-btn:hover,
+        .modify-deactivate-btn:hover,
         .generate-btn:hover {
             opacity: 0.85;
         }
