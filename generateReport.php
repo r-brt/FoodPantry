@@ -14,6 +14,7 @@ if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 1) {
 // Get current fiscal year
 $currentMonth = date("m");
 $currentYear = date("Y");
+$fiscalYearStart = ($currentMonth >= 10) ? $currentYear : $currentYear -1;
 $fiscalYearEnd = $fiscalYearStart + 1;
 ?>
 
