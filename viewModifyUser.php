@@ -117,23 +117,34 @@
     <title>Modify User | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        .title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--secondary-accent-color);
+        }
         .report-container {
             max-width: 1100px;
             margin: 0 auto 4rem auto;
             padding: 1rem;
         }
         .report-section {
-            background-color: rgba(0,0,0,0.15);
-            border: 1px solid var(--shadow-and-border-color);
+            background-color: white;
+            /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+        }
+        .report-section h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--secondary-accent-color);
         }
         .report-section h2 {
             font-size: 1.5rem;
             font-weight: 500;
             margin-bottom: 1rem;
-            color: var(--accent-color);
+            color: var(--secondary-accent-color);
         }
         .report-table {
             width: 100%;
@@ -292,7 +303,8 @@
         }
         .modify-save-btn:hover,
         .modify-cancel-btn:hover,
-        .modify-activate-btn:hover {
+        .modify-activate-btn:hover,
+        .generate-btn:hover {
             opacity: 0.85;
         }
         .modifyUsers-formBtns{
@@ -340,7 +352,7 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 style="color:black;">Modify User</h1>
+            <h1 class="title">Modify User</h1>
             <?php 
                 /* Display success message after submitting inventory */
                 if($submit_success == true){
