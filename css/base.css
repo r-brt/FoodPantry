@@ -69,9 +69,9 @@ table, td, tr, th, form, fieldset, em, button, a {
 
     --main-color: #2A435A; 
 
-    --accent-color: rgb(201, 171, 129);
+    --accent-color: #F6C445;
  
-    --secondary-accent-color: rgb(175, 141, 92);
+    --secondary-accent-color: #00395E;
 
     /* Accessibility / WV theme variables */
 --wv-accent-color: #111111; /* black */
@@ -360,7 +360,7 @@ input[type="submit"].disabled-btn {
 } */
 
 label {
-    color: var(--accent-color);
+    color: var(--secondary-accent-color);
     font-weight: 600;
     width: 100%;
     text-align: left;
@@ -398,7 +398,7 @@ h1 {
     margin-bottom: 2rem;
 
     background-color: var(#4d98f3);
-    color: var(--page-background-color);
+    color: var(--secondary-accent-color);
     width: 100%;
     text-align: center;
     padding: 1rem;

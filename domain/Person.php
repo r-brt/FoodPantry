@@ -71,9 +71,9 @@ class Person {
 	}
 
 	function get_access_level() {
-		if ($this->type == 'superadmin') {
+		if (strtolower($this->type) == 'superadmin') {
     		$access = 3;
-		} else if ($this->id == 'admin') {
+		} else if (strtolower($this->type) == 'admin') {
     		$access = 2;
 		} else {
     		$access = 1;

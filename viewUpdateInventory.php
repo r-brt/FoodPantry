@@ -62,14 +62,25 @@
                         $updatedItems = array();
                         break;
                     }
-                    /* do not add items that have 0 quantity */
-                    else if($value > 0){
+                    /* accept items with 0 or greater quantity */
+                    else if($value >= 0){
                         $updatedItems[$name] = $value;
                     }
                 }
             }
         }
-        
+
+        /* auto-fill missing items with 0 for complete analytics data */
+        if(empty($errors)){
+            $allCategories = get_all_ItemCategory();
+            foreach($allCategories as $category){
+                $categoryId = $category->getId();
+                if(!isset($updatedItems[$categoryId])){
+                    $updatedItems[$categoryId] = 0;
+                }
+            }
+        }
+
         /* if at least 1 item was updated, create inventory event and add items to database */
         if(count($updatedItems) > 0){
             $personId = retrieve_person($userID)->get_personId();
@@ -120,23 +131,34 @@
     <title>Update Inventory | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        .title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--secondary-accent-color); 
+        }
         .report-container {
             max-width: 1100px;
             margin: 0 auto 4rem auto;
             padding: 1rem;
         }
         .report-section {
-            background-color: rgba(0,0,0,0.15);
-            border: 1px solid var(--shadow-and-border-color);
+            background-color: white;
+            /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+        }
+        .report-section h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--secondary-accent-color);
         }
         .report-section h2 {
             font-size: 1.5rem;
             font-weight: 500;
             margin-bottom: 1rem;
-            color: var(--accent-color);
+            color: var(--secondary-accent-color);
         }
         .report-table {
             width: 100%;
@@ -305,7 +327,7 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 style="color:black;">Update Inventory</h1>
+            <h1 class="title">Update Inventory</h1>
             <?php 
                 /* Display success message after submitting inventory */
                 if($submit_success == true){
