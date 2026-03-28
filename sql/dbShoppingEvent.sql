@@ -43,7 +43,7 @@ INSERT INTO `dbshoppingevent` (`id`, `personId`, `familySize`, `date`) VALUES
 (1001, '3', '1-3', '2026-01-20'),
 (1002, '3', '1-3-IH', '2026-01-20'),
 (1003, '2', '4+', '2026-02-04'),
-(1004, '2', '4+-IH', '2026-02-04');
+(1004, '2', '4+-IH', '2026-02-04'),
 (1005, '2', '8+-IH', '2026-02-04');
 
 --
@@ -53,7 +53,7 @@ INSERT INTO `dbshoppingevent` (`id`, `personId`, `familySize`, `date`) VALUES
 --
 -- Indexes for table `dbshoppingevent`
 --
-ALTER TABLE `dbshoppingyevent`
+ALTER TABLE `dbshoppingevent`
   ADD PRIMARY KEY (`id`);
 
 --

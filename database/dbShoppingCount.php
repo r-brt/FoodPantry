@@ -4,12 +4,12 @@ include_once('dbinfo.php');
 include_once(dirname(__FILE__).'/../domain/ShoppingCount.php');
 
 /*
- * add an ShoppingCount to dbShoppingCount table: return id generated from sql autoincrement
+ * add an ShoppingCount to dbshoppingcounts table: return id generated from sql autoincrement
  */
 
 function add_shoppingCount($shoppingEventId, $itemCategoryId, $quantity) {
     $con=connect();
-    mysqli_query($con,'INSERT INTO dbshoppingcount (shoppingEventId, itemCategoryId, quantity) VALUES("' .
+    mysqli_query($con,'INSERT INTO dbshoppingcounts (shoppingEventId, itemCategoryId, quantity) VALUES("' .
             $shoppingEventId . '","' . 
             $itemCategoryId . '","' . 
             $quantity . '");');							
@@ -20,18 +20,18 @@ function add_shoppingCount($shoppingEventId, $itemCategoryId, $quantity) {
 }
 
 /*
- * remove an ShoppingCount from dbshoppingcount table: if it does not exist, return false
+ * remove an ShoppingCount from dbshoppingcounts table: if it does not exist, return false
  */
 
 function delete_shoppingCount($id){
     $con=connect();
-    $query = 'SELECT * FROM dbshoppingcount WHERE id = "' . $id . '"';
+    $query = 'SELECT * FROM dbshoppingcounts WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
-    $query = 'DELETE FROM dbshoppingcount WHERE id = "' . $id . '"';
+    $query = 'DELETE FROM dbshoppingcounts WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
 
     mysqli_close($con);
@@ -39,12 +39,12 @@ function delete_shoppingCount($id){
 }
 
 /*
- * get ShoppingCount from dbshoppingcount table with given shoppingEventId: return null if not found.
+ * get ShoppingCount from dbshoppingcounts table with given shoppingEventId: return null if not found.
  */
 
 function get_shoppingCount_by_id($id){
     $con=connect();
-    $query = 'SELECT * FROM dbshoppingcount WHERE id = "' . $id . '"';
+    $query = 'SELECT * FROM dbshoppingcounts WHERE id = "' . $id . '"';
     $sql_result = mysqli_query($con,$query);
     if ($sql_result == null || mysqli_num_rows($sql_result) == 0) {
         mysqli_close($con);
@@ -57,12 +57,12 @@ function get_shoppingCount_by_id($id){
 }
 
 /*
- * get all ShoppingCounts from dbshoppingcount table that have a given shoppingEventId
+ * get all ShoppingCounts from dbshoppingcounts table that have a given shoppingEventId
  */
 
 function get_shoppingCounts_by_shoppingEvent($shoppingEventId){
     $con=connect();
-    $query = 'SELECT * FROM dbshoppingcount WHERE shoppingEventId = "' . $shoppingEventId . '"';
+    $query = 'SELECT * FROM dbshoppingcounts WHERE shoppingEventId = "' . $shoppingEventId . '"';
     $sql_result = mysqli_query($con,$query);
     $array_result = mysqli_fetch_all($sql_result, MYSQLI_ASSOC);
     $shoppingCount_array = array();
@@ -74,12 +74,12 @@ function get_shoppingCounts_by_shoppingEvent($shoppingEventId){
 }
 
 /*
- * get all ShoppingCounts from dbshoppingcount table that have a given itemCategoryId
+ * get all ShoppingCounts from dbshoppingcounts table that have a given itemCategoryId
  */
 
 function get_shoppingCounts_by_itemCategory($itemCategoryId){
     $con=connect();
-    $query = 'SELECT * FROM dbshoppingcount WHERE itemCategoryId = "' . $itemCategoryId . '"';
+    $query = 'SELECT * FROM dbshoppingcounts WHERE itemCategoryId = "' . $itemCategoryId . '"';
     $sql_result = mysqli_query($con,$query);
     $array_result = mysqli_fetch_all($sql_result, MYSQLI_ASSOC);
     $shoppingCount_array = array();
@@ -91,18 +91,18 @@ function get_shoppingCounts_by_itemCategory($itemCategoryId){
 }
 
 /*
- * change the quantity for an ShoppingCount from dbshoppingcount table: if it does not exist, return false
+ * change the quantity for an ShoppingCount from dbshoppingcounts table: if it does not exist, return false
  */
 
 function update_quantity($id, $quantity){
     $con=connect();
-    $query = 'SELECT * FROM dbshoppingcount WHERE id = "' . $id . '"';
+    $query = 'SELECT * FROM dbshoppingcounts WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
-    $query = 'UPDATE dbshoppingcount SET quantity = "' . $quantity . '" WHERE id = "' . $id . '"';
+    $query = 'UPDATE dbshoppingcounts SET quantity = "' . $quantity . '" WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
 
     mysqli_close($con);
@@ -120,7 +120,7 @@ function get_most_recent_counts_up_to_event($maxEventId){
     $dateRow = mysqli_fetch_assoc($dateResult);
     $maxDate = $dateRow['date'];
 
-    $query = 'SELECT dic.* FROM dbshoppingcount dic
+    $query = 'SELECT dic.* FROM dbshoppingcounts dic
               INNER JOIN dbshoppingevent die ON dic.shoppingEventId = die.id
               WHERE die.date <= "' . $maxDate . '"
               ORDER BY dic.itemCategoryId, die.date DESC, dic.shoppingEventId DESC';
