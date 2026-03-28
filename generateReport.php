@@ -16,6 +16,67 @@ $currentMonth = date("m");
 $currentYear = date("Y");
 $fiscalYearStart = ($currentMonth >= 10) ? $currentYear : $currentYear -1;
 $fiscalYearEnd = $fiscalYearStart + 1;
+
+// Database connection and data fetching
+require_once('database/dbinfo.php');
+$conn = connect();
+
+// Fetch inventory events with dates and locations
+$eventResult = $conn->query("
+    SELECT DISTINCT ie.date, ie.location
+    FROM dbinventoryevent ie
+    ORDER BY ie.date DESC, ie.location ASC
+");
+$events = [];
+if ($eventResult) {
+    while ($row = $eventResult->fetch_assoc()) {
+        $events[] = $row;
+    }
+}
+
+// Fetch food categories
+$categoryResult = $conn->query("
+    SELECT id, name
+    FROM dbItemCategory
+    WHERE status = 'Active'
+    ORDER BY name ASC
+");
+$categories = [];
+if ($categoryResult) {
+    while ($row = $categoryResult->fetch_assoc()) {
+        $categories[] = $row;
+    }
+}
+
+// Get selected category for trend view
+$selectedCategory = isset($_GET['category']) ? intval($_GET['category']) : (count($categories) > 0 ? $categories[0]['id'] : null);
+
+// Fetch trend data for selected category (consolidated by date across locations)
+$trendData = [];
+if ($selectedCategory) {
+    $sql = "
+        SELECT 
+            DATE(ie.date) as eventDate,
+            dic.name as itemName,
+            dic.itemsPerBox,
+            COALESCE(SUM(dbic.quantity), 0) as total_boxes
+        FROM dbinventoryevent ie
+        LEFT JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
+        LEFT JOIN dbItemCategory dic ON dbic.itemCategoryId = dic.id
+        WHERE dic.id = ?
+        GROUP BY DATE(ie.date), dic.name, dic.itemsPerBox
+        ORDER BY DATE(ie.date) ASC
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $selectedCategory);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $trendData[] = $row;
+    }
+    $stmt->close();
+}
 ?>
 
 <!DOCTYPE html>
@@ -201,6 +262,58 @@ $fiscalYearEnd = $fiscalYearStart + 1;
         .generate-btn:hover {
             opacity: 0.85;
         }
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+        .form-section label {
+            display: block;
+            color: var(--page-font-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .form-section select {
+            width: 100%;
+            max-width: 300px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+        }
+        .form-section select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .category-trend-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .change-percentage {
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            min-width: 80px;
+            text-align: center;
+        }
+        .change-positive {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        .change-negative {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        .change-neutral {
+            background-color: rgba(156, 163, 175, 0.2);
+            color: var(--page-font-color);
+        }
+        .row-number {
+            text-align: center;
+            color: var(--inactive-font-color);
+            font-weight: 500;
+            width: 50px;
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -217,72 +330,128 @@ $fiscalYearEnd = $fiscalYearStart + 1;
     </style>
 </head>
 <body>
-    <?php require_once('database/dbInventoryEvent.php');?>
-    <?php require_once('database/dbPersons.php');?>
-
     <!-- Hero Section with Title -->
         <div class="center-header">
             <h1 class="title">Inventory Analytics</h1>
         </div>
-                <!-- Info Section -->
-        <!-- <section class="section-box">
-            <p style="margin-top: 1rem;text-align:center;">
-                Use this tool to generate weekly reports on food inventory.
-            </p>
-        </section> -->
 
     <main>
-        <?php require_once('database/dbInventoryEvent.php')?>
+        <div class="report-container">
+            
+            <!-- Export Section -->
+            <div class="report-section">
+                <h2>Export Inventory to Spreadsheet</h2>
+                
+                <form method="POST" action="processInventoryReport.php">
+                    <div class="form-section">
+                        <label for="weekSelect">Select Week to Export</label>
+                        <select name="week" id="weekSelect" required>
+                            <option value="">-- Select Week --</option>
+                            <?php 
+                                $uniqueDates = [];
+                                foreach ($events as $event) {
+                                    if (!in_array($event['date'], $uniqueDates)) {
+                                        $uniqueDates[] = $event['date'];
+                                    }
+                                }
+                                foreach ($uniqueDates as $date): ?>
+                                <option value="<?= htmlspecialchars($date) ?>">
+                                    <?= htmlspecialchars($date) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-        <div class="main-content-box">
-            <!--<div class="text-center">
-                <p style="font-size: 18px; color: #c2c2c2ff; margin-top: 0.5rem; margin-bottom: 0.5rem;">Fiscal Year: <?= $fiscalYearStart ?> - <?= $fiscalYearEnd ?></p>
-            </div>-->
+                    <div class="form-section">
+                        <label for="locationSelect">Location</label>
+                        <select name="location" id="locationSelect" required>
+                            <option value="">-- Select Location --</option>
+                            <option value="Warehouse">Warehouse</option>
+                            <option value="Pantry">Pantry</option>
+                        </select>
+                    </div>
 
-            <form method="POST" action="processInventoryReport.php">
-                <!-- Date Range -->
-                <div style="margin-bottom: 1.5rem;">
-                    <label for="week" style="font-weight: 600;">Select Week</label>
-                    <input name="week" id="week" required>
-                    <option value="">-- Select Week --</option>
-                    <?php
-                    require_once('database/dbinfo.php');
-                    $conn = connect();
+                    <div class="form-section">
+                        <label for="format">File Format</label>
+                        <select name="format" id="format">
+                            <option value="excel">Excel (.xls)</option>
+                            <option value="csv">CSV (.csv)</option>
+                        </select>
+                    </div>
 
-                    $result = $conn->query("
-                        SELECT DISTINCT inventoryEventId
-                        FROM dbitemcounts
-                        ORDER BY inventoryEventId DESC
-                    ");
+                    <div style="margin-top: 2rem;">
+                        <input type="hidden" value="<?php echo $_SESSION['_id']; ?>" name="admin" id="admin">
+                        <input type="hidden" value="<?php echo date("d-M-Y H:i:s e") ?>" name="time" id="time">
+                        <button type="submit" name="generate_button" class="generate-btn">Export to Spreadsheet</button>
+                    </div>
+                </form>
+            </div>
 
-                    while ($row = $result->fetch_assoc()) {
-                        $week = htmlspecialchars($row['inventoryEventId']);
-                        echo "<option value='$week'>$week</option>";
-                    }
-                        ?>
+            <!-- Category Trend Section -->
+            <div class="report-section">
+                <h2>Food Item Trends</h2>
+                
+                <div class="form-section">
+                    <label for="categorySelect">Select Food Item Category</label>
+                    <select id="categorySelect" onchange="window.location.href='?category=' + this.value">
+                        <?php foreach ($categories as $category): ?>
+                            <option value="<?= htmlspecialchars($category['id']) ?>" <?= ($category['id'] == $selectedCategory) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($category['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
-                <!-- Format -->
-                <div style="margin-bottom: 1.5rem; margin-top: 1.5rem;">
-                    <label for="format" style="font-weight: 600;">File Format</label>
-                    <select name="format" id="format">
-                        <option value="excel">Excel (.xls)</option>
-                        <option value="csv">CSV (.csv)</option>
-                    </select>
-                </div>
 
-                <div style="text-align: center; margin-top: 2rem;">
-                    <input type="hidden" value="<?php echo $_SESSION['_id']; ?>" name="admin" id="admin">
-                    <input type="hidden" value="<?php echo date("d-M-Y H:i:s e") ?>" name="time" id="time">
-                    <button name="generate_button" class="generate-btn">View Analytics</button>
+                <div class="table-wrapper">
+                    <table class="report-table" id="trendTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Date</th>
+                                <th>Total Boxes</th>
+                                <th>Total Items</th>
+                                <th>Change</th>
+                                <th>% Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (count($trendData) > 0): ?>
+                                <?php foreach ($trendData as $index => $row): ?>
+                                    <?php
+                                        $previousBoxes = ($index > 0) ? $trendData[$index - 1]['total_boxes'] : null;
+                                        $currentBoxes = $row['total_boxes'];
+                                        $changeBoxes = ($previousBoxes !== null) ? ($currentBoxes - $previousBoxes) : 0;
+                                        $percentChange = ($previousBoxes !== null && $previousBoxes > 0) ? (($changeBoxes / $previousBoxes) * 100) : 0;
+                                        $totalItems = $currentBoxes * $row['itemsPerBox'];
+                                    ?>
+                                    <tr>
+                                        <td class="row-number"><?= $index + 1 ?></td>
+                                        <td><?= htmlspecialchars($row['eventDate']) ?></td>
+                                        <td><?= htmlspecialchars($currentBoxes) ?></td>
+                                        <td><?= htmlspecialchars($totalItems) ?></td>
+                                        <td><?= ($previousBoxes !== null) ? ($changeBoxes >= 0 ? '+' : '') . htmlspecialchars($changeBoxes) : '—' ?></td>
+                                        <td>
+                                            <?php if ($previousBoxes !== null): ?>
+                                                <span class="change-percentage <?= $changeBoxes > 0 ? 'change-positive' : ($changeBoxes < 0 ? 'change-negative' : 'change-neutral') ?>">
+                                                    <?= ($changeBoxes >= 0 ? '+' : '') . number_format($percentChange, 1) ?>%
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="change-percentage change-neutral">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="6" class="empty-state">No data available for this category.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
-            </form>
+            </div>
 
-        <!-- Return Button -->
-        <!-- </div>
-        <div style="text-align: center; margin-top: 2rem;">
-            <a href="index.php" class="button" style="display: inline-block; text-decoration: none; width: 41%;">Return to Dashboard</a>
-        </div> -->
+        </div>
 
     </main>
 

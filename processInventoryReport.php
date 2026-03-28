@@ -22,7 +22,8 @@ require_once('database/dbinfo.php');
 // }
 
 // Get user input
-$selectedWeek = $_POST['week'] ?? '';
+$selectedWeekDate = $_POST['week'] ?? '';
+$selectedLocation = $_POST['location'] ?? '';
 
 // $reportType = $_POST['reportType'] ?? 'monthly';
 // $month = $_POST['month'] ?? '';
@@ -31,6 +32,28 @@ $format = $_POST['format'] ?? 'csv';
 // Fetch Data
 
 $con = connect();
+
+// First, find the inventory event ID that matches the date and location
+$eventSql = "
+    SELECT id 
+    FROM dbinventoryevent 
+    WHERE DATE(date) = ? AND location = ?
+";
+
+$eventStmt = $con->prepare($eventSql);
+$eventStmt->bind_param("ss", $selectedWeekDate, $selectedLocation);
+$eventStmt->execute();
+$eventResult = $eventStmt->get_result();
+
+if ($eventResult->num_rows === 0) {
+    // No matching event found
+    echo "No inventory event found for the selected date and location.";
+    exit();
+}
+
+$eventRow = $eventResult->fetch_assoc();
+$selectedWeek = $eventRow['id'];
+$eventStmt->close();
 
 $sql = "
     SELECT
@@ -68,7 +91,7 @@ if ($format === 'csv') {
     fputcsv($output, ["Inventory Report"]);
 
     // Column Headers
-    fputcsv($output, ["Item Name", "Boxes", "Items Per Box", "Total Count", "Week"]);
+    fputcsv($output, ["Item Name", "Boxes", "Items Per Box", "Total Count"]);
 
     // Data
     foreach ($reportData as $row) {
@@ -76,8 +99,7 @@ if ($format === 'csv') {
             $row["item_name"],
             $row["boxes"],
             $row["itemsPerBox"],
-            $row["total_count"],
-            $row["inventoryEventId"]
+            $row["total_count"]
         ]);
     }
     fclose($output);
@@ -95,7 +117,7 @@ echo "<html><head><meta charset='UTF-8'></head><body>";
 echo "<table border='1' style='border-collapse: collapse; font-family: Arial, sans-serif; text-align: center;'>";
 
 // Report Title
-echo "<tr><th colspan='4' >Inventory Report - Week {$selectedWeek}</th></tr>";
+echo "<tr><th colspan='4' >Inventory Report</th></tr>";
 
 // Column Headers
 echo "<tr>
@@ -103,7 +125,6 @@ echo "<tr>
         <th style='background-color: #AA4499; padding: 5px;'>Boxes</th>
         <th style='background-color: #DDCC77; padding: 5px;'>Items Per Box</th>
         <th style='background-color: #88CCEE; padding: 5px;'>Total Count</th>
-        <th style='background-color: #88CCEE; padding: 5px;'>Week</th>
         </tr>";
 
 // Data Rows
@@ -113,7 +134,6 @@ foreach ($reportData as $row) {
             <td style='padding: 5px;'>{$row["boxes"]}</td>
             <td style='padding: 5px;'>{$row["itemsPerBox"]}</td>
             <td style='padding: 5px;'>{$row["total_count"]}</td>
-            <td style='padding: 5px;'>{$row["inventoryEventId"]}</td>
             </tr>";
 }
 
