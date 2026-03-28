@@ -94,7 +94,7 @@ function get_shoppingCounts_by_itemCategory($itemCategoryId){
  * change the quantity for an ShoppingCount from dbshoppingcounts table: if it does not exist, return false
  */
 
-function update_quantity($id, $quantity){
+function update_shoppingCount_quantity($id, $quantity){
     $con=connect();
     $query = 'SELECT * FROM dbshoppingcounts WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
@@ -113,7 +113,7 @@ function update_quantity($id, $quantity){
  * get most recent ShoppingCount for each category where shoppingEventId <= given maxEventId
  */
 
-function get_most_recent_counts_up_to_event($maxEventId){
+function get_most_recent_shoppingCounts_up_to_event($maxEventId){
     $con=connect();
     $dateQuery = 'SELECT date FROM dbshoppingevent WHERE id = "' . $maxEventId . '"';
     $dateResult = mysqli_query($con, $dateQuery);
