@@ -450,7 +450,7 @@
                         <hr>
                         <button name="delete_button" name="delete_button" class="modify-delete-btn" 
                             onclick="return confirm('Are you sure you want to\nDELETE Category: <?php echo $theCategory->getName();?>?')"
-                            >Delete User
+                            >Delete Category
                         </button>
                     </div>
                 </form>
