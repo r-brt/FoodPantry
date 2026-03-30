@@ -15,6 +15,7 @@
         header('Location: index.php');
         die();
     }
+
     $badLogin = false;
     $archivedAccount = false;
 
@@ -26,40 +27,43 @@
         if (wereRequiredFieldsSubmitted($args, $required)) {
             require_once('domain/Person.php');
             require_once('database/dbPersons.php');
-            /*@require_once('database/dbMessages.php');*/
-            /*@dateChecker();*/
+
             $username = strtolower($args['username']);
             $password = $args['password'];
             $user = retrieve_person($username);
+
+            /*var_dump($user->get_access_level());
+            var_dump($user->get_type());
+            die();*/
+
             if (!$user) {
                 $badLogin = true;
-            } /*else if ($user->get_status() === "Inactive") {
+            } else if ($user->get_status() === "Inactive") {
                 // If the user is archived, block login
                 $archivedAccount = true;
-            }*/ else if (password_verify($password, $user->get_password())) {
+            } else if (password_verify($password, $user->get_password())) {
                 $_SESSION['logged_in'] = true;
-
                 $_SESSION['access_level'] = $user->get_access_level();
+                $role = $user->get_type();
+                /*$roleMap = [
+                    "superadmin" => 3,
+                    "admin" => 2,
+                    "inventory_counter" => 1
+                ];
+                $_SESSION['access_level'] = $roleMap[$role] ?? 1;*/
                 $_SESSION['f_name'] = $user->get_first_name();
                 $_SESSION['l_name'] = $user->get_last_name();
 
                 
-                $_SESSION['type'] = 'admin';
+                $_SESSION['type'] = $user->get_type();
                 $_SESSION['_id'] = $user->get_id();
                 
                  //hard code root privileges
                  if ($user->get_id() == 'vmsroot') {
                     $_SESSION['access_level'] = 3;
-		    $_SESSION['locked'] = false;
+		            $_SESSION['locked'] = false;
                     header('Location: index.php');
                }
-            
-                //if ($changePassword) {
-                //    $_SESSION['access_level'] = 0;
-                //    $_SESSION['change-password'] = true;
-                //    header('Location: changePassword.php');
-                //    die();
-                //} 
                 else {
                     header('Location: index.php');
                     die();
@@ -154,7 +158,7 @@
           <a href="#" class="text-[#22654D] text-sm hover:underline">Forgot password?</a>
           <!--<a href="https://whiskeyvalor.org" class="text-[#22654D] text-sm hover:underline">Whiskey Valor Website</a> -->
         </div>
-        <button class="cursor-pointer w-full bg-[#C9AB81] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition duration-300">Login</button>
+        <button class="cursor-pointer w-full bg-[#F6C445] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition duration-300">Login</button>
       </form>
 
       <!-- Divider -->

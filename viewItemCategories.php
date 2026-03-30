@@ -19,7 +19,7 @@
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>Audit Users | CCDA</title>
+    <title>View Item Categories | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .title {
@@ -172,75 +172,51 @@
     <?php require_once('header.php'); ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Audit Users</h1>
+            <h1 class="title">Item Categories</h1>
             
             <?php 
-                require_once('database/dbPersons.php');
-                /* display table of accounts with a given status (Active/Inactive/Deleted) */
+                require_once('database/dbItemCategory.php');
+                /* display table of Item Categories with a given status (Active/Inactive/Deleted) */
                 $display_accounts_by_status = function($status, $accessLevel){
                     echo '
                     <div class="report-section">
-                        <h2>'.$status.' User Accounts</h2>
+                        <h2>'.$status.' Item Categories</h2>
                         <div class="table-wrapper">
                             <table class="report-table">
                                 <thead>
                                     <tr>
-                                        <th>Username</th>
-                                        <th>First</th>
-                                        <th>Last</th>
-                                        <th>Email</th>
-                                        <th>Role</th>
+                                        <th>Name</th>
+                                        <th>Banana Box</th>
+                                        <th>Items Per Box</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody> ';
-
                             
                                 $num_active = 0;
-                                $persons = getall_persons();
-                                foreach ($persons as $person) {
-                                    if($person->get_status() == $status && $person->get_access_level() <= $accessLevel){
+                                $categories = get_all_ItemCategory();
+                                foreach ($categories as $category) {
+                                    if($category->getStatus() == $status){
                                         $num_active += 1;
 
-                                        $username = $person->get_id();
-                                        if (strlen($username) > 20)
-                                            $username = substr($username, 0, 17) . '...';
-
-                                        $first = $person->get_first_name();
-                                        if (strlen($first) > 20)
-                                            $first = substr($first, 0, 17) . '...';
-                                        else if (empty($first))
-                                            $first = "  -  ";
-
-                                        $last = $person->get_last_name();
-                                        if (strlen($last) > 20)
-                                            $last = substr($last, 0, 17) . '...';
-                                        else if (empty($last))
-                                            $last = "  -  ";
-
-                                        $email = $person->get_email();
-                                        if (strlen($email) > 20)
-                                            $email = substr($email, 0, 17) . '...';
+                                        $name = $category->getName();
+                                        $itemsPerBox = $category->getItemsPerBox();
+                                        $bananaBox = $category->getBananaBox() == 1 ? "✓" : "";
 
                                         echo '
                                         <tr>
-                                            <td>' . $username . '</td>
-                                            <td>' . $first . '</td>
-                                            <td>' . $last . '</td>';
-                                        if(empty($email))
-                                            echo '<td>  -  </td>';
-                                        else
-                                            echo '<td><a href="mailto:' . $person->get_email() . '" class="text-blue-700 underline">' . $email . '</a></td>';
+                                            <td>' . $name . '</td>
+                                            <td style="text-align: center;">' . $bananaBox . '</td>
+                                            <td>' . $itemsPerBox . '</td>';
                                         echo ' 
-                                            <td>' . ucfirst($person->get_type()) . '</td>
-                                            <td><a href="viewModifyUser.php?id=' . $person->get_personId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
+                                            <td><a href="viewModifyItemCategory.php?id=' . $category->getId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
                                         </tr>';
                                     }
                                 }
                                 if($num_active == 0){
                                     echo '
                                     <tr>
-                                        <td colspan="7" class="empty-state">No '.$status.' Accounts</td>
+                                        <td colspan="7" class="empty-state">No '.$status.' Categories</td>
                                     </tr>';
                                 }
 

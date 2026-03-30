@@ -27,20 +27,14 @@
     }
     
     require_once('include/input-validation.php');
-    require_once('database/dbPersons.php');
+    require_once('database/dbItemCategory.php');
 
-    // Does the person exist?
-    $thePerson = retrieve_person_by_personId($_GET['id']);
-    if (!$thePerson) {
+    // Does the category exist?
+    $theCategory = retrieve_ItemCategory($_GET['id']);
+    if (!$theCategory) {
         echo "That user does not exist";
         die();
     }
-    
-    // Is user authorized to view this page?
-    if ($accessLevel < 2) {
-        header('Location: index.php');
-        die();
-    }    
 
     /* 
     * _POST is empty when the page is first loaded.
@@ -51,54 +45,66 @@
     $errors = [];
     if (!empty($_POST)) {
         if(isset($_POST["cancel_button"])){
-            header('Location: viewAuditUsers.php');
+            header('Location: viewItemCategories.php');
             die();
         }
         else if(isset($_POST["deactivate_button"])){
-            if($thePerson->get_Id() == $userID){
-                $errors[] = "Unable to Deactivate your own account while in use";
-            }
-            else{
-                deactivate_person($thePerson->get_personId());
-                header('Location: viewAuditUsers.php');
+                deactivate_itemCategory($theCategory->getId());
+                header('Location: viewItemCategories.php');
                 die();
-            }
-            
         }
         else if(isset($_POST["activate_button"])){
-            activate_person($thePerson->get_personId());
-            header('Location: viewAuditUsers.php');
+            activate_itemCategory($theCategory->getId());
+            header('Location: viewItemCategories.php');
             die();
         }
         else if(isset($_POST["delete_button"])){
-            if($thePerson->get_Id() == $userID){
-                $errors[] = "Unable to Delete your own account while in use";
-            }
-            else{
-                delete_person($thePerson->get_personId());
-                header('Location: viewAuditUsers.php');
-                die();
-            }
-            
+            delete_itemCategory($theCategory->getId());
+            header('Location: viewItemCategories.php');
+            die();          
         }
         else if(isset($_POST["save_button"])){
-            $id = $_POST["id"];
-            $first_name = $_POST["fname"];
-            $last_name = $_POST["lname"];
-            $email = $_POST["email"];
-            $type = $_POST["role"];
-            if($thePerson->get_id() != $id && retrieve_person($_POST["id"])){
-                $errors[] = "Username already exists";
+            /* check that Name is set */
+            if(isset($_POST["name"])){
+                $name = $_POST["name"];
+                if($theCategory->getName() != $name && retrieve_ItemCategory_by_name($name)){
+                    $errors[] = "Category name already exists";
+                }
             }
-            if(!validateEmail($email) && !empty($email)){
-                $errors[] = "Invalid email";
+            else{
+                $errors[] = 'Name is required';
             }
-            if($accessLevel < 3 && $type == "Superadmin"){
-                $errors[] = "Unable to change role";
+            if(isset($_POST["bananaBox"]))
+                $bananaBox = 1;
+            else
+                $bananaBox = 0;
+
+            /* check that Items Per Box is set */
+            if(isset($_POST["itemsPerBox"])){
+
+                /* try to convert items per box to a number. If it cannot convert, leave it as a string */
+                try{
+                    $itemsPerBox = +$_POST["itemsPerBox"];
+                }
+                catch(TypeError  $e){ 
+                    $itemsPerBox = " ";
+                }
+
+                /* check for errors */
+                if(!is_int($itemsPerBox)){
+                    $errors[] = 'Items Per Box must be in whole numbers';
+                }
+                else if($itemsPerBox <= 0){
+                    $errors[] = 'Items Per Box must be greater than 0';
+                }
             }
+            else{
+                $errors[] = 'Items Per Box must be a whole number greater than 0';
+            }
+            
             if(empty($errors)){
-                if(update_person_by_personId($thePerson->get_personId(), $id, $first_name, $last_name, $email, $type)){
-                    header('Location: viewAuditUsers.php');
+                if(update_itemCategory($theCategory->getId(), $name, $bananaBox, $itemsPerBox)){
+                    header('Location: viewItemCategories.php');
                     die();
                 }
                 else{
@@ -114,7 +120,7 @@
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>Modify User | CCDA</title>
+    <title>Modify Item Category | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .title {
@@ -145,25 +151,6 @@
             font-weight: 500;
             margin-bottom: 1rem;
             color: var(--secondary-accent-color);
-        }
-        .report-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .report-table th,
-        .report-table td {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--shadow-and-border-color);
-            color: var(--page-font-color);
-        }
-        .report-table th {
-            background-color: var(--main-color);
-            color: var(--button-font-color);
-            font-weight: 500;
-        }
-        .report-table tr:hover {
-            background-color: rgba(255,255,255,0.05);
         }
         .low-stock-badge {
             display: inline-block;
@@ -336,8 +323,8 @@
             margin-bottom: 1.25rem;
         }
         @media only screen and (max-width: 768px) {
-            .report-table th,
-            .report-table td {
+            .modify-table th,
+            .modify-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
             }
@@ -372,7 +359,7 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Modify User</h1>
+            <h1  class="title">Modify Item Category</h1>
             <?php 
                 /* Display success message after submitting inventory */
                 if($submit_success == true){
@@ -389,96 +376,67 @@
 
             <!-- Update Inventory -->
             <div class="report-section">
-                <h2>User: <?php echo $thePerson->get_id();?></h2>              
-                <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewModifyUser.php?id=<?php echo $thePerson->get_personId();?>">
+                <h2>Category: <?php echo $theCategory->getName();?></h2>              
+                <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewModifyItemCategory.php?id=<?php echo $theCategory->getId();?>">
                     <div class="updateInv-row">
-                        <table class="modify-table">
-                            <tbody>
-                                <tr>
-                                    <td class="modify-table-label"><label class="updateInv-label" for="id">Username: </label></td>
-                                    <td class="modify-table-input">
-                                        <input type="text" class="updateInv-qty" 
-                                            value="<?php echo($thePerson->get_id())?>"
-                                            name="id" 
-                                            id="id"
-                                            required>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="modify-table-label"><label class="updateInv-label" for="fname">First Name: </label></td>
-                                    <td class="modify-table-input"><input type="text" class="updateInv-qty" 
-                                        value="<?php echo($thePerson->get_first_name())?>"
-                                        name="fname" 
-                                        id="fname"
-                                        required>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="modify-table-label"><label class="updateInv-label" for="lname">Last Name: </label></td>
-                                    <td class="modify-table-input"><input type="text" class="updateInv-qty" 
-                                        value="<?php echo($thePerson->get_last_name())?>"
-                                        name="lname" 
-                                        id="lname"
-                                        required>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="modify-table-label"><label class="updateInv-label" for="email">Email: </label></td>
-                                    <td class="modify-table-input"><input type="text" class="updateInv-qty" 
-                                        value="<?php echo($thePerson->get_email())?>"
-                                        name="email" 
-                                        id="email"
-                                        required>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="modify-table-label"><label class="updateInv-label" for="role">Role: </label></td>
-                                    <td class="modify-table-input"><select name="role" class="modify-role-select" id="role" 
-                                            <?php if ($thePerson->get_id() == $userID) echo("disabled");?>>
-                                            <?php if ($accessLevel >= 3):?> 
-                                                <option value="Superadmin">Superadmin</option>
-                                            <?php endif;?>
-                                            <option value="Admin"
-                                                <?php if ($thePerson->get_type() == "Admin") echo("selected");?>
-                                                >Admin</option>
-                                            <option value="Inventory_counter" 
-                                                <?php if ($thePerson->get_type() == "Inventory_counter") echo("selected");?>
-                                                >Inventory_counter</option>
-                                        </select>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="modify-table-label"><label class="updateInv-label">Status: </label></td>
-                                    <td class="modify-table-input">
-                                        <?php
-                                            if($thePerson->get_status() == "Active"){
-                                                echo '
-                                                    <label name="status_label" class="modify-status-label" style="color: green;font-weight: 500;">Active</label>
-                                                ';
-                                            }
-                                            else if($thePerson->get_status() == "Inactive"){
-                                                echo '
-                                                    <label name="status_label" class="modify-status-label" style="color: red;font-weight: 500;">Inactive</label>
-                                                ';
-                                            }
-                                            else if($thePerson->get_status() == "Deleted"){
-                                                echo '
-                                                    <label name="status_label" class="modify-status-label" style="color: black;font-weight: 500;">Deleted</label>
-                                                ';
-                                            }
-                                        ?>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="margin-bottom: 4rem;"></div>
+                            <table class="modify-table">
+                                <tbody>
+                                    <tr>
+                                        <td class="modify-table-label"><label class="updateInv-label" for="name">Name: </label></td>
+                                        <td class="modify-table-input"><input type="text" class="updateInv-qty" 
+                                                value="<?php echo($theCategory->getName())?>"
+                                                name="name" 
+                                                id="name"
+                                                required>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="modify-table-label"><label class="updateInv-label" for="bananaBox">Banana Box: </label></td>
+                                        <td class="modify-table-input"><input type="checkbox" id="bananaBox" name="bananaBox" value="1" 
+                                                    <?php if($theCategory->getBananaBox() == 1) echo("checked")?>>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="modify-table-label"> <label class="updateInv-label" for="itemsPerBox">Items Per Box: </label></td>
+                                        <td class="modify-table-input"><input type="number" class="updateInv-qty" 
+                                                value="<?php echo($theCategory->getItemsPerBox())?>"
+                                                name="itemsPerBox" 
+                                                id="itemsPerBox"
+                                                required>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="modify-table-label"><label class="updateInv-label">Status: </label></td>
+                                        <td class="modify-table-input">
+                                            <?php
+                                                if($theCategory->getStatus() == "Active"){
+                                                    echo '
+                                                        <label name="status_label" class="modify-status-label" style="color: green;font-weight: 500;">Active</label>
+                                                    ';
+                                                }
+                                                else if($theCategory->getStatus() == "Inactive"){
+                                                    echo '
+                                                        <label name="status_label" class="modify-status-label" style="color: red;font-weight: 500;">Inactive</label>
+                                                    ';
+                                                }
+                                                else if($theCategory->getStatus() == "Deleted"){
+                                                    echo '
+                                                        <label name="status_label" class="modify-status-label" style="color: black;font-weight: 500;">Deleted</label>
+                                                    ';
+                                                }
+                                            ?>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="margin-bottom: 4rem;"></div>
                     <div class="modifyUsers-formBtns">
                         <button name="save_button" class="modify-save-btn">Save Changes</button>
                         <button name="cancel_button" class="modify-cancel-btn">Cancel</button>
                         <hr>
                         <?php
-                            if($thePerson->get_status() == "Active"){
+                            if($theCategory->getStatus() == "Active"){
                                 echo '
                                     <button name="deactivate_button" class="modify-deactivate-btn">Deactivate</button>
                                 ';
@@ -491,8 +449,8 @@
                         ?>
                         <hr>
                         <button name="delete_button" name="delete_button" class="modify-delete-btn" 
-                            onclick="return confirm('Are you sure you want to\nDELETE USER: <?php echo $thePerson->get_id();?>?')"
-                            >Delete User
+                            onclick="return confirm('Are you sure you want to\nDELETE Category: <?php echo $theCategory->getName();?>?')"
+                            >Delete Category
                         </button>
                     </div>
                 </form>

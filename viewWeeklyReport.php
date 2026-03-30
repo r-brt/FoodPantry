@@ -11,10 +11,14 @@
         $userID = $_SESSION['_id'];
     }
 
+    // Add database includes here
+
     require_once('database/dbinfo.php');
     require_once('database/dbInventoryEvent.php');
     require_once('database/dbItemCategory.php');
     require_once('database/dbItemCounts.php');
+    require_once('database/dbShoppingEvent.php');
+    require_once('database/dbShoppingCount.php');
 
     // Consumption rates (items per day) - This is the available list for the moment.
     $consumptionRates = [
@@ -88,6 +92,48 @@
     // Get all item categories
     $allCategories = get_all_ItemCategory();
 
+    // Build category ID -> name map for basket lookup
+    $categoryMap = array();
+    foreach ($allCategories as $cat) {
+        $categoryMap[$cat->getId()] = $cat->getName();
+    }
+
+    // Get all shopping events and extract unique family sizes
+    $allShoppingEvents = get_all_shoppingEvents();
+    $familySizes = array();
+    foreach ($allShoppingEvents as $event) {
+        $fs = $event->getFamilySize();
+        if (!in_array($fs, $familySizes)) {
+            $familySizes[] = $fs;
+        }
+    }
+    sort($familySizes);
+
+    // If a family size is selected, find the most recent event and load its counts
+    $selectedFamilySize = isset($_GET['familySize']) ? $_GET['familySize'] : null;
+    $basketItems = array();
+    if ($selectedFamilySize !== null) {
+        $filtered = array_filter($allShoppingEvents, function($e) use ($selectedFamilySize) {
+            return $e->getFamilySize() == $selectedFamilySize;
+        });
+        usort($filtered, function($a, $b) {
+            $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
+            if ($dateDiff != 0) return $dateDiff;
+            return $b->getId() - $a->getId();
+        });
+        if (!empty($filtered)) {
+            $latestEvent = reset($filtered);
+            $counts = get_shoppingCounts_by_shoppingEvent($latestEvent->getId());
+            foreach ($counts as $count) {
+                $catId = $count->getItemCategory();
+                $basketItems[] = array(
+                    'item_name' => isset($categoryMap[$catId]) ? $categoryMap[$catId] : 'Unknown (ID: ' . $catId . ')',
+                    'quantity'  => $count->getQuantity()
+                );
+            }
+        }
+    }
+
     // Build weekly items array
     $weeklyItems = array();
     foreach ($allCategories as $category) {
@@ -116,16 +162,19 @@
             $monthsLeft = round($weeksLeft / 4);
         }
 
-        $weeklyItems[] = array(
-            'item_name' => $itemName,
-            'days_left' => $daysLeft,
-            'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
-            'current_boxes' => $currentBoxes,
-            'current_items_per_box' => $itemsPerBox,
-            'total_items' => $totalItems,
-            'weeks_left' => $weeksLeft,
-            'months_left' => $monthsLeft
-        );
+        // Only show items with current inventory > 0
+        if ($currentBoxes > 0) {
+            $weeklyItems[] = array(
+                'item_name' => $itemName,
+                'days_left' => $daysLeft,
+                'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
+                'current_boxes' => $currentBoxes,
+                'current_items_per_box' => $itemsPerBox,
+                'total_items' => $totalItems,
+                'weeks_left' => $weeksLeft,
+                'months_left' => $monthsLeft
+            );
+        }
     }
 ?>
     
@@ -135,24 +184,37 @@
     <?php require_once('universal.inc') ?>
     <title>Weekly Inventory Report | Whiskey Valor Foundation</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/jspdf.umd.min.js"></script>
+    <script src="js/jspdf.plugin.autotable.min.js"></script>
     <style>
+        .title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--secondary-accent-color);
+        }
         .report-container {
             max-width: 1100px;
             margin: 0 auto 4rem auto;
             padding: 1rem;
         }
         .report-section {
-            background-color: rgba(0,0,0,0.15);
-            border: 1px solid var(--shadow-and-border-color);
+            background-color: white;
+            /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+        }
+        .report-section h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--secondary-accent-color);
         }
         .report-section h2 {
             font-size: 1.5rem;
             font-weight: 500;
             margin-bottom: 1rem;
-            color: var(--accent-color);
+            color: var(--secondary-accent-color);
         }
         .report-table {
             width: 100%;
@@ -298,6 +360,99 @@
         .generate-btn:hover {
             opacity: 0.85;
         }
+        .select {
+            background-color: white !important;
+        }
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toolbar-select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            min-width: 180px;
+        }
+        .toolbar-select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .toolbar-search {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            min-width: 200px;
+        }
+        .toolbar-search::placeholder {
+            color: var(--inactive-font-color);
+        }
+        .toolbar-btn-clear {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .toolbar-btn-clear:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .row-number {
+            text-align: center;
+            color: var(--inactive-font-color);
+            font-weight: 500;
+        }
+        .basket-qty-input {
+            width: 80px;
+            padding: 0.3rem 0.5rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+            background: transparent;
+            color: var(--page-font-color);
+            font-size: inherit;
+            text-align: center;
+        }
+        .basket-qty-input:hover,
+        .basket-qty-input:focus {
+            border-color: var(--accent-color);
+            background: rgba(0,0,0,0.15);
+            outline: none;
+        }
+        .drag-handle {
+            cursor: grab;
+            text-align: center;
+            color: var(--inactive-font-color);
+            font-size: 1.1rem;
+            user-select: none;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        #basketTbody tr.drag-over {
+            border-top: 2px solid var(--accent-color);
+        }
+        #basketTbody tr.dragging {
+            opacity: 0.4;
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -310,6 +465,18 @@
             div.table-wrapper {
                 overflow-x: auto;
             }
+            .table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .toolbar-left,
+            .toolbar-right {
+                width: 100%;
+            }
+            .toolbar-select,
+            .toolbar-search {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -317,7 +484,7 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 style="color:var(--accent-color);">Weekly Inventory Report</h1>
+            <h1 class="title">Weekly Inventory Report</h1>
 
             <!-- Weekly Items -->
             <div class="report-section">
@@ -325,7 +492,7 @@
 
                 <div class="week-selector">
                     <label for="weekSelect">View Week:</label>
-                    <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
+                    <select class="select" id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
                         <?php if (count($dateToEventMap) > 0): ?>
                             <?php foreach ($uniqueDates as $date): ?>
                                 <?php $eventId = $dateToEventMap[$date]; ?>
@@ -337,10 +504,29 @@
                     </select>
                 </div>
 
+                <!-- Toolbar: Sort and Search -->
+                <div class="table-toolbar">
+                    <div class="toolbar-left">
+                        <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
+                        <select id="sortSelect" class="toolbar-select">
+                            <option value="default">Default</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="days-asc">Days Left (Low to High)</option>
+                            <option value="days-desc">Days Left (High to Low)</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-right">
+                        <input type="text" id="searchInput" class="toolbar-search" placeholder="Search items...">
+                        <button type="button" id="clearSearch" class="toolbar-btn-clear">Clear</button>
+                    </div>
+                </div>
+
                 <div class="table-wrapper">
-                    <table class="report-table">
+                    <table class="report-table" id="weeklyItemsTable">
                         <thead>
                             <tr>
+                                <th style="width: 50px;">#</th>
                                 <th>Item Name</th>
                                 <th>Days Left</th>
                                 <th>Previous Boxes</th>
@@ -376,6 +562,7 @@
                                         }
                                     ?>
                                     <tr class="<?= $rowClass ?>">
+                                        <td class="row-number"></td>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= htmlspecialchars($item['days_left']) ?></td>
                                         <td><?= htmlspecialchars($item['previous_boxes']) ?></td>
@@ -388,7 +575,7 @@
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="8" class="empty-state">No weekly items to display.</td>
+                                    <td colspan="9" class="empty-state">No weekly items to display.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -398,54 +585,269 @@
 
             <!-- Generate Basket -->
             <div class="report-section">
-                <h2>Generate Basket</h2>
-                <p style="color: var(--page-font-color); margin-bottom: 1rem;">Select item categories and quantities to generate a recommended food basket.</p>
-                <div class="basket-options">
-                    <div class="basket-row">
-                        <label class="basket-label">Grains / Bread</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                    <div class="basket-row">
-                        <label class="basket-label">Canned Goods</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                    <div class="basket-row">
-                        <label class="basket-label">Produce</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                    <div class="basket-row">
-                        <label class="basket-label">Dairy</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                    <div class="basket-row">
-                        <label class="basket-label">Protein</label>
-                        <input type="number" class="basket-qty" min="0" value="0" placeholder="Qty">
-                    </div>
-                </div>
-                <button class="generate-btn">Generate Basket</button>
+                <h2>Shopping List</h2>
+                <p style="color: var(--page-font-color); margin-bottom: 1rem;">Select a family size to view the recommended basket items and quantities.</p>
 
-                <!-- Basket Result Table -->
-                <div class="table-wrapper" style="margin-top: 1.5rem; display: none;" id="basketResult">
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>Category</th>
-                                <th>Qty Allocated</th>
-                                <th>Available Stock</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" class="empty-state">No basket generated yet.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="week-selector">
+                    <label for="familySizeSelect">Family Size:</label>
+                    <select class="select" id="familySizeSelect" name="familySize"
+                        onchange="window.location.href='?week=<?= htmlspecialchars($selectedWeek ?? '') ?>&familySize=' + encodeURIComponent(this.value)">
+                        <option value="">-- Select Family Size --</option>
+                        <?php foreach ($familySizes as $fs): ?>
+                            <option value="<?= htmlspecialchars($fs) ?>"
+                                <?= ($fs == $selectedFamilySize) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($fs) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
+
+                <?php if ($selectedFamilySize !== null): ?>
+                    <div class="table-wrapper" style="margin-top: 1rem;" id="basketTableWrapper">
+                        <table class="report-table" id="basketTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 36px;"></th>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Item Name</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="basketTbody">
+                                <?php if (!empty($basketItems)): ?>
+                                    <?php foreach ($basketItems as $i => $item): ?>
+                                        <tr draggable="true">
+                                            <td class="drag-handle" title="Drag to reorder">&#8597;</td>
+                                            <td class="row-number"><?= $i + 1 ?></td>
+                                            <td><?= htmlspecialchars($item['item_name']) ?></td>
+                                            <td><input type="number" class="basket-qty-input" value="<?= htmlspecialchars($item['quantity']) ?>" min="0"></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="4" class="empty-state">No items found for this family size.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="generate-btn" id="generatePdfBtn" style="margin-top: 1.25rem;">Generate Shopping List PDF</button>
+                <?php endif; ?>
             </div>
 
         </div>
     </main>
+
+    <script>
+        $(function() {
+            // Update row numbers
+            function updateRowNumbers() {
+                $('#weeklyItemsTable tbody tr:visible').each(function(index) {
+                    $(this).find('.row-number').text(index + 1);
+                });
+            }
+
+            // Initialize row numbers on page load
+            updateRowNumbers();
+
+            // Sorting functionality
+            $('#sortSelect').change(function() {
+                var sortValue = $(this).val();
+                var $tbody = $('#weeklyItemsTable tbody');
+                var $rows = $tbody.find('tr').get();
+
+                if (sortValue === 'default') {
+                    // Restore original order - no sorting
+                    $rows.sort(function(a, b) {
+                        return $(a).data('original-index') - $(b).data('original-index');
+                    });
+                } else if (sortValue === 'name-asc') {
+                    // Sort by name A-Z
+                    $rows.sort(function(a, b) {
+                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        return nameA.localeCompare(nameB);
+                    });
+                } else if (sortValue === 'name-desc') {
+                    // Sort by name Z-A
+                    $rows.sort(function(a, b) {
+                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        return nameB.localeCompare(nameA);
+                    });
+                } else if (sortValue === 'days-asc') {
+                    // Sort by days left (low to high) - items at risk first
+                    $rows.sort(function(a, b) {
+                        var daysA = $(a).find('td').eq(2).text();
+                        var daysB = $(b).find('td').eq(2).text();
+
+                        // Handle N/A values - put them at the end
+                        if (daysA === 'N/A') return 1;
+                        if (daysB === 'N/A') return -1;
+
+                        return parseInt(daysA) - parseInt(daysB);
+                    });
+                } else if (sortValue === 'days-desc') {
+                    // Sort by days left (high to low)
+                    $rows.sort(function(a, b) {
+                        var daysA = $(a).find('td').eq(2).text();
+                        var daysB = $(b).find('td').eq(2).text();
+
+                        // Handle N/A values - put them at the end
+                        if (daysA === 'N/A') return 1;
+                        if (daysB === 'N/A') return -1;
+
+                        return parseInt(daysB) - parseInt(daysA);
+                    });
+                }
+
+                // Re-append rows in new order
+                $.each($rows, function(index, row) {
+                    $tbody.append(row);
+                });
+
+                // Update row numbers after sorting
+                updateRowNumbers();
+            });
+
+            // Search functionality
+            $('#searchInput').on('input', function() {
+                var searchTerm = $(this).val().toLowerCase();
+
+                $('#weeklyItemsTable tbody tr').each(function() {
+                    var itemName = $(this).find('td').eq(1).text().toLowerCase();
+
+                    if (itemName.indexOf(searchTerm) > -1) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+
+                // Update row numbers after filtering
+                updateRowNumbers();
+            });
+
+            // Clear search button
+            $('#clearSearch').click(function() {
+                $('#searchInput').val('');
+                $('#weeklyItemsTable tbody tr').show();
+                updateRowNumbers();
+            });
+
+            // Store original order for default sorting
+            $('#weeklyItemsTable tbody tr').each(function(index) {
+                $(this).data('original-index', index);
+            });
+
+            // Basket drag-and-drop reordering
+            var basketTbody = document.getElementById('basketTbody');
+            if (basketTbody) {
+                var dragSrc = null;
+
+                basketTbody.addEventListener('dragstart', function(e) {
+                    dragSrc = e.target.closest('tr');
+                    dragSrc.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                basketTbody.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    var target = e.target.closest('tr');
+                    if (target && target !== dragSrc) {
+                        basketTbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('drag-over'); });
+                        target.classList.add('drag-over');
+                    }
+                });
+
+                basketTbody.addEventListener('dragleave', function(e) {
+                    var target = e.target.closest('tr');
+                    if (target) target.classList.remove('drag-over');
+                });
+
+                basketTbody.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    var target = e.target.closest('tr');
+                    if (target && target !== dragSrc) {
+                        var rows = Array.from(basketTbody.querySelectorAll('tr'));
+                        var srcIndex = rows.indexOf(dragSrc);
+                        var tgtIndex = rows.indexOf(target);
+                        if (srcIndex < tgtIndex) {
+                            basketTbody.insertBefore(dragSrc, target.nextSibling);
+                        } else {
+                            basketTbody.insertBefore(dragSrc, target);
+                        }
+                        target.classList.remove('drag-over');
+                        // Update row numbers
+                        basketTbody.querySelectorAll('tr').forEach(function(r, i) {
+                            var cell = r.querySelector('.row-number');
+                            if (cell) cell.textContent = i + 1;
+                        });
+                    }
+                });
+
+                basketTbody.addEventListener('dragend', function(e) {
+                    if (dragSrc) dragSrc.classList.remove('dragging');
+                    basketTbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('drag-over'); });
+                });
+            }
+            // Generate Shopping List PDF
+            var pdfBtn = document.getElementById('generatePdfBtn');
+            if (pdfBtn) {
+                pdfBtn.addEventListener('click', function() {
+                    var { jsPDF } = window.jspdf;
+                    var doc = new jsPDF();
+
+                    var familySize = '<?= htmlspecialchars($selectedFamilySize ?? '') ?>';
+                    var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                    // Header
+                    doc.setFontSize(18);
+                    doc.setTextColor(40, 40, 40);
+                    doc.text('Shopping List', 14, 20);
+
+                    doc.setFontSize(11);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text('Family Size: ' + familySize, 14, 29);
+                    doc.text('Date: ' + today, 14, 36);
+
+                    // Read rows in current DOM order
+                    var rows = [];
+                    document.querySelectorAll('#basketTbody tr').forEach(function(tr, i) {
+                        var cells = tr.querySelectorAll('td');
+                        if (cells.length < 4) return;
+                        var itemName = cells[2].textContent.trim();
+                        var qtyInput = cells[3].querySelector('input');
+                        var qty = qtyInput ? qtyInput.value : cells[3].textContent.trim();
+                        rows.push([(i + 1).toString(), itemName, qty]);
+                    });
+
+                    doc.autoTable({
+                        startY: 44,
+                        head: [['#', 'Item Name', 'Quantity']],
+                        body: rows,
+                        headStyles: {
+                            fillColor: [44, 62, 80],
+                            textColor: 255,
+                            fontStyle: 'bold'
+                        },
+                        alternateRowStyles: {
+                            fillColor: [245, 245, 245]
+                        },
+                        columnStyles: {
+                            0: { cellWidth: 12, halign: 'center' },
+                            2: { cellWidth: 30, halign: 'center' }
+                        },
+                        styles: { fontSize: 11 },
+                        margin: { left: 14, right: 14 }
+                    });
+
+                    doc.save('shopping-list-' + familySize.replace(/[^a-z0-9]/gi, '-') + '.pdf');
+                });
+            }
+        });
+    </script>
 
 </body>
 </html>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 26, 2026 at 09:09 PM
+-- Generation Time: Mar 27, 2026 at 05:01 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -24,37 +24,36 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `dbinventoryevent`
+-- Table structure for table `dbshoppingevent`
 --
 
-DROP TABLE IF EXISTS `dbinventoryevent`;
-CREATE TABLE `dbinventoryevent` (
+DROP TABLE IF EXISTS `dbshoppingevent`;
+CREATE TABLE `dbshoppingevent` (
   `id` int(11) NOT NULL,
   `personId` varchar(11) NOT NULL,
-  `location` varchar(50) NOT NULL DEFAULT 'Pantry',
+  `familySize` varchar(11) NOT NULL,
   `date` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `dbinventoryevent`
+-- Dumping data for table `dbshoppingevent`
 --
 
-INSERT INTO `dbinventoryevent` (`id`, `personId`, `location`, `date`) VALUES
-(1049, '7', 'Warehouse', '2026-01-20'),
-(1050, '7', 'Pantry', '2026-01-20'),
-(1051, '7', 'Warehouse', '2026-03-20'),
-(1052, '7', 'Pantry', '2026-03-20'),
-(1053, '7', 'Warehouse', '2026-02-04'),
-(1054, '7', 'Pantry', '2026-02-04');
+INSERT INTO `dbshoppingevent` (`id`, `personId`, `familySize`, `date`) VALUES
+(1001, '3', '1-3', '2026-01-20'),
+(1002, '3', '1-3-IH', '2026-01-20'),
+(1003, '2', '4+', '2026-02-04'),
+(1004, '2', '4+-IH', '2026-02-04'),
+(1005, '2', '8+-IH', '2026-02-04');
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `dbinventoryevent`
+-- Indexes for table `dbshoppingevent`
 --
-ALTER TABLE `dbinventoryevent`
+ALTER TABLE `dbshoppingevent`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -62,10 +61,10 @@ ALTER TABLE `dbinventoryevent`
 --
 
 --
--- AUTO_INCREMENT for table `dbinventoryevent`
+-- AUTO_INCREMENT for table `dbshoppingevent`
 --
-ALTER TABLE `dbinventoryevent`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1055;
+ALTER TABLE `dbshoppingevent`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1005;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
