@@ -84,7 +84,7 @@ if ($selectedCategory) {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Whiskey Valor | Attendance Reports</title>
+    <title>CCDA | Attendance Reports</title>
     <!--<script src="js/data-filters.js" defer></script>-->
     <link href="css/base.css" rel="stylesheet">
     <?php require_once('header.php'); ?>
@@ -284,6 +284,21 @@ if ($selectedCategory) {
         .form-section select:hover {
             background-color: rgba(0,0,0,0.3);
         }
+        ul.checkbox {
+            margin-left: 15px;
+        }
+        ul.checkbox li input {
+            margin-right: .25rem;
+        }
+        ul.checkbox li {
+            border: 1px transparent solid;
+            display: inline-block;
+            width: 12rem;
+        }
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
         .category-trend-row {
             display: flex;
             gap: 1rem;
@@ -360,6 +375,19 @@ if ($selectedCategory) {
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+
+                    <div class="form-section">
+                        <label for="itemSelect">Item Categories</label>
+                        <ul class="checkbox">
+                                <li> <input name="name[]" class="checkbox" type="checkbox" value="">All</input> </li>
+                                <?php foreach ($categories as $category): ?>
+                                    <li> <input name="name[]" class="checklist-column" type="checkbox" value="<?= htmlspecialchars($category['id']) ?>" <?= ($category['id'] == $selectedCategory) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($category['name']) ?>
+                                </input> </li>
+                                <?php endforeach; ?>
+                            </select>
+                        </ul>
                     </div>
 
                     <div class="form-section">
