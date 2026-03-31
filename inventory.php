@@ -10,6 +10,8 @@ if(!isset($_SESSION['_id'])) {
     exit;
 }
 
+$accessLevel = $_SESSION['access_level'] ?? 0;
+
 require_once(__DIR__ . '/database/dbinfo.php');
 
 $conn = connect();
@@ -246,6 +248,17 @@ if ($result) {
     <main>
         <div class="report-container">
             <h1 class="title">Inventory Log</h1>
+
+            <!-- Edit/Delete Inventory Button -->
+            <?php if($accessLevel >= 2): ?>
+                <div style="margin-bottom: 1.5rem;">
+                    <a href="viewEditDeleteInventory.php">
+                        <button style="background-color: #dc2626; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500; font-size: 1rem;">
+                            Edit/Delete Inventory
+                        </button>
+                    </a>
+                </div>
+            <?php endif; ?>
 
             <div class="report-section">
                 <h2>Food Items</h2>

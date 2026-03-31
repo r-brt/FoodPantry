@@ -80,12 +80,61 @@
         }
     }
 
-    // Get previous week item counts (hybrid: same-day progression or previous event)
+    // Get previous week item counts (check same day older events first, then previous date)
     $previousCounts = array();
     if ($selectedWeek) {
-        $previousCountObjects = get_previous_counts_by_event($selectedWeek);
-        foreach($previousCountObjects as $count){
-            $previousCounts[$count->getItemCategory()] = $count;
+        $currentEvent = retrieve_inventoryEvent($selectedWeek);
+        $currentDate = $currentEvent->getDate();
+
+        /* Get all events on the current date, sorted by ID DESC */
+        $allEventsOnDate = get_all_inventoryEvents_by_date($currentDate);
+
+        /* Separate events by location */
+        $warehouseEvents = array();
+        $pantryEvents = array();
+        foreach($allEventsOnDate as $evt) {
+            if($evt->getLocation() == 'Warehouse') {
+                $warehouseEvents[] = $evt;
+            } else if($evt->getLocation() == 'Pantry') {
+                $pantryEvents[] = $evt;
+            }
+        }
+
+        /* Find the 2nd newest event for each location (index [1] = 2nd newest) */
+        $prevWarehouseEvent = isset($warehouseEvents[1]) ? $warehouseEvents[1] : null;
+        $prevPantryEvent = isset($pantryEvents[1]) ? $pantryEvents[1] : null;
+
+        /* If BOTH locations have no 2nd event, fall back to previous date */
+        if($prevWarehouseEvent === null && $prevPantryEvent === null) {
+            $previousCountObjects = get_previous_counts_by_event($selectedWeek);
+            foreach($previousCountObjects as $count){
+                $previousCounts[$count->getItemCategory()] = $count;
+            }
+        } else {
+            /* Get item counts from each location independently (use 0 if location doesn't have 2nd event) */
+            $prev_item_counts = array();
+            if($prevWarehouseEvent !== null){
+                $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($prevWarehouseEvent->getId()));
+            }
+            if($prevPantryEvent !== null){
+                $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($prevPantryEvent->getId()));
+            }
+
+            /* Sum up totals by category (Warehouse + Pantry) */
+            $prev_totals = array();
+            foreach($prev_item_counts as $item){
+                $categoryId = $item->getItemCategory();
+                if(isset($prev_totals[$categoryId])){
+                    $prev_totals[$categoryId] += $item->getQuantity();
+                } else {
+                    $prev_totals[$categoryId] = $item->getQuantity();
+                }
+            }
+
+            /* Create ItemCount objects for consistency with current counts */
+            foreach($prev_totals as $categoryId => $quantity){
+                $previousCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
+            }
         }
     }
 
