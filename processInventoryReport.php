@@ -21,19 +21,21 @@ require_once('database/dbinfo.php');
 //     return $today > $lastDayOfMonth;
 // }
 
-// Get user input
 $selectedWeekDate = $_POST['week'] ?? '';
+$rawItemCategories = $_POST['name'] ?? '';
+$selectedItemCategories = is_array($rawItemCategories) ? $rawItemCategories : [$rawItemCategories];
+
+if (in_array('', $selectedItemCategories, true) || empty($selectedItemCategories)) {
+    $selectedItemCategories = []; 
+} else {
+    $selectedItemCategories = array_values(array_filter($selectedItemCategories));
+}
+
 $selectedLocation = $_POST['location'] ?? '';
-
-// $reportType = $_POST['reportType'] ?? 'monthly';
-// $month = $_POST['month'] ?? '';
 $format = $_POST['format'] ?? 'csv';
-
-// Fetch Data
 
 $con = connect();
 
-// First, find the inventory event ID that matches the date and location
 $eventSql = "
     SELECT id 
     FROM dbinventoryevent 
@@ -46,7 +48,6 @@ $eventStmt->execute();
 $eventResult = $eventStmt->get_result();
 
 if ($eventResult->num_rows === 0) {
-    // No matching event found
     echo "No inventory event found for the selected date and location.";
     exit();
 }
@@ -55,21 +56,29 @@ $eventRow = $eventResult->fetch_assoc();
 $selectedWeek = $eventRow['id'];
 $eventStmt->close();
 
-$sql = "
-    SELECT
-        dic.name as item_name,
-        dbic.quantity as boxes,
-        dic.itemsPerBox,
-        dbic.quantity * dic.itemsPerBox as total_count,
-        dbic.inventoryEventID as inventoryEventId
-    FROM dbItemCategory dic
-    INNER JOIN dbitemcounts dbic on dic.id = dbic.itemCategoryId
-    WHERE dbic.inventoryEventId = ?
-    ORDER BY dic.name, dbic.inventoryEventID DESC
-";
+$sql = "SELECT dic.id, dic.name as item_name, 
+        dbic.quantity as boxes, 
+        dic.itemsPerBox, 
+        dbic.quantity * dic.itemsPerBox as total_count, 
+        dbic.inventoryEventID as inventoryEventId 
+        FROM dbItemCategory dic 
+        INNER JOIN dbitemcounts dbic on dic.id = dbic.itemCategoryId 
+        WHERE dbic.inventoryEventID = ?";
+$params = [$selectedWeek];
+$types = "s";
+
+// managing selected item categories
+if (!empty($selectedItemCategories)) {
+    // adding placeholders based off of how many items were selected
+    $placeholders = implode(',', array_fill(0, count($selectedItemCategories), '?'));
+    $sql .= " AND dic.id IN ($placeholders)";
+    // for the bind function to work with all the items
+    $types .= str_repeat('s', count($selectedItemCategories));
+    $params = array_merge($params, $selectedItemCategories); 
+}
 
 $stmt = $con->prepare($sql);
-$stmt->bind_param("i", $selectedWeek);
+$stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
 
