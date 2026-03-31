@@ -76,7 +76,7 @@ function retrieve_inventoryEvent($id) {
         return false;
     }
     $result_row = mysqli_fetch_assoc($result);
-    var_dump($result_row);
+    // var_dump($result_row);
     $theEvent = make_an_inventoryEvent($result_row);
     mysqli_close($con);
     return $theEvent;
