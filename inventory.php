@@ -280,7 +280,6 @@ if ($result) {
                     <div class="toolbar-left">
                         <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
                         <select id="sortSelect" class="toolbar-select">
-                            <option value="default">Default</option>
                             <option value="name-asc">Name (A-Z)</option>
                             <option value="name-desc">Name (Z-A)</option>
                         </select>
@@ -350,12 +349,7 @@ if ($result) {
                 var $tbody = $('#inventoryTable tbody');
                 var $rows = $tbody.find('tr').get();
 
-                if (sortValue === 'default') {
-                    // Restore original order - no sorting
-                    $rows.sort(function(a, b) {
-                        return $(a).data('original-index') - $(b).data('original-index');
-                    });
-                } else if (sortValue === 'name-asc') {
+                if (sortValue === 'name-asc') {
                     // Sort by name A-Z
                     $rows.sort(function(a, b) {
                         var nameA = $(a).find('td').eq(1).text().toLowerCase();
