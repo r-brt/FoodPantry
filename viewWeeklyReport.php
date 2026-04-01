@@ -558,10 +558,9 @@
                     <div class="toolbar-left">
                         <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
                         <select id="sortSelect" class="toolbar-select">
-                            <option value="default">Default</option>
                             <option value="name-asc">Name (A-Z)</option>
                             <option value="name-desc">Name (Z-A)</option>
-                            <option value="days-asc">Days Left (Low to High)</option>
+                            <option value="days-asc" selected>Days Left (Low to High)</option>
                             <option value="days-desc">Days Left (High to Low)</option>
                         </select>
                     </div>
@@ -705,12 +704,7 @@
                 var $tbody = $('#weeklyItemsTable tbody');
                 var $rows = $tbody.find('tr').get();
 
-                if (sortValue === 'default') {
-                    // Restore original order - no sorting
-                    $rows.sort(function(a, b) {
-                        return $(a).data('original-index') - $(b).data('original-index');
-                    });
-                } else if (sortValue === 'name-asc') {
+                if (sortValue === 'name-asc') {
                     // Sort by name A-Z
                     $rows.sort(function(a, b) {
                         var nameA = $(a).find('td').eq(1).text().toLowerCase();
@@ -788,6 +782,9 @@
             $('#weeklyItemsTable tbody tr').each(function(index) {
                 $(this).data('original-index', index);
             });
+
+            // Trigger initial sort (Days Left Low to High)
+            $('#sortSelect').trigger('change');
 
             // Basket drag-and-drop reordering
             var basketTbody = document.getElementById('basketTbody');
