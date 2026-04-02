@@ -557,7 +557,6 @@
 </div> -->
 
 
-
 <div class="full-width-bar-sub">
 
     <?php
@@ -664,7 +663,7 @@
 </body>
 <?php endif ?>
 
-<?php?>
+<?php ?>
 <body>
 
   <!-- Icon Container -->

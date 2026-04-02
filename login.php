@@ -57,6 +57,7 @@
                 
                 $_SESSION['type'] = $user->get_type();
                 $_SESSION['_id'] = $user->get_id();
+                $_SESSION['_personId'] = $user->get_personId();
                 
                  //hard code root privileges
                  if ($user->get_id() == 'vmsroot') {

@@ -640,7 +640,7 @@ if (date("H:i:s") > "18:19:59") {
     //If they aren't logged in, display our log-in form.
     $showing_login = false;
     if (!isset($_SESSION['logged_in'])) {
-		echo('<div class="navbar">
+		/*echo('<div class="navbar">
         <!-- Left Section: Logo & Nav Links -->
         <div class="left-section">
             <div class="logo-container">
@@ -670,7 +670,7 @@ if (date("H:i:s") > "18:19:59") {
                 </div>
             </div>
         </div>
-    </div>');
+    </div>');*/
 
     } else if ($_SESSION['logged_in']) {
 

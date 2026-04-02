@@ -23,11 +23,12 @@ function connect() {
     $database = "foodpantrydb";
     $user = "foodpantrydb";
     $pass = "foodpantrydb";
-    // if ($_SERVER['SERVER_NAME'] == 'jenniferp160.sg-host.com') {
-    //     $user = 'generated';
-    //     $database = 'generated';
-    //     $pass = 'generated';
-    // } 
+    if ($_SERVER['SERVER_NAME'] == 'jenniferp231.sg-host.com') {
+        $user = 'u5d0cfthf4cep';
+        $database = 'dbevnlo0ng2zde';
+        $pass = 'iy7yv19huajx';
+    } 
+ 
  
     
     $con = mysqli_connect($host,$user,$pass,$database);

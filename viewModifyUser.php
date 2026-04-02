@@ -1,4 +1,3 @@
-
 <?php
     session_cache_expire(30);
     session_start();
@@ -12,6 +11,7 @@
         // 0 = not logged in, 1 = standard user, 2 = manager (Admin), 3 super admin (TBI)
         $accessLevel = $_SESSION['access_level'];
         $userID = $_SESSION['_id'];
+        $personId = $_SESSION['_personId'];
     }
 
     // Was an ID supplied?
@@ -86,7 +86,12 @@
             $first_name = $_POST["fname"];
             $last_name = $_POST["lname"];
             $email = $_POST["email"];
-            $type = $_POST["role"];
+            if(isset($_POST["role"])){
+                $type = $_POST["role"];
+            }
+            else{
+                $type = $thePerson->get_type();
+            }
             if($thePerson->get_id() != $id && retrieve_person($_POST["id"])){
                 $errors[] = "Username already exists";
             }
@@ -98,6 +103,11 @@
             }
             if(empty($errors)){
                 if(update_person_by_personId($thePerson->get_personId(), $id, $first_name, $last_name, $email, $type)){
+                    if($thePerson->get_personId() == $personId){
+                        $_SESSION['_id'] = $id;
+                        $_SESSION['f_name'] = $first_name;
+                        $_SESSION['l_name'] = $last_name;  
+                    }
                     header('Location: viewAuditUsers.php');
                     die();
                 }
@@ -434,7 +444,7 @@
                                 <tr>
                                     <td class="modify-table-label"><label class="updateInv-label" for="role">Role: </label></td>
                                     <td class="modify-table-input"><select name="role" class="modify-role-select" id="role" 
-                                            <?php if ($thePerson->get_id() == $userID) echo("disabled");?>>
+                                            <?php if ($thePerson->get_personId() == $personId) echo("disabled");?>>
                                             <?php if ($accessLevel >= 3):?> 
                                                 <option value="Superadmin">Superadmin</option>
                                             <?php endif;?>
@@ -475,24 +485,24 @@
                     <div style="margin-bottom: 4rem;"></div>
                     <div class="modifyUsers-formBtns">
                         <button name="save_button" class="modify-save-btn">Save Changes</button>
-                        <button name="cancel_button" class="modify-cancel-btn">Cancel</button>
+                        <button name="cancel_button" class="modify-cancel-btn" formnovalidate>Cancel</button>
                         <hr>
                         <?php
                             if($thePerson->get_status() == "Active"){
                                 echo '
-                                    <button name="deactivate_button" class="modify-deactivate-btn">Deactivate</button>
+                                    <button name="deactivate_button" class="modify-deactivate-btn" formnovalidate>Deactivate</button>
                                 ';
                             }
                             else {
                                 echo '
-                                    <button name="activate_button" class="modify-activate-btn">Activate</button>
+                                    <button name="activate_button" class="modify-activate-btn" formnovalidate>Activate</button>
                                 ';
                             }
                         ?>
                         <hr>
                         <button name="delete_button" name="delete_button" class="modify-delete-btn" 
                             onclick="return confirm('Are you sure you want to\nDELETE USER: <?php echo $thePerson->get_id();?>?')"
-                            >Delete User
+                            formnovalidate>Delete User
                         </button>
                     </div>
                 </form>

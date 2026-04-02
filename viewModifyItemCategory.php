@@ -1,4 +1,3 @@
-
 <?php
     session_cache_expire(30);
     session_start();
@@ -433,24 +432,24 @@
                         <div style="margin-bottom: 4rem;"></div>
                     <div class="modifyUsers-formBtns">
                         <button name="save_button" class="modify-save-btn">Save Changes</button>
-                        <button name="cancel_button" class="modify-cancel-btn">Cancel</button>
+                        <button name="cancel_button" class="modify-cancel-btn" formnovalidate>Cancel</button>
                         <hr>
                         <?php
                             if($theCategory->getStatus() == "Active"){
                                 echo '
-                                    <button name="deactivate_button" class="modify-deactivate-btn">Deactivate</button>
+                                    <button name="deactivate_button" class="modify-deactivate-btn" formnovalidate>Deactivate</button>
                                 ';
                             }
                             else {
                                 echo '
-                                    <button name="activate_button" class="modify-activate-btn">Activate</button>
+                                    <button name="activate_button" class="modify-activate-btn" formnovalidate>Activate</button>
                                 ';
                             }
                         ?>
                         <hr>
                         <button name="delete_button" name="delete_button" class="modify-delete-btn" 
                             onclick="return confirm('Are you sure you want to\nDELETE Category: <?php echo $theCategory->getName();?>?')"
-                            >Delete Category
+                            formnovalidate>Delete Category
                         </button>
                     </div>
                 </form>

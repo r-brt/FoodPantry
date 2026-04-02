@@ -4,11 +4,11 @@ include_once('dbinfo.php');
 include_once(dirname(__FILE__).'/../domain/ItemCategory.php');
 
 /*
- * Add a item Category to dbItemCategory table: return id
+ * Add a item Category to dbitemcategory table: return id
  */
 function add_itemCategory($name, $bananaBox, $itemsPerBox, $status) {
     $con=connect();
-    mysqli_query($con,'INSERT INTO dbItemCategory (name, bananaBox, itemsPerBox, status) VALUES("' .
+    mysqli_query($con,'INSERT INTO dbitemcategory (name, bananaBox, itemsPerBox, status) VALUES("' .
             $name . '","' . 
             $bananaBox . '","' . 
             $itemsPerBox . '","' . 
@@ -25,13 +25,13 @@ function add_itemCategory($name, $bananaBox, $itemsPerBox, $status) {
 
 function activate_itemCategory($id) {
     $con=connect();
-    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
+    $query = 'SELECT * FROM dbitemcategory WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
-    $query = "UPDATE dbItemCategory SET status = 'Active' WHERE id = '$id'";
+    $query = "UPDATE dbitemcategory SET status = 'Active' WHERE id = '$id'";
     $result = mysqli_query($con,$query);
     mysqli_close($con);
     return true;
@@ -43,13 +43,13 @@ function activate_itemCategory($id) {
 
 function deactivate_itemCategory($id) {
     $con=connect();
-    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
+    $query = 'SELECT * FROM dbitemcategory WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
-    $query = "UPDATE dbItemCategory SET status = 'Inactive' WHERE id = '$id'";
+    $query = "UPDATE dbitemcategory SET status = 'Inactive' WHERE id = '$id'";
     $result = mysqli_query($con,$query);
     mysqli_close($con);
     return true;
@@ -61,13 +61,13 @@ function deactivate_itemCategory($id) {
 
 function delete_itemCategory($id) {
     $con=connect();
-    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
+    $query = 'SELECT * FROM dbitemcategory WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
-    $query = "UPDATE dbItemCategory SET status = 'Deleted' WHERE id = '$id'";
+    $query = "UPDATE dbitemcategory SET status = 'Deleted' WHERE id = '$id'";
     $result = mysqli_query($con,$query);
     mysqli_close($con);
     return true;
@@ -79,7 +79,7 @@ function delete_itemCategory($id) {
  */
 function retrieve_ItemCategory($category) {
     $con = connect();
-    $query = "SELECT * FROM dbItemCategory WHERE id = '" . $category . "'";
+    $query = "SELECT * FROM dbitemcategory WHERE id = '" . $category . "'";
     $result = mysqli_query($con, $query);
     if (mysqli_num_rows($result) !== 1) {
         mysqli_close($con);
@@ -97,7 +97,7 @@ function retrieve_ItemCategory($category) {
  */
 function retrieve_ItemCategory_by_name($name) {
     $con = connect();
-    $query = "SELECT * FROM dbItemCategory WHERE name = '" . $name . "'";
+    $query = "SELECT * FROM dbitemcategory WHERE name = '" . $name . "'";
     $result = mysqli_query($con, $query);
     if (mysqli_num_rows($result) !== 1) {
         mysqli_close($con);
@@ -111,7 +111,7 @@ function retrieve_ItemCategory_by_name($name) {
 
 function get_all_ItemCategory() {
     $con = connect();
-    $query = "SELECT * FROM dbItemCategory";
+    $query = "SELECT * FROM dbitemcategory";
     $result = mysqli_query($con, $query);
 
     // If no groups are found, return an empty array
@@ -142,14 +142,14 @@ function get_all_ItemCategory() {
  */
 function update_itemCategory($id, $name, $bananaBox, $itemsPerBox) {
     $con=connect();
-    $query = 'SELECT * FROM dbItemCategory WHERE id = "' . $id . '"';
+    $query = 'SELECT * FROM dbitemcategory WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
 
-    $update_query = "UPDATE `dbItemCategory` SET 
+    $update_query = "UPDATE `dbitemcategory` SET 
        `name` = '$name', 
        `bananaBox` = '$bananaBox', 
        `itemsPerBox` = '$itemsPerBox' 

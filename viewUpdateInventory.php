@@ -1,4 +1,3 @@
-
 <?php
     session_cache_expire(30);
     session_start();
@@ -12,13 +11,13 @@
         $userID = $_SESSION['_id'];
     }
 
+    // Add database includes here
+
     require_once('database/dbinfo.php');
     require_once('database/dbPersons.php');
     require_once('database/dbInventoryEvent.php');
     require_once('database/dbItemCategory.php');
     require_once('database/dbItemCounts.php');
-    
-    $con = connect();
 
     /* 
     * _POST is empty when the page is first loaded.

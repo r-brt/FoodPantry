@@ -45,7 +45,7 @@ if ($selectedWeek) {
             COALESCE(SUM(CASE WHEN ie.location = 'Warehouse' THEN dbic.quantity ELSE 0 END), 0) as warehouse_boxes,
             COALESCE(SUM(CASE WHEN ie.location = 'Pantry' THEN dbic.quantity ELSE 0 END), 0) as pantry_boxes,
             COALESCE(SUM(dbic.quantity), 0) as total_boxes
-        FROM dbItemCategory dic
+        FROM dbitemcategory dic
         INNER JOIN dbitemcounts dbic ON dic.id = dbic.itemCategoryId
         INNER JOIN dbinventoryevent ie ON dbic.inventoryEventId = ie.id
         WHERE dic.status = 'Active'
@@ -72,7 +72,6 @@ if ($result) {
         $items[] = $row;
     }
 }
-
 
 ?>
 
