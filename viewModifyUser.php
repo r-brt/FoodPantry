@@ -11,6 +11,7 @@
         // 0 = not logged in, 1 = standard user, 2 = manager (Admin), 3 super admin (TBI)
         $accessLevel = $_SESSION['access_level'];
         $userID = $_SESSION['_id'];
+        $personId = $_SESSION['_personId'];
     }
 
     // Was an ID supplied?
@@ -102,7 +103,11 @@
             }
             if(empty($errors)){
                 if(update_person_by_personId($thePerson->get_personId(), $id, $first_name, $last_name, $email, $type)){
-                    $_SESSION['_id'] = $id;
+                    if($thePerson->get_personId() == $personId){
+                        $_SESSION['_id'] = $id;
+                        $_SESSION['f_name'] = $first_name;
+                        $_SESSION['l_name'] = $last_name;  
+                    }
                     header('Location: viewAuditUsers.php');
                     die();
                 }
@@ -439,7 +444,7 @@
                                 <tr>
                                     <td class="modify-table-label"><label class="updateInv-label" for="role">Role: </label></td>
                                     <td class="modify-table-input"><select name="role" class="modify-role-select" id="role" 
-                                            <?php if ($thePerson->get_id() == $userID) echo("disabled");?>>
+                                            <?php if ($thePerson->get_personId() == $personId) echo("disabled");?>>
                                             <?php if ($accessLevel >= 3):?> 
                                                 <option value="Superadmin">Superadmin</option>
                                             <?php endif;?>
