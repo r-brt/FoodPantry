@@ -71,7 +71,6 @@ if ($result) {
     }
 }
 
-
 ?>
 
 <!DOCTYPE html>
