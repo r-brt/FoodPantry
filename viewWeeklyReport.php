@@ -84,6 +84,11 @@
     $previousCounts = array();
     if ($selectedWeek) {
         $currentEvent = retrieve_inventoryEvent($selectedWeek);
+        /* Check if event exists (prevents crash if event was deleted) */
+        if(!$currentEvent) {
+            header('Location: viewWeeklyReport.php');
+            die();
+        }
         $currentDate = $currentEvent->getDate();
 
         /* Get all events on the current date, sorted by ID DESC */

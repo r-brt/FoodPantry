@@ -131,6 +131,7 @@
             font-weight: 600;
             color: var(--secondary-accent-color);
             margin-bottom: 1rem;
+            text-align: center;
         }
         .event-info {
             background-color: rgba(0,0,0,0.05);
@@ -141,14 +142,6 @@
         .event-info p {
             margin: 0.5rem 0;
             color: var(--page-font-color);
-            font-weight: 500;
-        }
-        .success-message {
-            background-color: #dcfce7;
-            color: #166534;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
             font-weight: 500;
         }
         .modify-table {
@@ -212,6 +205,18 @@
         .modify-cancel-btn:hover {
             background-color: rgba(0,0,0,0.3);
         }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            text-decoration: none;
+            border-radius: 0.25rem;
+        }
+        .back-btn:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
         @media only screen and (max-width: 768px) {
             .modify-table th,
             .modify-table td {
@@ -230,6 +235,8 @@
 <body>
     <?php require_once('header.php') ?>
     <main class="edit-container">
+        <a href="viewEditDeleteInventory.php" class="back-btn">← Back</a>
+
         <h1 class="title">Edit Inventory</h1>
 
         <!-- Event Info (Read-Only) -->
@@ -241,9 +248,7 @@
 
         <!-- Success Message -->
         <?php if($success): ?>
-            <div class="success-message">
-                ✓ Inventory updated successfully!
-            </div>
+            <h4 style="color:black;"><i>Inventory Updated: <?= date("F jS, Y", strtotime($eventDate)) ?>  -  <?= htmlspecialchars($eventLocation) ?>  -  Event ID: <?= htmlspecialchars($eventId) ?></i></h4>
         <?php endif; ?>
 
         <!-- Error Messages -->
