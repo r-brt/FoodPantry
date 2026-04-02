@@ -860,6 +860,12 @@ if (date("H:i:s") > "18:19:59") {
                     <span>Manage Item Categories</span>
                 </div>
                 </a>');
+                echo('<a href="viewEditDeleteInventory.php" style="text-decoration: none;">
+                <div class="in-nav">
+                    <img src="images/clipboard-list-alt.svg" alt="Inventory Icon">
+                    <span>Manage Inventory</span>
+                </div>
+                </a>');
             }
 echo('<a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">

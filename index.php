@@ -499,9 +499,17 @@
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/list-solid.svg" alt="Categories Icon">
         </div>
-        
+
         <div class="large-text-sub" style="color:white;">Manage Item Categories</div>
         <div class="graph-text" style="color:white;">Add, edit, and delete item categories.</div>
+    </div>
+    <div class="content-box-test" onclick="window.location.href='viewEditDeleteInventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Manage Inventory Icon">
+        </div>
+
+        <div class="large-text-sub" style="color:white;">Manage Inventory</div>
+        <div class="graph-text" style="color:white;">Edit, and delete inventories.</div>
     </div>
             </div>
 <!--
@@ -736,11 +744,11 @@
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/clipboard-checklist.svg" alt="Inventory Icon">
         </div>
-        
+
         <div class="large-text-sub" style="color:white;">Update Inventory Log</div>
         <div class="graph-text" style="color:white;">Add inventory entry.</div>
     </div>
-    
+
     <!--Weekly Inventory Report -->
     <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
