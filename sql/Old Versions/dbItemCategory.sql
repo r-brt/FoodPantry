@@ -24,10 +24,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `dbItemCategory`
+-- Table structure for table `dbitemcategory`
 --
 
-CREATE TABLE `dbItemCategory` (
+CREATE TABLE `dbitemcategory` (
   `id` int(11) NOT NULL,
   `name` text NOT NULL,
   `status` varchar(11) NOT NULL
@@ -38,9 +38,9 @@ CREATE TABLE `dbItemCategory` (
 --
 
 --
--- Indexes for table `dbItemCategory`
+-- Indexes for table `dbitemcategory`
 --
-ALTER TABLE `dbItemCategory`
+ALTER TABLE `dbitemcategory`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -48,9 +48,9 @@ ALTER TABLE `dbItemCategory`
 --
 
 --
--- AUTO_INCREMENT for table `dbItemCategory`
+-- AUTO_INCREMENT for table `dbitemcategory`
 --
-ALTER TABLE `dbItemCategory`
+ALTER TABLE `dbitemcategory`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 COMMIT;
 
