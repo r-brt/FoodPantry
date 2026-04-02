@@ -24,10 +24,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `dbInventoryEvent`
+-- Table structure for table `dbinventoryevent`
 --
 
-CREATE TABLE `dbInventoryEvent` (
+CREATE TABLE `dbinventoryevent` (
   `id` int(11) NOT NULL,
   `personId` varchar(11) NOT NULL,
   `date` date NOT NULL
@@ -38,9 +38,9 @@ CREATE TABLE `dbInventoryEvent` (
 --
 
 --
--- Indexes for table `dbInventoryEvent`
+-- Indexes for table `dbinventoryevent`
 --
-ALTER TABLE `dbInventoryEvent`
+ALTER TABLE `dbinventoryevent`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -48,9 +48,9 @@ ALTER TABLE `dbInventoryEvent`
 --
 
 --
--- AUTO_INCREMENT for table `dbInventoryEvent`
+-- AUTO_INCREMENT for table `dbinventoryevent`
 --
-ALTER TABLE `dbInventoryEvent`
+ALTER TABLE `dbinventoryevent`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1000;
 COMMIT;
 

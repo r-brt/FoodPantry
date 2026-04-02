@@ -62,7 +62,7 @@ $sql = "
         dic.itemsPerBox,
         dbic.quantity * dic.itemsPerBox as total_count,
         dbic.inventoryEventID as inventoryEventId
-    FROM dbItemCategory dic
+    FROM dbitemcategory dic
     INNER JOIN dbitemcounts dbic on dic.id = dbic.itemCategoryId
     WHERE dbic.inventoryEventId = ?
     ORDER BY dic.name, dbic.inventoryEventID DESC

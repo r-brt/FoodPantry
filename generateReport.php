@@ -37,7 +37,7 @@ if ($eventResult) {
 // Fetch food categories
 $categoryResult = $conn->query("
     SELECT id, name
-    FROM dbItemCategory
+    FROM dbitemcategory
     WHERE status = 'Active'
     ORDER BY name ASC
 ");
@@ -62,7 +62,7 @@ if ($selectedCategory) {
             COALESCE(SUM(dbic.quantity), 0) as total_boxes
         FROM dbinventoryevent ie
         LEFT JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
-        LEFT JOIN dbItemCategory dic ON dbic.itemCategoryId = dic.id
+        LEFT JOIN dbitemcategory dic ON dbic.itemCategoryId = dic.id
         WHERE dic.id = ?
         GROUP BY DATE(ie.date), dic.name, dic.itemsPerBox
         ORDER BY DATE(ie.date) ASC
