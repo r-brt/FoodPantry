@@ -38,9 +38,9 @@
     <title>Edit/Delete Inventory | Whiskey Valor Foundation</title>
     <style>
         .main-container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 2rem auto;
-            padding: 1rem;
+            padding: 1rem 2rem;
         }
         .title {
             font-size: 2rem;
@@ -62,6 +62,10 @@
             text-align: left;
             font-weight: 500;
         }
+        .inventory-table th:last-child,
+        .inventory-table td:last-child {
+            width: 220px;
+        }
         .inventory-table td {
             padding: 1rem;
             border-bottom: 1px solid var(--shadow-and-border-color);
@@ -71,29 +75,39 @@
             background-color: rgba(255,255,255,0.05);
         }
         .modify-btn {
-            padding: 0.4rem 1rem;
+            padding: 0.6rem 1.3rem;
             background-color: var(--accent-color);
             color: var(--button-font-color);
             border: none;
             border-radius: 0.25rem;
             cursor: pointer;
             font-weight: 500;
+            font-size: 1rem;
             margin-right: 0.5rem;
         }
         .modify-btn:hover {
             opacity: 0.85;
         }
-        .back-btn {
-            display: inline-block;
-            margin-bottom: 1rem;
-            padding: 0.5rem 1rem;
-            background-color: rgba(0,0,0,0.2);
-            color: var(--page-font-color);
-            text-decoration: none;
+        .delete-btn {
+            padding: 0.6rem 1.3rem;
+            background-color: #dc2626;
+            color: white;
+            border: none;
             border-radius: 0.25rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
         }
-        .back-btn:hover {
-            background-color: rgba(0,0,0,0.3);
+        .delete-btn:hover {
+            background-color: #b91c1c;
+        }
+        .success-message {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
         }
         .empty-state {
             text-align: center;
@@ -115,13 +129,23 @@
 <body>
     <?php require_once('header.php') ?>
     <main class="main-container">
-        <a href="inventory.php" class="back-btn">← Back to Inventory</a>
-
         <h1 class="title">Edit/Delete Inventory</h1>
+
+        <!-- Success Message -->
+        <?php if(isset($_GET['deleted']) && $_GET['deleted'] == 'success'): ?>
+            <?php
+                $deletedDate = $_GET['date'] ?? '';
+                $deletedLocation = $_GET['location'] ?? '';
+                $deletedEventId = $_GET['eventId'] ?? '';
+                $formattedDate = $deletedDate ? date("F jS, Y", strtotime($deletedDate)) : '';
+            ?>
+            <h4 style="color:black;"><i>Inventory Event Deleted: <?= $formattedDate ?>  -  <?= htmlspecialchars($deletedLocation) ?>  -  Event ID: <?= htmlspecialchars($deletedEventId) ?></i></h4>
+        <?php endif; ?>
 
         <table class="inventory-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Date</th>
                     <th>Location</th>
                     <th>Event ID</th>
@@ -130,21 +154,25 @@
             </thead>
             <tbody>
                 <?php if(count($allEventObjects) > 0): ?>
-                    <?php foreach($allEventObjects as $event): ?>
+                    <?php foreach($allEventObjects as $index => $event): ?>
                         <tr>
+                            <td><?= $index + 1 ?></td>
                             <td><?= date('M j, Y', strtotime($event->getDate())) ?></td>
                             <td><?= htmlspecialchars($event->getLocation()) ?></td>
                             <td><?= htmlspecialchars($event->getId()) ?></td>
-                            <td>
-                                <a href="editInventoryEvent.php?id=<?= htmlspecialchars($event->getId()) ?>">
+                            <td style="white-space: nowrap;">
+                                <a href="editInventoryEvent.php?id=<?= htmlspecialchars($event->getId()) ?>" style="display: inline-block;">
                                     <button class="modify-btn">Edit</button>
+                                </a>
+                                <a href="deleteInventoryEvent.php?id=<?= htmlspecialchars($event->getId()) ?>" style="display: inline-block;">
+                                    <button class="delete-btn">Delete</button>
                                 </a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="4" class="empty-state">
+                        <td colspan="5" class="empty-state">
                             No inventory records found.
                         </td>
                     </tr>

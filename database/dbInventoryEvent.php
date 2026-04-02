@@ -47,20 +47,27 @@ function add_inventoryEvent($personId, $location, $date) {
  */
 
 function remove_inventoryEvent($id) {
-    $con=connect();
+    $con = connect();
+
+    /* Check if event exists */
     $query = 'SELECT * FROM dbinventoryevent WHERE id = "' . $id . '"';
-    $result = mysqli_query($con,$query);
+    $result = mysqli_query($con, $query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
+
+    /* Step 1: Delete all child itemcounts first (prevents orphaned records) */
+    $deleteItems = 'DELETE FROM dbitemcounts WHERE inventoryEventId = "' . $id . '"';
+    mysqli_query($con, $deleteItems);
+
+    /* Step 2: Delete the inventory event */
     $query = 'DELETE FROM dbinventoryevent WHERE id = "' . $id . '"';
-    $result = mysqli_query($con,$query);
+    $result = mysqli_query($con, $query);
 
     mysqli_close($con);
     return true;
 }
-
 
 /*
  * @return an Event from dbEvents table matching a particular id.
