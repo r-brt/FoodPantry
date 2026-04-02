@@ -85,7 +85,12 @@
             $first_name = $_POST["fname"];
             $last_name = $_POST["lname"];
             $email = $_POST["email"];
-            $type = $_POST["role"];
+            if(isset($_POST["role"])){
+                $type = $_POST["role"];
+            }
+            else{
+                $type = $thePerson->get_type();
+            }
             if($thePerson->get_id() != $id && retrieve_person($_POST["id"])){
                 $errors[] = "Username already exists";
             }
@@ -97,6 +102,7 @@
             }
             if(empty($errors)){
                 if(update_person_by_personId($thePerson->get_personId(), $id, $first_name, $last_name, $email, $type)){
+                    $_SESSION['_id'] = $id;
                     header('Location: viewAuditUsers.php');
                     die();
                 }
