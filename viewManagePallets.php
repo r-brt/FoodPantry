@@ -5,35 +5,21 @@
     $loggedIn = false;
     $accessLevel = 0;
     $userID = null;
-    $errors = [];
+    $personId = null;
     if (isset($_SESSION['_id'])) {
         $loggedIn = true;
         $accessLevel = $_SESSION['access_level'];
         $userID = $_SESSION['_id'];
+        $personId = $_SESSION['_personId'];
     }
+
+    // Add database includes here
+
     require_once('database/dbinfo.php');
     require_once('database/dbPersons.php');
-    require_once('database/dbInventoryEvent.php');
+    require_once('database/dbPalletEvent.php');
     require_once('database/dbItemCategory.php');
-    require_once('database/dbItemCounts.php');
-    $con = connect();
-
-    //New Categorys
-        if (isset($_POST['add_category'])) {
-            $cat_name = trim($_POST['cat_name']);
-            $bananaBox = isset($_POST['bananaBox']) ? 1 : 0;
-            $itemsPerBox = intval($_POST['itemsPerBox']);
-            $status = "Active";
-
-            if (retrieve_ItemCategory_by_name($cat_name)) {
-                $errors[] = "Category already exists";
-            } else {
-                add_itemCategory($cat_name, $bananaBox, $itemsPerBox, $status);
-
-                header("Location: viewItemCategories.php");
-                exit();
-            }
-        }
+    require_once('database/dbPalletCounts.php');
 
 ?>
     
@@ -41,7 +27,7 @@
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>View Item Categories | CCDA</title>
+    <title>Manage Pallets | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .title {
@@ -194,58 +180,45 @@
     <?php require_once('header.php'); ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Item Categories</h1>
-
-            <?php if (!empty($errors)): ?>
-                <ul>
-                    <?php foreach($errors AS $error): ?>
-                        <li><?php echo("<h4 style=\"color:red;\"><i>".$error."</i></h4>"); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-            <?php 
-                require_once('database/dbItemCategory.php');
-                /* display table of Item Categories with a given status (Active/Inactive/Deleted) */
-                $display_accounts_by_status = function($status, $accessLevel){
+            <h1 class="title">Manage Pallets</h1>
+                
+                <?php 
+                /* display table for each pallet */
+                foreach(get_all_palletEvents() as $pallet){
+                    $palletCounts = get_palletCounts_by_palletEvent($pallet->getId());
                     echo '
                     <div class="report-section">
-                        <h2>'.$status.' Item Categories</h2>
+                        <h2>'.$pallet->getName().' </h2>
                         <div class="table-wrapper">
                             <table class="report-table">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
+                                        <th>Boxes</th>
                                         <th>Banana Box</th>
                                         <th>Items Per Box</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody> ';
-                            
-                                $num_active = 0;
-                                $categories = get_all_ItemCategory();
-                                foreach ($categories as $category) {
-                                    if($category->getStatus() == $status){
-                                        $num_active += 1;
-
-                                        $name = $category->getName();
-                                        $itemsPerBox = $category->getItemsPerBox();
-                                        $bananaBox = $category->getBananaBox() == 1 ? "✓" : "";
-
-                                        echo '
+                                foreach($palletCounts as $count){
+                                    $category = retrieve_ItemCategory($count->getItemCategory());
+                                    echo '
                                         <tr>
-                                            <td>' . $name . '</td>
-                                            <td style="text-align: center;">' . $bananaBox . '</td>
-                                            <td>' . $itemsPerBox . '</td>';
-                                        echo ' 
-                                            <td><a href="viewModifyItemCategory.php?id=' . $category->getId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
+                                            <td>' . $category->getName() . '</td>
+                                            <td>' . $count->getQuantity() . '</td>
+                                            <td style="text-align: center;">';
+                                                if($category->getBananaBox() == 1){
+                                                    echo '✓';
+                                                }
+                                    echo '
+                                            </td>
+                                            <td style="text-align: center;">'.$category->getItemsPerBox().'</td>
                                         </tr>';
-                                    }
                                 }
-                                if($num_active == 0){
+                                if(count($palletCounts) == 0){
                                     echo '
                                     <tr>
-                                        <td colspan="7" class="empty-state">No '.$status.' Categories</td>
+                                        <td colspan="4" class="empty-state">Empty Pallet</td>
                                     </tr>';
                                 }
 
@@ -254,42 +227,8 @@
                             </table>
                         </div>
                     </div>';
-                            }; ?>
-
-                            <!-- Display Table of accounts for each Status -->
-                            <?php 
-                            $display_accounts_by_status("Active", $accessLevel);
-                            $display_accounts_by_status("Inactive", $accessLevel);
-                            /* Superadmin can see deleted accounts */
-                            if($accessLevel >= 3){
-                                $display_accounts_by_status("Deleted", $accessLevel);
-                            }
-                            ?>
-                            <div class ="report-section">
-                <h2>Add New Item Category</h2>
-                <form method="POST" action= "viewItemCategories.php">
-                    <div style="display:flex; flex-direction:column; gap:1rem; max-width:400px;">
-                        <div>
-                            <label>Category Name:</label><br>
-                            <input type="text" name="cat_name" required>
-                        </div>
-                        <div>
-                            <label>Items Per Box:</label><br>
-                            <input type="number" name="itemsPerBox" min="0" value="0" required>
-                        </div>
-                        <div>
-                            <label>
-                                <input type="checkbox" name="bananaBox">
-                                Banana Box
-                            </label>
-                        </div>
-                        <div>
-                            <input type="submit" name="add_category" value="Add Category" class="generate-btn">
-                        </div>
-                </form>
-        </div>
-        
-                
+                    }?>
+         
     </main>
 
 </body>
