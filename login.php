@@ -104,7 +104,7 @@
 }
 * { font-family: Quicksand, sans-serif; }
 	</style>
-        <title>Whiskey Valor Foundation | Log In</title>
+        <title>CCDA | Log In</title>
     </head>
     <body>
 <div class="h-screen flex">

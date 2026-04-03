@@ -78,7 +78,7 @@ $(function() {
 });
 </script>
 	<?php require_once('universal.inc') ?>
-        <title>Whiskey Valor | Reports</title>
+        <title>CCDA | Reports</title>
         <style>
             .report_select{
                 display: flex;

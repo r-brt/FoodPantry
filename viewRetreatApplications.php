@@ -13,7 +13,7 @@
 <html>
     <head>
         <?php require_once('universal.inc'); ?>
-        <title>Whiskey Valor | View Retreat Applications</title>
+        <title>CCDA | View Retreat Applications</title>
         <link src="css/base.css" rel="stylesheet">
     </head>
     <body>

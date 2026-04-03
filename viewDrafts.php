@@ -57,7 +57,7 @@ mysqli_close($connection);
 <html>
 <head>
     <?php require_once('universal.inc'); ?>
-    <title>Whiskey Valor | Email Drafts</title>
+    <title>CCDA | Email Drafts</title>
     <link href="css/base.css" rel="stylesheet">
     <style>
         .drafts-container {

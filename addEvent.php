@@ -153,7 +153,7 @@
 <html>
     <head>
         <?php require_once('universal.inc') ?>
-        <title>Whiskey Valor | Create Event</title>
+        <title>CCDA | Create Event</title>
     </head>
     <body>
         <?php require_once('header.php') ?>
