@@ -132,7 +132,7 @@ function get_palletCount_by_palletEvent_and_itemCategory($palletEventId, $itemCa
  * change the quantity for an palletCount from dbpalletcounts table: if it does not exist, return false
  */
 
-function update_quantity($id, $quantity){
+function update_pallet_quantity($id, $quantity){
     $con=connect();
     $query = 'SELECT * FROM dbpalletcounts WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);

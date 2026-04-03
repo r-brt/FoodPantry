@@ -407,7 +407,7 @@
                                 <tbody>
                                     <?php 
                         $palletCounts = get_palletCounts_by_palletEvent($thePallet->getId());
-                        $categories = get_all_ItemCategory();
+                        $categories = get_all_active_ItemCategory();
                         foreach($categories AS $category): ?>
                             <tr>
                                 <div class="updateInv-row">
