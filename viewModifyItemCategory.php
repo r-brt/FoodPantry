@@ -31,7 +31,7 @@
     // Does the category exist?
     $theCategory = retrieve_ItemCategory($_GET['id']);
     if (!$theCategory) {
-        echo "That user does not exist";
+        echo "That Category does not exist";
         die();
     }
 

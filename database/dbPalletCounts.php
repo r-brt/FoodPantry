@@ -39,6 +39,26 @@ function delete_palletCount($id){
 }
 
 /*
+ * remove all palletCounts from dbpalletcounts table with a given palletEventId: 
+ * if it does not exist, return false
+ */
+
+function delete_palletCount_by_palletEvent($palletEventId){
+    $con=connect();
+    $query = 'SELECT * FROM dbpalletcounts WHERE palletEventId = "' . $palletEventId . '"';
+    $result = mysqli_query($con,$query);
+    if ($result == null || mysqli_num_rows($result) == 0) {
+        mysqli_close($con);
+        return false;
+    }
+    $query = 'DELETE FROM dbpalletcounts WHERE palletEventId = "' . $palletEventId . '"';
+    $result = mysqli_query($con,$query);
+
+    mysqli_close($con);
+    return true;
+}
+
+/*
  * get palletCount from dbpalletcounts table with given palletEventId: return null if not found.
  */
 
@@ -88,6 +108,24 @@ function get_palletCounts_by_itemCategory($itemCategoryId){
     }
     mysqli_close($con);
     return $itemCount_array;
+}
+
+/*
+ * get all palletCounts from dbpalletcounts table that have a given itemCategoryId
+ */
+
+function get_palletCount_by_palletEvent_and_itemCategory($palletEventId, $itemCategoryId){
+    $con=connect();
+    $query = 'SELECT * FROM dbpalletcounts WHERE itemCategoryId = "' . $itemCategoryId . '" AND palletEventId = "' . $palletEventId . '"';
+    $sql_result = mysqli_query($con,$query);
+    if ($sql_result == null || mysqli_num_rows($sql_result) == 0) {
+        mysqli_close($con);
+        return null;
+    }
+    $array_result = mysqli_fetch_array($sql_result, MYSQLI_ASSOC);
+    $itemCount = new PalletCount($array_result['id'],$array_result['palletEventId'],$array_result['itemCategoryId'],$array_result['quantity']);
+    mysqli_close($con);
+    return $itemCount;
 }
 
 /*

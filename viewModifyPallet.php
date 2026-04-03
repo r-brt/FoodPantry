@@ -21,6 +21,19 @@
     require_once('database/dbItemCategory.php');
     require_once('database/dbPalletCounts.php');
 
+    // Was an ID supplied?
+    if ($_SERVER["REQUEST_METHOD"] == "GET" && !isset($_GET['id'])) {
+        header('Location: index.php');
+        die();
+    } 
+    
+    // Does the Pallet exist?
+    $thePallet = retrieve_PalletEvent($_GET['id']);
+    if (!$thePallet) {
+        echo "That Pallet does not exist";
+        die();
+    }
+
     /* 
     * _POST is empty when the page is first loaded.
     *  Submitting the form on this page reloads the page with data in _POST
@@ -29,12 +42,22 @@
     $submit_success = false;
     $errors = [];
     if (!empty($_POST)) {
+        if(isset($_POST["cancel_button"])){
+            header('Location: viewManagePallets.php');
+            die();
+        }
+        else if(isset($_POST["delete_button"])){
+            remove_palletEvent($thePallet->getId());
+            header('Location: viewManagePallets.php');
+            die();          
+        }
+
         $updatedItems = array();
         foreach($_POST as $cat => $value){
             if($cat == "name"){
                 $name = $value;
-                if($name == "Pallet"){
-                    $name = "PALLET_PLACEHOLDER_NAME";
+                if($name == $thePallet->getName()){
+                    continue;
                 }
                 else if(!pallet_name_unique($name)){
                     $errors[] = "Pallet name already exists";
@@ -74,16 +97,17 @@
 
         /* if at least 1 item was updated, create inventory event and add items to database */
         if(count($updatedItems) > 0){
-            $palletEventId = add_palletEvent($name, $personId);
-            if($name == "PALLET_PLACEHOLDER_NAME"){
-                $name = "Pallet " . $palletEventId;
+            $palletEventId = $thePallet->getId();
+            if(isset($name) && $name != $thePallet->getName()){
                 update_palletEvent_name($palletEventId, $name);
             }
+            delete_palletCount_by_palletEvent($palletEventId);
             foreach($updatedItems as $categoryId => $quantity){
                 add_palletCount($palletEventId, $categoryId, $quantity);
             }
 
-            $submit_success = true;
+            header('Location: viewManagePallets.php');
+            die();
         } 
         else{
             /* if errors have already been detected array was emptied. Do no show error for missing data */
@@ -99,7 +123,7 @@
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>Add Pallet | CCDA</title>
+    <title>Modify Pallet | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .title {
@@ -247,6 +271,50 @@
             color: var(--page-font-color);
             font-size: 0.9rem;
         }
+        .modify-save-btn,
+        .modify-cancel-btn,
+        .modify-delete-btn,
+        .modify-activate-btn,
+        .modify-deactivate-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            max-width: 500px;
+        }
+        .modify-delete-btn {
+            background-color: darkred;
+            color: var(--button-font-color);
+        }
+        .modify-deactivate-btn {
+            color: red;
+        }
+        .modify-activate-btn {
+            color: green;
+        }
+        .modify-delete-btn:hover{
+            opacity: 0.75;
+            background-color: darkred;
+        }
+        .modify-save-btn:hover,
+        .modify-cancel-btn:hover,
+        .modify-activate-btn:hover,
+        .modify-deactivate-btn:hover,
+        .generate-btn:hover {
+            opacity: 0.85;
+        }
+        .modifyUsers-formBtns{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
         .generate-btn {
             padding: 0.5rem 1.5rem;
             background-color: var(--accent-color);
@@ -298,7 +366,7 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Add New Pallet</h1>
+            <h1 class="title">Modify Pallet</h1>
             <?php 
                 /* Display success message after submitting pallet */
                 if($submit_success == true){
@@ -313,15 +381,15 @@
                 </ul>
             <?php endif; ?>
 
-            <!-- Add Pallet -->
+            <!-- Modify Pallet -->
             <div class="report-section">
-                <h2>Pallet Input</h2>              
-                <form name="palletForm" method="POST" action="viewAddPallet.php">
+                <h2>Modifying Pallet: <?php echo($thePallet->getName()); ?></h2>              
+                <form name="palletForm" method="POST" action="viewModifyPallet.php?id=<?php echo $thePallet->getId(); ?>">
                     <div class="updateInv-optionRow">
                         <div class="updateInv-option">
                             <label class="updateInv-optionLabel" for="name">Pallet Name:</label>
                             <input type="text" class="updateInv-qty" min="0" placeholder="Qty" 
-                                            value="Pallet"
+                                            value="<?php echo($thePallet->getName()); ?>"
                                             name="name" 
                                             id="name">
                         </div>
@@ -338,6 +406,7 @@
                                 </thead>
                                 <tbody>
                                     <?php 
+                        $palletCounts = get_palletCounts_by_palletEvent($thePallet->getId());
                         $categories = get_all_ItemCategory();
                         foreach($categories AS $category): ?>
                             <tr>
@@ -347,7 +416,22 @@
                                             <?php echo($category->getName());?>
                                     </label></td>
                                     <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
-                                            value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
+                                            <?php 
+                                                    $val = "";
+                                                    if (!empty($errors) && isset($_POST[$category->getId()])){
+                                                        $val = $_POST[$category->getId()];
+                                                        
+                                                    } 
+                                                    else{
+                                                        foreach($palletCounts as $count){
+                                                            if($count->getItemCategory() == $category->getId()){
+                                                                $val = $count->getQuantity();
+                                                                break;
+                                                            }
+                                                        }
+                                                    }  
+                                                ?>
+                                            value="<?php echo($val)?>"
                                             name="<?php echo($category->getId())?>" 
                                             id="qty_<?php echo($category->getId())?>"></td>
                                     <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
@@ -359,7 +443,15 @@
                             </table>
                         </div>
                     </div>
-                    <input type="submit" value="Add New Pallet" />
+                    <div class="modifyUsers-formBtns">
+                        <button name="save_button" class="modify-save-btn">Save Changes</button>
+                        <button name="cancel_button" class="modify-cancel-btn" formnovalidate>Cancel</button>
+                        <hr>
+                        <button name="delete_button" name="delete_button" class="modify-delete-btn" 
+                            onclick="return confirm('Are you sure you want to\nDELETE Pallet: <?php echo $thePallet->getName();?>?')"
+                            formnovalidate>Delete Pallet
+                        </button>
+                    </div>
                 </form>
             </div>
 

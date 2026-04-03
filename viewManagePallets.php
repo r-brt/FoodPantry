@@ -147,6 +147,13 @@
             color: var(--page-font-color);
             font-size: 0.9rem;
         }
+        .pallet-table-header {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 1rem;
+        }
         .modify-btn {
             padding: 0.5rem 1.5rem;
             background-color: var(--accent-color);
@@ -157,9 +164,54 @@
             font-size: 0.95rem;
             font-weight: 500;
             width: auto;
+            margin-bottom: 1rem;
         }
         .modify-btn:hover {
             opacity: 0.85;
+        }
+        .modify-save-btn,
+        .modify-cancel-btn,
+        .modify-delete-btn,
+        .modify-activate-btn,
+        .modify-deactivate-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            max-width: 500px;
+        }
+        .modify-delete-btn {
+            background-color: darkred;
+            color: var(--button-font-color);
+        }
+        .modify-deactivate-btn {
+            color: red;
+        }
+        .modify-activate-btn {
+            color: green;
+        }
+        .modify-delete-btn:hover{
+            opacity: 0.75;
+            background-color: darkred;
+        }
+        .modify-save-btn:hover,
+        .modify-cancel-btn:hover,
+        .modify-activate-btn:hover,
+        .modify-deactivate-btn:hover,
+        .generate-btn:hover {
+            opacity: 0.85;
+        }
+        .modifyUsers-formBtns{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
         }
         div.table-wrapper {
                 overflow-x: auto;
@@ -188,7 +240,10 @@
                     $palletCounts = get_palletCounts_by_palletEvent($pallet->getId());
                     echo '
                     <div class="report-section">
+                    <div class="pallet-table-header">
                         <h2>'.$pallet->getName().' </h2>
+                        <td><a href="viewModifyPallet.php?id=' . $pallet->getId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
+                    </div>
                         <div class="table-wrapper">
                             <table class="report-table">
                                 <thead>
@@ -228,6 +283,19 @@
                         </div>
                     </div>';
                     }?>
+                    
+                        <form action="viewAddPallet.php" style="display: inline;">
+                            <div class="modifyUsers-formBtns">
+                                <button name="save_button" class="modify-save-btn">Add New Pallet</button>
+                            </div>
+                        </form>
+                        <form action="viewUpdateInventory.php" style="display: inline;">
+                            <div class="modifyUsers-formBtns">
+                                <button name="cancel_button" class="modify-cancel-btn" formnovalidate>Back</button>
+                            </div>
+                        </form>
+                        
+                    </div>
          
     </main>
 
