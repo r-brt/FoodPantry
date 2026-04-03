@@ -7,7 +7,7 @@
     <html>
         <head>
             <?php require_once('universal.inc') ?>
-            <title>Whiskey Valor | Sign-Up for Event</title>
+            <title>CCDA | Sign-Up for Event</title>
             <style>
                 .h1 {
                         font-family: Quicksand, sans-serif;
