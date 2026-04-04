@@ -12,10 +12,12 @@ include_once(dirname(__FILE__).'/../database/dbPalletCounts.php');
  */
 
 function add_palletEvent($name, $personId) {
+
     $con=connect();
-    mysqli_query($con,'INSERT INTO dbpalletevent (name, personId) VALUES("' .
+    mysqli_query($con,'INSERT INTO dbpalletevent (name, personId, date) VALUES("' .
             $name . '","' .
-            $personId . '");');							
+            $personId . '","' .
+            date('Y-m-d') . '");');							
     $id = mysqli_insert_id($con);
     mysqli_close($con);
     
