@@ -31,7 +31,7 @@
 <html>
     <head>
         <?php require_once('universal.inc'); ?>
-        <title>Whiskey Valor | View Application</title>
+        <title>CCDA | View Application</title>
         <!--<link rel="stylesheet" href="css/base.css">-->
         <link rel="stylesheet" href="css/application.css">
     </head>

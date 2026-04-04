@@ -137,6 +137,34 @@ function get_all_ItemCategory() {
     return $categories;
 }
 
+function get_all_active_ItemCategory() {
+    $con = connect();
+    $query = "SELECT * FROM dbitemcategory WHERE status = 'Active'";
+    $result = mysqli_query($con, $query);
+
+    // If no groups are found, return an empty array
+    /*if (mysqli_num_rows($result) == 0) {
+        mysqli_close($con);
+        return [];
+    }*/
+
+    // Create an array of Group objects
+    $categories = [];
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $categories[] = new ItemCategory($row['id'], $row['name'], $row['bananaBox'], $row['itemsPerBox'], $row['status']);
+        //$category[] = $category;
+        }
+    }
+    /*while ($row = mysqli_fetch_assoc($result)) {
+        $category = new ItemCategory($row['id'], $row['name'], $row['status']);
+        //$category[] = $category;
+    }*/
+
+    mysqli_close($con);
+    return $categories;
+}
+
 /*
  * Update an exisint item Category with a new name, bananaBox, and itemsPerBox
  */

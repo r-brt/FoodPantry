@@ -38,7 +38,7 @@
 <html>
     <head>
         <?php require_once('universal.inc') ?>
-        <title>Whiskey Valor | View Date</title>
+        <title>CCDA | View Date</title>
     </head>
     <body>
         <?php require_once('header.php') ?>

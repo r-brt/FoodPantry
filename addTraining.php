@@ -101,7 +101,7 @@
 <html>
     <head>
         <?php require_once('universal.inc') ?>
-        <title>Whiskey Valor | Create Training</title>
+        <title>CCDA | Create Training</title>
     </head>
     <body>
         <?php require_once('header.php') ?>

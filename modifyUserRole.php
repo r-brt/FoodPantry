@@ -91,7 +91,7 @@
 <html>
     <head>
         <?php require_once('universal.inc') ?>
-        <title>Whiskey Valor | Archive User</title>
+        <title>CCDA | Archive User</title>
         <style>
             .modUser{
                 display: flex;
