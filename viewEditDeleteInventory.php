@@ -19,16 +19,74 @@
 
     require_once('database/dbinfo.php');
     require_once('database/dbInventoryEvent.php');
+    require_once('database/dbItemCounts.php');
 
-    /* Get all inventory events sorted by date (newest first), then by ID (highest first) */
+    /* Get sort order from dropdown (default: newest-oldest) */
+    $sortOrder = $_GET['sort'] ?? 'newest-oldest';
+
+    /* Get all inventory events */
     $allEventObjects = get_all_inventoryEvents();
-    usort($allEventObjects, function($a, $b) {
-        $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
-        if ($dateDiff != 0) {
-            return $dateDiff;
+
+    /* Sort based on selected order */
+    if($sortOrder == 'oldest-newest') {
+        /* Sort by date (oldest first), then by ID (lowest first) */
+        usort($allEventObjects, function($a, $b) {
+            $dateDiff = strtotime($a->getDate()) - strtotime($b->getDate());
+            if ($dateDiff != 0) {
+                return $dateDiff;
+            }
+            return $a->getId() - $b->getId();
+        });
+    } else {
+        /* Sort by date (newest first), then by ID (highest first) - DEFAULT */
+        usort($allEventObjects, function($a, $b) {
+            $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
+            if ($dateDiff != 0) {
+                return $dateDiff;
+            }
+            return $b->getId() - $a->getId();
+        });
+    }
+
+    /* Group events into pairs (warehouse + matching pantry) */
+    $eventPairs = array();
+    foreach($allEventObjects as $event) {
+        /* Only process warehouse events (pantry will be paired automatically) */
+        if($event->getLocation() == 'Warehouse') {
+            /* Find matching pantry event using the pairing function */
+            $pantryEvent = get_matching_inventoryEvent($event);
+
+            /* Check if warehouse has any non-zero items */
+            $warehouseHasData = false;
+            $warehouseCounts = get_itemCounts_by_inventoryEvent($event->getId());
+            foreach($warehouseCounts as $count) {
+                if($count->getQuantity() > 0) {
+                    $warehouseHasData = true;
+                    break;
+                }
+            }
+
+            /* Check if pantry has any non-zero items */
+            $pantryHasData = false;
+            if($pantryEvent) {
+                $pantryCounts = get_itemCounts_by_inventoryEvent($pantryEvent->getId());
+                foreach($pantryCounts as $count) {
+                    if($count->getQuantity() > 0) {
+                        $pantryHasData = true;
+                        break;
+                    }
+                }
+            }
+
+            $eventPairs[] = array(
+                'warehouse' => $event,
+                'pantry' => $pantryEvent,
+                'date' => $event->getDate(),
+                'warehouseHasData' => $warehouseHasData,
+                'pantryHasData' => $pantryHasData
+            );
         }
-        return $b->getId() - $a->getId();
-    });
+    }
 ?>
 
 <!DOCTYPE html>
@@ -114,6 +172,18 @@
             padding: 3rem 1rem;
             color: var(--inactive-font-color);
         }
+        .sort-container {
+            margin-bottom: 1.5rem;
+        }
+        .select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: white !important;
+            color: var(--page-font-color);
+            cursor: pointer;
+            width: auto;
+        }
         @media only screen and (max-width: 768px) {
             .inventory-table th,
             .inventory-table td {
@@ -136,35 +206,48 @@
             <?php
                 $deletedDate = $_GET['date'] ?? '';
                 $deletedLocation = $_GET['location'] ?? '';
-                $deletedEventId = $_GET['eventId'] ?? '';
                 $formattedDate = $deletedDate ? date("F jS, Y", strtotime($deletedDate)) : '';
             ?>
-            <h4 style="color:black;"><i>Inventory Event Deleted: <?= $formattedDate ?>  -  <?= htmlspecialchars($deletedLocation) ?>  -  Event ID: <?= htmlspecialchars($deletedEventId) ?></i></h4>
+            <h4 style="color:black;"><i>Inventory Event Deleted: <?= $formattedDate ?>  -  <?= htmlspecialchars($deletedLocation) ?></i></h4>
         <?php endif; ?>
+
+        <!-- Sort Order Dropdown -->
+        <div class="sort-container">
+            <form method="GET" style="margin: 0;">
+                <select name="sort" id="sortOrder" class="select" onchange="this.form.submit()">
+                    <option value="newest-oldest" <?= $sortOrder == 'newest-oldest' ? 'selected' : '' ?>>Newest - Oldest</option>
+                    <option value="oldest-newest" <?= $sortOrder == 'oldest-newest' ? 'selected' : '' ?>>Oldest - Newest</option>
+                </select>
+            </form>
+        </div>
 
         <table class="inventory-table">
             <thead>
                 <tr>
                     <th>#</th>
                     <th>Date</th>
-                    <th>Location</th>
-                    <th>Event ID</th>
+                    <th style="text-align: center;">Warehouse</th>
+                    <th style="text-align: center;">Pantry</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if(count($allEventObjects) > 0): ?>
-                    <?php foreach($allEventObjects as $index => $event): ?>
+                <?php if(count($eventPairs) > 0): ?>
+                    <?php foreach($eventPairs as $index => $pair): ?>
                         <tr>
                             <td><?= $index + 1 ?></td>
-                            <td><?= date('M j, Y', strtotime($event->getDate())) ?></td>
-                            <td><?= htmlspecialchars($event->getLocation()) ?></td>
-                            <td><?= htmlspecialchars($event->getId()) ?></td>
+                            <td><?= date('M j, Y', strtotime($pair['date'])) ?></td>
+                            <td style="text-align: center;">
+                                <?= $pair['warehouseHasData'] ? '✓' : '-' ?>
+                            </td>
+                            <td style="text-align: center;">
+                                <?= $pair['pantryHasData'] ? '✓' : '-' ?>
+                            </td>
                             <td style="white-space: nowrap;">
-                                <a href="editInventoryEvent.php?id=<?= htmlspecialchars($event->getId()) ?>" style="display: inline-block;">
+                                <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($pair['warehouse']->getId()) ?>" style="display: inline-block;">
                                     <button class="modify-btn">Edit</button>
                                 </a>
-                                <a href="deleteInventoryEvent.php?id=<?= htmlspecialchars($event->getId()) ?>" style="display: inline-block;">
+                                <a href="deleteInventoryEvent.php?warehouseId=<?= htmlspecialchars($pair['warehouse']->getId()) ?>" style="display: inline-block;">
                                     <button class="delete-btn">Delete</button>
                                 </a>
                             </td>
