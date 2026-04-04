@@ -87,6 +87,45 @@
             );
         }
     }
+
+    /* Also process Pantry events with no matching warehouse */
+    foreach($allEventObjects as $event) {
+        if($event->getLocation() == 'Pantry') {
+            $warehouseEvent = get_matching_inventoryEvent($event);
+
+            /* Only add if no matching warehouse exists */
+            if($warehouseEvent === null) {
+                /* Check if pantry has any non-zero items */
+                $pantryHasData = false;
+                $pantryCounts = get_itemCounts_by_inventoryEvent($event->getId());
+                foreach($pantryCounts as $count) {
+                    if($count->getQuantity() > 0) {
+                        $pantryHasData = true;
+                        break;
+                    }
+                }
+
+                $eventPairs[] = array(
+                    'warehouse' => null,
+                    'pantry' => $event,
+                    'date' => $event->getDate(),
+                    'warehouseHasData' => false,
+                    'pantryHasData' => $pantryHasData
+                );
+            }
+        }
+    }
+
+    /* Re-sort eventPairs by date after adding orphan pantry events */
+    if($sortOrder == 'oldest-newest') {
+        usort($eventPairs, function($a, $b) {
+            return strtotime($a['date']) - strtotime($b['date']);
+        });
+    } else {
+        usort($eventPairs, function($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+    }
 ?>
 
 <!DOCTYPE html>
@@ -244,12 +283,21 @@
                                 <?= $pair['pantryHasData'] ? '✓' : '-' ?>
                             </td>
                             <td style="white-space: nowrap;">
-                                <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($pair['warehouse']->getId()) ?>" style="display: inline-block;">
-                                    <button class="modify-btn">Edit</button>
-                                </a>
-                                <a href="deleteInventoryEvent.php?warehouseId=<?= htmlspecialchars($pair['warehouse']->getId()) ?>" style="display: inline-block;">
-                                    <button class="delete-btn">Delete</button>
-                                </a>
+                                <?php if($pair['warehouse']): ?>
+                                    <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($pair['warehouse']->getId()) ?>" style="display: inline-block;">
+                                        <button class="modify-btn">Edit</button>
+                                    </a>
+                                    <a href="deleteInventoryEvent.php?warehouseId=<?= htmlspecialchars($pair['warehouse']->getId()) ?>" style="display: inline-block;">
+                                        <button class="delete-btn">Delete</button>
+                                    </a>
+                                <?php else: ?>
+                                    <a href="editInventoryEvent.php?pantryId=<?= htmlspecialchars($pair['pantry']->getId()) ?>" style="display: inline-block;">
+                                        <button class="modify-btn">Edit</button>
+                                    </a>
+                                    <a href="deleteInventoryEvent.php?pantryId=<?= htmlspecialchars($pair['pantry']->getId()) ?>" style="display: inline-block;">
+                                        <button class="delete-btn">Delete</button>
+                                    </a>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
