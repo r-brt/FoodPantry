@@ -22,25 +22,32 @@
     require_once('database/dbItemCounts.php');
     require_once('database/dbItemCategory.php');
 
-    /* Get warehouse event ID parameter */
+    /* Get event ID parameter (either warehouseId or pantryId) */
     $warehouseId = $_GET['warehouseId'] ?? null;
-    if(!$warehouseId) {
-        echo "Invalid warehouse event ID";
+    $pantryId = $_GET['pantryId'] ?? null;
+
+    if($warehouseId) {
+        /* Warehouse-anchored: get warehouse, find matching pantry */
+        $warehouseEvent = retrieve_inventoryEvent($warehouseId);
+        if(!$warehouseEvent || $warehouseEvent->getLocation() != 'Warehouse') {
+            echo "Warehouse event not found";
+            die();
+        }
+        $pantryEvent = get_matching_inventoryEvent($warehouseEvent);
+        $eventDate = $warehouseEvent->getDate();
+    } else if($pantryId) {
+        /* Pantry-anchored: get pantry, find matching warehouse */
+        $pantryEvent = retrieve_inventoryEvent($pantryId);
+        if(!$pantryEvent || $pantryEvent->getLocation() != 'Pantry') {
+            echo "Pantry event not found";
+            die();
+        }
+        $warehouseEvent = get_matching_inventoryEvent($pantryEvent);
+        $eventDate = $pantryEvent->getDate();
+    } else {
+        echo "Invalid event ID";
         die();
     }
-
-    /* Get warehouse event */
-    $warehouseEvent = retrieve_inventoryEvent($warehouseId);
-    if(!$warehouseEvent || $warehouseEvent->getLocation() != 'Warehouse') {
-        echo "Warehouse event not found";
-        die();
-    }
-
-    /* Get paired pantry event using matching function */
-    $pantryEvent = get_matching_inventoryEvent($warehouseEvent);
-
-    /* Get event date for display */
-    $eventDate = $warehouseEvent->getDate();
 
     /* Get item counts for warehouse (if exists) */
     $warehouseCountsMap = array();

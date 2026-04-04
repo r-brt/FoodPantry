@@ -22,27 +22,35 @@
     require_once('database/dbItemCounts.php');
     require_once('database/dbItemCategory.php');
 
-    /* Get warehouse event ID parameter */
+    /* Get event ID parameter (either warehouseId or pantryId) */
     $warehouseId = $_GET['warehouseId'] ?? null;
+    $pantryId = $_GET['pantryId'] ?? null;
     $confirm = $_GET['confirm'] ?? 0;
 
-    if(!$warehouseId) {
+    if(!$warehouseId && !$pantryId) {
         header('Location: viewEditDeleteInventory.php');
         die();
     }
 
-    /* Get warehouse event */
-    $warehouseEvent = retrieve_inventoryEvent($warehouseId);
-    if(!$warehouseEvent || $warehouseEvent->getLocation() != 'Warehouse') {
-        echo "Warehouse event not found";
-        die();
+    if($warehouseId) {
+        /* Warehouse-anchored: get warehouse, find matching pantry */
+        $warehouseEvent = retrieve_inventoryEvent($warehouseId);
+        if(!$warehouseEvent || $warehouseEvent->getLocation() != 'Warehouse') {
+            echo "Warehouse event not found";
+            die();
+        }
+        $pantryEvent = get_matching_inventoryEvent($warehouseEvent);
+        $eventDate = $warehouseEvent->getDate();
+    } else if($pantryId) {
+        /* Pantry-anchored: get pantry, find matching warehouse */
+        $pantryEvent = retrieve_inventoryEvent($pantryId);
+        if(!$pantryEvent || $pantryEvent->getLocation() != 'Pantry') {
+            echo "Pantry event not found";
+            die();
+        }
+        $warehouseEvent = get_matching_inventoryEvent($pantryEvent);
+        $eventDate = $pantryEvent->getDate();
     }
-
-    /* Get paired pantry event using matching function */
-    $pantryEvent = get_matching_inventoryEvent($warehouseEvent);
-
-    /* Get event date for display */
-    $eventDate = $warehouseEvent->getDate();
 
     /* Get item counts for warehouse (if exists) */
     $warehouseCountsMap = array();
@@ -281,7 +289,11 @@
 
             <!-- Confirmation Form -->
             <form method="GET" onsubmit="return confirmDelete()">
-                <input type="hidden" name="warehouseId" value="<?= htmlspecialchars($warehouseId) ?>">
+                <?php if($warehouseId): ?>
+                    <input type="hidden" name="warehouseId" value="<?= htmlspecialchars($warehouseId) ?>">
+                <?php else: ?>
+                    <input type="hidden" name="pantryId" value="<?= htmlspecialchars($pantryId) ?>">
+                <?php endif; ?>
                 <input type="hidden" name="confirm" value="1">
                 <div class="modifyUsers-formBtns">
                     <button type="submit" class="modify-delete-btn">
