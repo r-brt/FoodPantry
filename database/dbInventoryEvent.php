@@ -196,10 +196,22 @@ function get_all_inventoryEvents() {
             return $matching_events[0];
         else if(count($matching_events) > 1){
             /* if multiple inventory events match the given event
-             * pick the first in the array.
-             * We can write smarter event matching in the future
+             * find the one with the closest ID to the first event.
+             * This works because warehouse and pantry are created sequentially
+             * (warehouse first, then pantry with the next ID)
              */
-            return $matching_events[0];
+            $first_event_id = $first_event->getId();
+            $closest_event = $matching_events[0];
+            $closest_diff = abs($matching_events[0]->getId() - $first_event_id);
+
+            foreach($matching_events as $event){
+                $diff = abs($event->getId() - $first_event_id);
+                if($diff < $closest_diff){
+                    $closest_diff = $diff;
+                    $closest_event = $event;
+                }
+            }
+            return $closest_event;
         }    
     }
 

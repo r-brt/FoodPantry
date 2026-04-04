@@ -22,30 +22,46 @@
     require_once('database/dbItemCounts.php');
     require_once('database/dbItemCategory.php');
 
-    /* Get event ID */
-    $eventId = $_GET['id'] ?? null;
+    /* Get warehouse event ID parameter */
+    $warehouseId = $_GET['warehouseId'] ?? null;
     $confirm = $_GET['confirm'] ?? 0;
 
-    if(!$eventId) {
+    if(!$warehouseId) {
         header('Location: viewEditDeleteInventory.php');
         die();
     }
 
-    /* Get event data */
-    $event = retrieve_inventoryEvent($eventId);
-    if(!$event) {
-        echo "Event not found";
+    /* Get warehouse event */
+    $warehouseEvent = retrieve_inventoryEvent($warehouseId);
+    if(!$warehouseEvent || $warehouseEvent->getLocation() != 'Warehouse') {
+        echo "Warehouse event not found";
         die();
     }
 
-    /* Get item counts for this event */
-    $itemCounts = get_itemCounts_by_inventoryEvent($eventId);
+    /* Get paired pantry event using matching function */
+    $pantryEvent = get_matching_inventoryEvent($warehouseEvent);
 
-    /* Build array mapping category ID to ItemCount object */
-    $countsMap = array();
-    foreach($itemCounts as $count) {
-        $categoryId = $count->getItemCategory();
-        $countsMap[$categoryId] = $count;
+    /* Get event date for display */
+    $eventDate = $warehouseEvent->getDate();
+
+    /* Get item counts for warehouse (if exists) */
+    $warehouseCountsMap = array();
+    if($warehouseEvent) {
+        $warehouseItemCounts = get_itemCounts_by_inventoryEvent($warehouseEvent->getId());
+        foreach($warehouseItemCounts as $count) {
+            $categoryId = $count->getItemCategory();
+            $warehouseCountsMap[$categoryId] = $count;
+        }
+    }
+
+    /* Get item counts for pantry (if exists) */
+    $pantryCountsMap = array();
+    if($pantryEvent) {
+        $pantryItemCounts = get_itemCounts_by_inventoryEvent($pantryEvent->getId());
+        foreach($pantryItemCounts as $count) {
+            $categoryId = $count->getItemCategory();
+            $pantryCountsMap[$categoryId] = $count;
+        }
     }
 
     /* Get all item categories */
@@ -53,20 +69,37 @@
 
     $errors = array();
 
-    /* If confirmed, delete the event */
+    /* If confirmed, delete the paired warehouse and pantry events */
     if($confirm == 1) {
-        /* Store event details before deletion */
-        $eventDate = $event->getDate();
-        $eventLocation = $event->getLocation();
-        $eventIdForMessage = $event->getId();
+        $deleteSuccess = true;
+        $locations = array();
 
-        $result = remove_inventoryEvent($eventId);
-        if($result) {
-            /* Pass event details to success message */
-            header('Location: viewEditDeleteInventory.php?deleted=success&date=' . urlencode($eventDate) . '&location=' . urlencode($eventLocation) . '&eventId=' . urlencode($eventIdForMessage));
+        /* Delete warehouse event */
+        if($warehouseEvent) {
+            $result = remove_inventoryEvent($warehouseEvent->getId());
+            if(!$result) {
+                $deleteSuccess = false;
+            } else {
+                $locations[] = 'Warehouse';
+            }
+        }
+
+        /* Delete paired pantry event */
+        if($pantryEvent) {
+            $result = remove_inventoryEvent($pantryEvent->getId());
+            if(!$result) {
+                $deleteSuccess = false;
+            } else {
+                $locations[] = 'Pantry';
+            }
+        }
+
+        if($deleteSuccess) {
+            $locationStr = implode(' & ', $locations);
+            header('Location: viewEditDeleteInventory.php?deleted=success&date=' . urlencode($eventDate) . '&location=' . urlencode($locationStr));
             die();
         } else {
-            $errors[] = "Failed to delete inventory event";
+            $errors[] = "Failed to delete inventory events";
         }
     }
 ?>
@@ -194,20 +227,19 @@
         <?php else: ?>
             <!-- Event Info (Read-Only) -->
             <div class="event-info">
-                <p><strong>Date:</strong> <?= date('M j, Y', strtotime($event->getDate())) ?></p>
-                <p><strong>Location:</strong> <?= htmlspecialchars($event->getLocation()) ?></p>
-                <p><strong>Event ID:</strong> <?= htmlspecialchars($event->getId()) ?></p>
+                <p><strong>Date:</strong> <?= date('M j, Y', strtotime($eventDate)) ?></p>
             </div>
 
             <!-- Items List (Read-Only) -->
-            <h3 style="margin-bottom: 1rem;">Items in this inventory:</h3>
+            <h3 style="margin-bottom: 1rem;">Items to be deleted:</h3>
             <table class="modify-table">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Item Name</th>
                         <th>Items Per Box</th>
-                        <th>Boxes</th>
+                        <th>Warehouse</th>
+                        <th>Pantry</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -218,22 +250,29 @@
                         <?php if($category->getStatus() != 'Active') continue; ?>
                         <?php
                         $categoryId = $category->getId();
-                        if(!isset($countsMap[$categoryId])) continue;
+                        $hasWarehouse = isset($warehouseCountsMap[$categoryId]);
+                        $hasPantry = isset($pantryCountsMap[$categoryId]);
+
+                        if(!$hasWarehouse && !$hasPantry) continue;
+
                         $hasItems = true;
                         $rowNum++;
-                        $qty = $countsMap[$categoryId]->getQuantity();
+
+                        $warehouseQty = $hasWarehouse ? $warehouseCountsMap[$categoryId]->getQuantity() : '-';
+                        $pantryQty = $hasPantry ? $pantryCountsMap[$categoryId]->getQuantity() : '-';
                         ?>
                         <tr>
                             <td><?= $rowNum ?></td>
                             <td><?= htmlspecialchars($category->getName()) ?></td>
                             <td><?= htmlspecialchars($category->getItemsPerBox()) ?></td>
-                            <td><?= $qty ?></td>
+                            <td><?= $warehouseQty ?></td>
+                            <td><?= $pantryQty ?></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if(!$hasItems): ?>
                         <tr>
-                            <td colspan="4" style="text-align: center; color: var(--inactive-font-color);">
-                                No items in this inventory event
+                            <td colspan="5" style="text-align: center; color: var(--inactive-font-color);">
+                                No items in inventory events for this date
                             </td>
                         </tr>
                     <?php endif; ?>
@@ -242,7 +281,7 @@
 
             <!-- Confirmation Form -->
             <form method="GET" onsubmit="return confirmDelete()">
-                <input type="hidden" name="id" value="<?= htmlspecialchars($eventId) ?>">
+                <input type="hidden" name="warehouseId" value="<?= htmlspecialchars($warehouseId) ?>">
                 <input type="hidden" name="confirm" value="1">
                 <div class="modifyUsers-formBtns">
                     <button type="submit" class="modify-delete-btn">
@@ -256,11 +295,19 @@
         <?php endif; ?>
     </main>
     <script>
-        /* Final confirmation before deleting inventory event */
+        /* Final confirmation before deleting inventory events */
         function confirmDelete() {
-            return confirm("<?= date('m/d/Y', strtotime($event->getDate())) ?>\n" +
-                          "<?= htmlspecialchars($event->getLocation()) ?>\n\n" +
-                          "Are you sure you want to delete?");
+            var locations = [];
+            <?php if($warehouseEvent): ?>
+            locations.push('Warehouse');
+            <?php endif; ?>
+            <?php if($pantryEvent): ?>
+            locations.push('Pantry');
+            <?php endif; ?>
+
+            return confirm("Date: <?= date('m/d/Y', strtotime($eventDate)) ?>\n" +
+                          "Locations: " + locations.join(' & ') + "\n\n" +
+                          "Are you sure you want to delete this inventory pair?");
         }
     </script>
 </body>

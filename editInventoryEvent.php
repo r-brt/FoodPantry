@@ -22,32 +22,44 @@
     require_once('database/dbItemCounts.php');
     require_once('database/dbItemCategory.php');
 
-    /* Get event ID */
-    $eventId = $_GET['id'] ?? null;
-    if(!$eventId) {
-        echo "Invalid event ID";
+    /* Get warehouse event ID parameter */
+    $warehouseId = $_GET['warehouseId'] ?? null;
+    if(!$warehouseId) {
+        echo "Invalid warehouse event ID";
         die();
     }
 
-    /* Get event data */
-    $event = retrieve_inventoryEvent($eventId);
-    if(!$event) {
-        echo "Event not found";
+    /* Get warehouse event */
+    $warehouseEvent = retrieve_inventoryEvent($warehouseId);
+    if(!$warehouseEvent || $warehouseEvent->getLocation() != 'Warehouse') {
+        echo "Warehouse event not found";
         die();
     }
 
-    /* Get location and date for this specific event */
-    $eventLocation = $event->getLocation();
-    $eventDate = $event->getDate();
+    /* Get paired pantry event using matching function */
+    $pantryEvent = get_matching_inventoryEvent($warehouseEvent);
 
-    /* Get item counts for this specific event only */
-    $itemCounts = get_itemCounts_by_inventoryEvent($eventId);
+    /* Get event date for display */
+    $eventDate = $warehouseEvent->getDate();
 
-    /* Build array mapping category ID to ItemCount object */
-    $countsMap = array(); // categoryId => ItemCount object (with real ID)
-    foreach($itemCounts as $count) {
-        $categoryId = $count->getItemCategory();
-        $countsMap[$categoryId] = $count;
+    /* Get item counts for warehouse (if exists) */
+    $warehouseCountsMap = array();
+    if($warehouseEvent) {
+        $warehouseItemCounts = get_itemCounts_by_inventoryEvent($warehouseEvent->getId());
+        foreach($warehouseItemCounts as $count) {
+            $categoryId = $count->getItemCategory();
+            $warehouseCountsMap[$categoryId] = $count;
+        }
+    }
+
+    /* Get item counts for pantry (if exists) */
+    $pantryCountsMap = array();
+    if($pantryEvent) {
+        $pantryItemCounts = get_itemCounts_by_inventoryEvent($pantryEvent->getId());
+        foreach($pantryItemCounts as $count) {
+            $categoryId = $count->getItemCategory();
+            $pantryCountsMap[$categoryId] = $count;
+        }
     }
 
     /* Get all item categories */
@@ -62,39 +74,72 @@
             die();
         }
         else if(isset($_POST['save_button'])) {
-            /* Update quantities for each item in this event */
-            foreach($allCategories as $category) {
-                if($category->getStatus() != 'Active') continue;
+            /* Update quantities for warehouse (if exists) */
+            if($warehouseEvent) {
+                foreach($allCategories as $category) {
+                    if($category->getStatus() != 'Active') continue;
 
-                $categoryId = $category->getId();
-                $fieldName = 'qty_' . $categoryId;
+                    $categoryId = $category->getId();
+                    $fieldName = 'warehouse_qty_' . $categoryId;
 
-                /* Update quantity if this category exists in the event */
-                if(isset($_POST[$fieldName]) && isset($countsMap[$categoryId])) {
-                    /* Convert to number */
-                    try{
-                        $newQty = +$_POST[$fieldName];
+                    if(isset($_POST[$fieldName]) && isset($warehouseCountsMap[$categoryId])) {
+                        try{
+                            $newQty = +$_POST[$fieldName];
+                        }
+                        catch(TypeError $e){
+                            $newQty = " ";
+                        }
+
+                        if(!is_int($newQty)){
+                            $errors[] = 'Warehouse - ' . $category->getName() . ' quantity must be in whole numbers';
+                            continue;
+                        }
+                        else if($newQty < 0){
+                            $errors[] = 'Warehouse - ' . $category->getName() . ' quantity cannot be negative';
+                            continue;
+                        }
+
+                        $itemCountId = $warehouseCountsMap[$categoryId]->getId();
+                        $oldQty = $warehouseCountsMap[$categoryId]->getQuantity();
+
+                        if($oldQty != $newQty) {
+                            update_quantity($itemCountId, $newQty);
+                        }
                     }
-                    catch(TypeError $e){
-                        $newQty = " ";
-                    }
+                }
+            }
 
-                    /* Validation */
-                    if(!is_int($newQty)){
-                        $errors[] = $category->getName() . ' quantity must be in whole numbers';
-                        continue;
-                    }
-                    else if($newQty < 0){
-                        $errors[] = $category->getName() . ' quantity cannot be negative';
-                        continue;
-                    }
+            /* Update quantities for pantry (if exists) */
+            if($pantryEvent) {
+                foreach($allCategories as $category) {
+                    if($category->getStatus() != 'Active') continue;
 
-                    /* Update using real database ID */
-                    $itemCountId = $countsMap[$categoryId]->getId();
-                    $oldQty = $countsMap[$categoryId]->getQuantity();
+                    $categoryId = $category->getId();
+                    $fieldName = 'pantry_qty_' . $categoryId;
 
-                    if($oldQty != $newQty) {
-                        update_quantity($itemCountId, $newQty);
+                    if(isset($_POST[$fieldName]) && isset($pantryCountsMap[$categoryId])) {
+                        try{
+                            $newQty = +$_POST[$fieldName];
+                        }
+                        catch(TypeError $e){
+                            $newQty = " ";
+                        }
+
+                        if(!is_int($newQty)){
+                            $errors[] = 'Pantry - ' . $category->getName() . ' quantity must be in whole numbers';
+                            continue;
+                        }
+                        else if($newQty < 0){
+                            $errors[] = 'Pantry - ' . $category->getName() . ' quantity cannot be negative';
+                            continue;
+                        }
+
+                        $itemCountId = $pantryCountsMap[$categoryId]->getId();
+                        $oldQty = $pantryCountsMap[$categoryId]->getQuantity();
+
+                        if($oldQty != $newQty) {
+                            update_quantity($itemCountId, $newQty);
+                        }
                     }
                 }
             }
@@ -102,11 +147,21 @@
             if(empty($errors)) {
                 $success = true;
                 /* Refresh counts by re-fetching from database */
-                $itemCounts = get_itemCounts_by_inventoryEvent($eventId);
-                $countsMap = array();
-                foreach($itemCounts as $count) {
-                    $categoryId = $count->getItemCategory();
-                    $countsMap[$categoryId] = $count;
+                if($warehouseEvent) {
+                    $warehouseItemCounts = get_itemCounts_by_inventoryEvent($warehouseEvent->getId());
+                    $warehouseCountsMap = array();
+                    foreach($warehouseItemCounts as $count) {
+                        $categoryId = $count->getItemCategory();
+                        $warehouseCountsMap[$categoryId] = $count;
+                    }
+                }
+                if($pantryEvent) {
+                    $pantryItemCounts = get_itemCounts_by_inventoryEvent($pantryEvent->getId());
+                    $pantryCountsMap = array();
+                    foreach($pantryItemCounts as $count) {
+                        $categoryId = $count->getItemCategory();
+                        $pantryCountsMap[$categoryId] = $count;
+                    }
                 }
             }
         }
@@ -242,13 +297,11 @@
         <!-- Event Info (Read-Only) -->
         <div class="event-info">
             <p><strong>Date:</strong> <?= date('M j, Y', strtotime($eventDate)) ?></p>
-            <p><strong>Location:</strong> <?= htmlspecialchars($eventLocation) ?></p>
-            <p><strong>Event ID:</strong> <?= htmlspecialchars($eventId) ?></p>
         </div>
 
         <!-- Success Message -->
         <?php if($success): ?>
-            <h4 style="color:black;"><i>Inventory Updated: <?= date("F jS, Y", strtotime($eventDate)) ?>  -  <?= htmlspecialchars($eventLocation) ?>  -  Event ID: <?= htmlspecialchars($eventId) ?></i></h4>
+            <h4 style="color:black;"><i>Inventory Updated: <?= date("F jS, Y", strtotime($eventDate)) ?></i></h4>
         <?php endif; ?>
 
         <!-- Error Messages -->
@@ -265,32 +318,60 @@
             <table class="modify-table">
                 <thead>
                     <tr>
+                        <th>#</th>
                         <th>Item Name</th>
                         <th>Items Per Box</th>
-                        <th>Boxes</th>
+                        <th>Warehouse</th>
+                        <th>Pantry</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($allCategories as $category): ?>
+                    <?php
+                    $rowNum = 0;
+                    foreach($allCategories as $category): ?>
                         <?php if($category->getStatus() != 'Active') continue; ?>
+                        <?php $rowNum++; ?>
                         <?php
                         $categoryId = $category->getId();
-                        $qty = isset($countsMap[$categoryId])
-                            ? $countsMap[$categoryId]->getQuantity()
-                            : 0;
+
+                        // Warehouse quantity
+                        $warehouseQty = isset($warehouseCountsMap[$categoryId])
+                            ? $warehouseCountsMap[$categoryId]->getQuantity()
+                            : null;
+
+                        // Pantry quantity
+                        $pantryQty = isset($pantryCountsMap[$categoryId])
+                            ? $pantryCountsMap[$categoryId]->getQuantity()
+                            : null;
                         ?>
                         <tr>
+                            <td><?= $rowNum ?></td>
                             <td><?= htmlspecialchars($category->getName()) ?></td>
                             <td><?= htmlspecialchars($category->getItemsPerBox()) ?></td>
+
+                            <!-- Warehouse Input -->
                             <td>
-                                <input type="number"
-                                       name="qty_<?= $categoryId ?>"
-                                       value="<?= $qty ?>"
-                                       min="0"
-                                       class="updateInv-qty"
-                                       <?= isset($countsMap[$categoryId]) ? '' : 'disabled' ?>>
-                                <?php if(!isset($countsMap[$categoryId])): ?>
-                                    <small style="color: var(--inactive-font-color); display: block;">(Not in event)</small>
+                                <?php if($warehouseEvent && $warehouseQty !== null): ?>
+                                    <input type="number"
+                                           name="warehouse_qty_<?= $categoryId ?>"
+                                           value="<?= $warehouseQty ?>"
+                                           min="0"
+                                           class="updateInv-qty">
+                                <?php else: ?>
+                                    <span style="color: var(--inactive-font-color);">-</span>
+                                <?php endif; ?>
+                            </td>
+
+                            <!-- Pantry Input -->
+                            <td>
+                                <?php if($pantryEvent && $pantryQty !== null): ?>
+                                    <input type="number"
+                                           name="pantry_qty_<?= $categoryId ?>"
+                                           value="<?= $pantryQty ?>"
+                                           min="0"
+                                           class="updateInv-qty">
+                                <?php else: ?>
+                                    <span style="color: var(--inactive-font-color);">-</span>
                                 <?php endif; ?>
                             </td>
                         </tr>
