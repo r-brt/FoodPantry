@@ -2,6 +2,21 @@
     session_cache_expire(30);
     session_start();
 
+    // Handle AJAX quantity update
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'updateQty') {
+        require_once('database/dbShoppingCount.php');
+        $id       = isset($_POST['id'])       ? (int)$_POST['id']       : 0;
+        $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
+        header('Content-Type: application/json');
+        if ($id > 0 && $quantity >= 0) {
+            $result = update_shoppingCount_quantity($id, $quantity);
+            echo json_encode(['success' => $result]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid input']);
+        }
+        exit;
+    }
+
     $loggedIn = false;
     $accessLevel = 0;
     $userID = null;
@@ -181,6 +196,7 @@
             foreach ($counts as $count) {
                 $catId = $count->getItemCategory();
                 $basketItems[] = array(
+                    'id'        => $count->getId(),
                     'item_name' => isset($categoryMap[$catId]) ? $categoryMap[$catId] : 'Unknown (ID: ' . $catId . ')',
                     'quantity'  => $count->getQuantity()
                 );
@@ -501,8 +517,11 @@
         .drag-handle:active {
             cursor: grabbing;
         }
-        #basketTbody tr.drag-over {
+        #basketTbody tr.drag-over-top {
             border-top: 2px solid var(--accent-color);
+        }
+        #basketTbody tr.drag-over-bottom {
+            border-bottom: 2px solid var(--accent-color);
         }
         #basketTbody tr.dragging {
             opacity: 0.4;
@@ -669,7 +688,7 @@
                             <tbody id="basketTbody">
                                 <?php if (!empty($basketItems)): ?>
                                     <?php foreach ($basketItems as $i => $item): ?>
-                                        <tr draggable="true">
+                                        <tr draggable="true" data-count-id="<?= $item['id'] ?>">
                                             <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                             <td class="row-number"><?= $i + 1 ?></td>
                                             <td><?= htmlspecialchars($item['item_name']) ?></td>
@@ -684,7 +703,10 @@
                             </tbody>
                         </table>
                     </div>
-                    <button class="generate-btn" id="generatePdfBtn" style="margin-top: 1.25rem;">Generate Shopping List PDF</button>
+                    <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
+                        <button class="generate-btn" id="saveQuantitiesBtn">Save Quantities</button>
+                        <button class="generate-btn" id="generatePdfBtn">Generate Shopping List PDF</button>
+                    </div>
                 <?php endif; ?>
             </div>
 
@@ -807,29 +829,36 @@
                     e.dataTransfer.dropEffect = 'move';
                     var target = e.target.closest('tr');
                     if (target && target !== dragSrc) {
-                        basketTbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('drag-over'); });
-                        target.classList.add('drag-over');
+                        basketTbody.querySelectorAll('tr').forEach(function(r) {
+                            r.classList.remove('drag-over-top', 'drag-over-bottom');
+                        });
+                        var rect = target.getBoundingClientRect();
+                        if (e.clientY < rect.top + rect.height / 2) {
+                            target.classList.add('drag-over-top');
+                        } else {
+                            target.classList.add('drag-over-bottom');
+                        }
                     }
                 });
 
                 basketTbody.addEventListener('dragleave', function(e) {
                     var target = e.target.closest('tr');
-                    if (target) target.classList.remove('drag-over');
+                    if (target) {
+                        target.classList.remove('drag-over-top', 'drag-over-bottom');
+                    }
                 });
 
                 basketTbody.addEventListener('drop', function(e) {
                     e.preventDefault();
                     var target = e.target.closest('tr');
                     if (target && target !== dragSrc) {
-                        var rows = Array.from(basketTbody.querySelectorAll('tr'));
-                        var srcIndex = rows.indexOf(dragSrc);
-                        var tgtIndex = rows.indexOf(target);
-                        if (srcIndex < tgtIndex) {
-                            basketTbody.insertBefore(dragSrc, target.nextSibling);
-                        } else {
+                        var rect = target.getBoundingClientRect();
+                        if (e.clientY < rect.top + rect.height / 2) {
                             basketTbody.insertBefore(dragSrc, target);
+                        } else {
+                            basketTbody.insertBefore(dragSrc, target.nextSibling);
                         }
-                        target.classList.remove('drag-over');
+                        target.classList.remove('drag-over-top', 'drag-over-bottom');
                         // Update row numbers
                         basketTbody.querySelectorAll('tr').forEach(function(r, i) {
                             var cell = r.querySelector('.row-number');
@@ -840,9 +869,28 @@
 
                 basketTbody.addEventListener('dragend', function(e) {
                     if (dragSrc) dragSrc.classList.remove('dragging');
-                    basketTbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('drag-over'); });
+                    basketTbody.querySelectorAll('tr').forEach(function(r) {
+                        r.classList.remove('drag-over-top', 'drag-over-bottom');
+                    });
                 });
             }
+            // Save quantity changes to database on button click
+            $('#saveQuantitiesBtn').on('click', function() {
+                var btn = $(this);
+                var requests = [];
+                $('#basketTbody tr').each(function() {
+                    var row = $(this);
+                    var countId = row.data('count-id');
+                    var quantity = parseInt(row.find('.basket-qty-input').val(), 10);
+                    if (!countId || isNaN(quantity) || quantity < 0) return;
+                    requests.push($.post('viewWeeklyReport.php', { action: 'updateQty', id: countId, quantity: quantity }));
+                });
+                $.when.apply($, requests).done(function() {
+                    btn.text('Saved!');
+                    setTimeout(function() { btn.text('Save Quantities'); }, 2000);
+                });
+            });
+
             // Generate Shopping List PDF
             var pdfBtn = document.getElementById('generatePdfBtn');
             if (pdfBtn) {
