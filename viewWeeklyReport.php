@@ -195,19 +195,17 @@
             $monthsLeft = round($weeksLeft / 4);
         }
 
-        // Only show items with current inventory > 0
-        if ($currentBoxes > 0) {
-            $weeklyItems[] = array(
-                'item_name' => $itemName,
-                'days_left' => $daysLeft,
-                'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
-                'current_boxes' => $currentBoxes,
-                'current_items_per_box' => $itemsPerBox,
-                'total_items' => $totalItems,
-                'weeks_left' => $weeksLeft,
-                'months_left' => $monthsLeft
-            );
-        }
+        // Show all items including those with 0 quantity
+        $weeklyItems[] = array(
+            'item_name' => $itemName,
+            'days_left' => $daysLeft,
+            'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
+            'current_boxes' => $currentBoxes,
+            'current_items_per_box' => $itemsPerBox,
+            'total_items' => $totalItems,
+            'weeks_left' => $weeksLeft,
+            'months_left' => $monthsLeft
+        );
     }
 
 ?>
