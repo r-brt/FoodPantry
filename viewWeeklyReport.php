@@ -167,43 +167,6 @@
         $categoryMap[$cat->getId()] = $cat->getName();
     }
 
-    // Get all shopping events and extract unique family sizes
-    $allShoppingEvents = get_all_shoppingEvents();
-    $familySizes = array();
-    foreach ($allShoppingEvents as $event) {
-        $fs = $event->getFamilySize();
-        if (!in_array($fs, $familySizes)) {
-            $familySizes[] = $fs;
-        }
-    }
-    sort($familySizes);
-
-    // If a family size is selected, find the most recent event and load its counts
-    $selectedFamilySize = isset($_GET['familySize']) ? $_GET['familySize'] : null;
-    $basketItems = array();
-    if ($selectedFamilySize !== null) {
-        $filtered = array_filter($allShoppingEvents, function($e) use ($selectedFamilySize) {
-            return $e->getFamilySize() == $selectedFamilySize;
-        });
-        usort($filtered, function($a, $b) {
-            $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
-            if ($dateDiff != 0) return $dateDiff;
-            return $b->getId() - $a->getId();
-        });
-        if (!empty($filtered)) {
-            $latestEvent = reset($filtered);
-            $counts = get_shoppingCounts_by_shoppingEvent($latestEvent->getId());
-            foreach ($counts as $count) {
-                $catId = $count->getItemCategory();
-                $basketItems[] = array(
-                    'id'        => $count->getId(),
-                    'item_name' => isset($categoryMap[$catId]) ? $categoryMap[$catId] : 'Unknown (ID: ' . $catId . ')',
-                    'quantity'  => $count->getQuantity()
-                );
-            }
-        }
-    }
-
     // Build weekly items array
     $weeklyItems = array();
     foreach ($allCategories as $category) {
@@ -246,6 +209,7 @@
             );
         }
     }
+
 ?>
     
 <!DOCTYPE html>
@@ -526,6 +490,44 @@
         #basketTbody tr.dragging {
             opacity: 0.4;
         }
+        .data-entry-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            max-width: 500px;
+        }
+        .data-entry-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .data-entry-label {
+            color: var(--page-font-color);
+            width: 160px;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+        .data-entry-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            flex: 1;
+        }
+        .feedback-msg {
+            display: inline-block;
+            margin-left: 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .feedback-success {
+            color: rgb(34, 197, 94);
+        }
+        .feedback-error {
+            color: rgb(239, 68, 68);
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -549,6 +551,13 @@
             .toolbar-select,
             .toolbar-search {
                 width: 100%;
+            }
+            .data-entry-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .data-entry-label {
+                width: auto;
             }
         }
     </style>
@@ -653,61 +662,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Generate Basket -->
-            <div class="report-section">
-                <h2>Shopping List</h2>
-                <p style="color: var(--page-font-color); margin-bottom: 1rem;">Select a family size to view the recommended basket items and quantities.</p>
-
-                <div class="week-selector">
-                    <label for="familySizeSelect">Family Size:</label>
-                    <select class="select" id="familySizeSelect" name="familySize"
-                        onchange="window.location.href='?week=<?= htmlspecialchars($selectedWeek ?? '') ?>&familySize=' + encodeURIComponent(this.value)">
-                        <option value="">-- Select Family Size --</option>
-                        <?php foreach ($familySizes as $fs): ?>
-                            <option value="<?= htmlspecialchars($fs) ?>"
-                                <?= ($fs == $selectedFamilySize) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($fs) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <?php if ($selectedFamilySize !== null): ?>
-                    <div class="table-wrapper" style="margin-top: 1rem;" id="basketTableWrapper">
-                        <table class="report-table" id="basketTable">
-                            <thead>
-                                <tr>
-                                    <th style="width: 36px;"></th>
-                                    <th style="width: 50px;">#</th>
-                                    <th>Item Name</th>
-                                    <th>Quantity</th>
-                                </tr>
-                            </thead>
-                            <tbody id="basketTbody">
-                                <?php if (!empty($basketItems)): ?>
-                                    <?php foreach ($basketItems as $i => $item): ?>
-                                        <tr draggable="true" data-count-id="<?= $item['id'] ?>">
-                                            <td class="drag-handle" title="Drag to reorder">&#8597;</td>
-                                            <td class="row-number"><?= $i + 1 ?></td>
-                                            <td><?= htmlspecialchars($item['item_name']) ?></td>
-                                            <td><input type="number" class="basket-qty-input" value="<?= htmlspecialchars($item['quantity']) ?>" min="0"></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="4" class="empty-state">No items found for this family size.</td>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
-                        <button class="generate-btn" id="saveQuantitiesBtn">Save Quantities</button>
-                        <button class="generate-btn" id="generatePdfBtn">Generate Shopping List PDF</button>
-                    </div>
-                <?php endif; ?>
             </div>
 
         </div>
@@ -872,77 +826,6 @@
                     basketTbody.querySelectorAll('tr').forEach(function(r) {
                         r.classList.remove('drag-over-top', 'drag-over-bottom');
                     });
-                });
-            }
-            // Save quantity changes to database on button click
-            $('#saveQuantitiesBtn').on('click', function() {
-                var btn = $(this);
-                var requests = [];
-                $('#basketTbody tr').each(function() {
-                    var row = $(this);
-                    var countId = row.data('count-id');
-                    var quantity = parseInt(row.find('.basket-qty-input').val(), 10);
-                    if (!countId || isNaN(quantity) || quantity < 0) return;
-                    requests.push($.post('viewWeeklyReport.php', { action: 'updateQty', id: countId, quantity: quantity }));
-                });
-                $.when.apply($, requests).done(function() {
-                    btn.text('Saved!');
-                    setTimeout(function() { btn.text('Save Quantities'); }, 2000);
-                });
-            });
-
-            // Generate Shopping List PDF
-            var pdfBtn = document.getElementById('generatePdfBtn');
-            if (pdfBtn) {
-                pdfBtn.addEventListener('click', function() {
-                    var { jsPDF } = window.jspdf;
-                    var doc = new jsPDF();
-
-                    var familySize = '<?= htmlspecialchars($selectedFamilySize ?? '') ?>';
-                    var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-                    // Header
-                    doc.setFontSize(18);
-                    doc.setTextColor(40, 40, 40);
-                    doc.text('Shopping List', 14, 20);
-
-                    doc.setFontSize(11);
-                    doc.setTextColor(100, 100, 100);
-                    doc.text('Family Size: ' + familySize, 14, 29);
-                    doc.text('Date: ' + today, 14, 36);
-
-                    // Read rows in current DOM order
-                    var rows = [];
-                    document.querySelectorAll('#basketTbody tr').forEach(function(tr, i) {
-                        var cells = tr.querySelectorAll('td');
-                        if (cells.length < 4) return;
-                        var itemName = cells[2].textContent.trim();
-                        var qtyInput = cells[3].querySelector('input');
-                        var qty = qtyInput ? qtyInput.value : cells[3].textContent.trim();
-                        rows.push([(i + 1).toString(), itemName, qty]);
-                    });
-
-                    doc.autoTable({
-                        startY: 44,
-                        head: [['#', 'Item Name', 'Quantity']],
-                        body: rows,
-                        headStyles: {
-                            fillColor: [44, 62, 80],
-                            textColor: 255,
-                            fontStyle: 'bold'
-                        },
-                        alternateRowStyles: {
-                            fillColor: [245, 245, 245]
-                        },
-                        columnStyles: {
-                            0: { cellWidth: 12, halign: 'center' },
-                            2: { cellWidth: 30, halign: 'center' }
-                        },
-                        styles: { fontSize: 11 },
-                        margin: { left: 14, right: 14 }
-                    });
-
-                    doc.save('shopping-list-' + familySize.replace(/[^a-z0-9]/gi, '-') + '.pdf');
                 });
             }
         });

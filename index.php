@@ -755,7 +755,16 @@
         </div>
         <div class="large-text-sub" style="color:white;">Generate Weekly Inventory Report</div>
         <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
-    </div>    
+    </div>
+
+    <!-- Shopping List -->
+    <div class="content-box-test" onclick="window.location.href='viewShoppingList.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Shopping List Icon">
+        </div>
+        <div class="large-text-sub" style="color:white;">Shopping List</div>
+        <div class="graph-text" style="color:white;">Manage baskets, client counts, distribution days, and consumption rates.</div>
+    </div>
     </div>
 
 <div style="width: 90%; /* Stops before page ends */
