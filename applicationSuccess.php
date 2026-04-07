@@ -8,7 +8,7 @@
     <html>
         <head>
             <?php require_once('universal.inc') ?>
-            <title>Whiskey Valor | View Application</title>
+            <title>CCDA | View Application</title>
         </head>
         <body>
             <?php require_once('header.php') ?>

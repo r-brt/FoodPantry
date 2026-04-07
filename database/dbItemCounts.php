@@ -4,7 +4,7 @@ include_once('dbinfo.php');
 include_once(dirname(__FILE__).'/../domain/ItemCount.php');
 
 /*
- * add an itemCount to dbItemCounts table: return id generated from sql autoincrement
+ * add an itemCount to dbitemcounts table: return id generated from sql autoincrement
  */
 
 function add_itemCount($inventoryEventId, $itemCategoryId, $quantity) {
@@ -20,7 +20,7 @@ function add_itemCount($inventoryEventId, $itemCategoryId, $quantity) {
 }
 
 /*
- * remove an itemCount from dbItemCounts table: if it does not exist, return false
+ * remove an itemCount from dbitemcounts table: if it does not exist, return false
  */
 
 function delete_itemCount($id){
@@ -39,7 +39,7 @@ function delete_itemCount($id){
 }
 
 /*
- * get itemCount from dbItemCounts table with given inventoryEventId: return null if not found.
+ * get itemCount from dbitemcounts table with given inventoryEventId: return null if not found.
  */
 
 function get_itemCount_by_id($id){
@@ -57,7 +57,7 @@ function get_itemCount_by_id($id){
 }
 
 /*
- * get all itemCounts from dbItemCounts table that have a given inventoryEventId
+ * get all itemCounts from dbitemcounts table that have a given inventoryEventId
  */
 
 function get_itemCounts_by_inventoryEvent($inventoryEventId){
@@ -74,7 +74,7 @@ function get_itemCounts_by_inventoryEvent($inventoryEventId){
 }
 
 /*
- * get all itemCounts from dbItemCounts table that have a given itemCategoryId
+ * get all itemCounts from dbitemcounts table that have a given itemCategoryId
  */
 
 function get_itemCounts_by_itemCategory($itemCategoryId){
@@ -91,7 +91,7 @@ function get_itemCounts_by_itemCategory($itemCategoryId){
 }
 
 /*
- * change the quantity for an itemCount from dbItemCounts table: if it does not exist, return false
+ * change the quantity for an itemCount from dbitemcounts table: if it does not exist, return false
  */
 
 function update_quantity($id, $quantity){

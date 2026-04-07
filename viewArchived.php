@@ -38,7 +38,7 @@
 <html>
     <head>
         <?php require_once('universal.inc') ?>
-        <title>Whiskey Valor | Archived Animals</title>
+        <title>CCDA | Archived Animals</title>
     </head>
     <body>
         <?php require_once('header.php') ?>

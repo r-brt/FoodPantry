@@ -263,7 +263,7 @@ if ($isAdmin && $_SERVER["REQUEST_METHOD"] === "POST") {
 <html>
 <head>
     <?php require_once('universal.inc'); ?>
-    <title>Whiskey Valor | Send Email</title>
+    <title>CCDA | Send Email</title>
     <link rel="stylesheet" href="css/base.css">
 </head>
 <body>

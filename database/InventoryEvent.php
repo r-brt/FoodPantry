@@ -267,13 +267,13 @@ function remove_user_from_event($event_id, $user_id) {
 
 function remove_inventoryEvent($id) {
     $con=connect();
-    $query = 'SELECT * FROM dbInventoryEvent WHERE id = "' . $id . '"';
+    $query = 'SELECT * FROM dbinventoryevent WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
     if ($result == null || mysqli_num_rows($result) == 0) {
         mysqli_close($con);
         return false;
     }
-    $query = 'DELETE FROM dbInventoryEvent WHERE id = "' . $id . '"';
+    $query = 'DELETE FROM dbinventoryevent WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
 
 
@@ -302,7 +302,7 @@ function remove_inventoryEvent($id) {
 
 function retrieve_inventoryEvent($id) {
     $con=connect();
-    $query = "SELECT * FROM dbInventoryEvent WHERE id = '" . $id . "'";
+    $query = "SELECT * FROM dbinventoryevent WHERE id = '" . $id . "'";
     $result = mysqli_query($con,$query);
     if (mysqli_num_rows($result) !== 1) {
         mysqli_close($con);
@@ -331,7 +331,7 @@ function retrieve_inventoryEvent($id) {
 // not in use, may be useful for future iterations in changing how events are edited (i.e. change the remove and create new event process)
 function update_inventoryEvent_date($id, $new_event_date) {
 	$con=connect();
-	$query = 'UPDATE dbInventoryEvent SET event_date = "' . $new_event_date . '" WHERE id = "' . $id . '"';
+	$query = 'UPDATE dbinventoryevent SET event_date = "' . $new_event_date . '" WHERE id = "' . $id . '"';
 	$result = mysqli_query($con,$query);
 	mysqli_close($con);
 	return $result;
@@ -351,7 +351,7 @@ function make_an_inventoryEvent($result_row) {
 
 function get_all_inventoryEvents() {
     $con=connect();
-    $query = "SELECT * FROM dbInventoryEvent" .
+    $query = "SELECT * FROM dbinventoryevent" .
             " ORDER BY completed";
     $result = mysqli_query($con,$query);
     $theEvents = array();
@@ -692,7 +692,7 @@ function update_services_for_event($eventID, $serviceIDs) {
 /*function find_inventoryEvent($nameLike) {
     $connection = connect();
     $query = "
-        select * from dbInventoryEvent
+        select * from dbinventoryevent
         where name like '%$nameLike%'
     ";
     $result = mysqli_query($connection, $query);
@@ -723,7 +723,7 @@ function update_services_for_event($eventID, $serviceIDs) {
 */
 /*function fetch_all_inventoryEvents() {
     $connection = connect();
-    $query = "select * from dbInventoryEvent
+    $query = "select * from dbinventoryevent
               order by date, startTime asc";
     $result = mysqli_query($connection, $query);
     if (!$result) {
@@ -809,7 +809,7 @@ function get_services($eventID) {
 // }
 
 function delete_event($id) {
-    $query = "delete from dbInventoryEvent where id='$id'";
+    $query = "delete from dbinventoryevent where id='$id'";
     $connection = connect();
     $result = mysqli_query($connection, $query);
     $result = boolval($result);

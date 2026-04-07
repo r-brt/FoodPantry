@@ -1,4 +1,3 @@
-
 <?php
     session_cache_expire(30);
     session_start();
@@ -12,13 +11,30 @@
         $userID = $_SESSION['_id'];
     }
 
+    // Add database includes here
+
     require_once('database/dbinfo.php');
     require_once('database/dbPersons.php');
     require_once('database/dbInventoryEvent.php');
     require_once('database/dbItemCategory.php');
     require_once('database/dbItemCounts.php');
-    
-    $con = connect();
+    require_once('database/dbPalletEvent.php');
+
+    /* get the total pallet inventory for each category to show in the pallet column */
+    $pallet_totals = array();
+    $pallets = get_all_palletEvents();
+    $categories = get_all_ItemCategory();
+    foreach($categories as $category){
+        $pallet_totals[$category->getId()] = 0;
+    }
+    foreach($pallets as $pallet){
+        $palletCounts = get_palletCounts_by_palletEvent($pallet->getId());
+        foreach($palletCounts as $count){
+            $categoryId = $count->getItemCategory();
+            $pallet_totals[$categoryId] += $count->getQuantity();
+        }
+    }
+
 
     /* 
     * _POST is empty when the page is first loaded.
@@ -26,6 +42,7 @@
     *  if _POST is not empty, process data from form
     */
     $submit_success = false;
+    $include_pallets = false;
     $errors = [];
     if (!empty($_POST)) {
         $updatedItems = array();
@@ -38,6 +55,9 @@
             }
             else if($name == "date"){
                 $date = $value;
+            }
+            else if($name == "checkIncludePallets"){
+                $include_pallets = true;
             }
             else{
                 /* only add items that have values to array */
@@ -70,19 +90,30 @@
             }
         }
 
-        /* auto-fill missing items with 0 for complete analytics data */
-        if(empty($errors)){
-            $allCategories = get_all_ItemCategory();
-            foreach($allCategories as $category){
-                $categoryId = $category->getId();
-                if(!isset($updatedItems[$categoryId])){
-                    $updatedItems[$categoryId] = 0;
+        if($include_pallets){
+            foreach($pallet_totals as $categoryId => $quantity){
+                if(isset($updatedItems[$categoryId])){
+                    $updatedItems[$categoryId] += $quantity;
+                }
+                else{
+                    $updatedItems[$categoryId] = $quantity;
                 }
             }
         }
 
         /* if at least 1 item was updated, create inventory event and add items to database */
         if(count($updatedItems) > 0){
+
+            /* auto-fill missing items with 0 for complete analytics data */
+            if(empty($errors)){
+                $allCategories = get_all_ItemCategory();
+                foreach($allCategories as $category){
+                    $categoryId = $category->getId();
+                    if(!isset($updatedItems[$categoryId])){
+                        $updatedItems[$categoryId] = 0;
+                    }
+                }
+            }
             $personId = retrieve_person($userID)->get_personId();
             $inventoryEventId = add_inventoryEvent($personId, $location, $date);
             foreach($updatedItems as $categoryId => $quantity){
@@ -290,6 +321,20 @@
         .generate-btn:hover {
             opacity: 0.85;
         }
+        .modify-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .modify-btn:hover {
+            opacity: 0.85;
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -344,14 +389,14 @@
 
             <!-- Update Inventory -->
             <div class="report-section">
-                <h2>Inventory Input</h2>              
+                <h2>Inventory Input</h2>   
                 <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewUpdateInventory.php">
                     <div class="updateInv-optionRow">
                         <div class="updateInv-option">
                             <label class="updateInv-optionLabel" for="location">Choose a Location:</label>
                             <select name="location" id="location">
-                                <option value="Pantry">Pantry</option>
-                                <option value="Warehouse" <?php if (!empty($_POST) && $_POST['location'] == "Warehouse") echo("selected");?>>Warehouse</option>
+                                <option value="Warehouse">Warehouse</option>
+                                <option value="Pantry" <?php if (!empty($_POST) && $_POST['location'] == "Pantry") echo("selected");?>>Pantry</option>
                             </select>
                         </div>
                         <div class="updateInv-option">
@@ -360,12 +405,20 @@
                                 value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
                         </div>
                     </div>
+                    <div class="updateInv-option">
+                            <label class="updateInv-optionLabel" for="checkIncludePallets">Include Pallets:</label>
+                            <input type="checkbox" id="checkIncludePallets" name="checkIncludePallets" value="1" onclick="showPalletColumn()"
+                                <?php if (empty($_POST) || isset($_POST['checkIncludePallets'])) echo("checked");?>>
+                            <button class="modify-btn" formaction="viewManagePallets.php">Manage Pallets</button>
+                            
+                        </div>
                         <div class="table-wrapper">
                             <table class="report-table">
                                 <thead>
                                     <tr>
                                         <th>Item Name</th>
                                         <th>Boxes</th>
+                                        <th><div class="pallet-column" style="display: block;">Pallet Boxes</div></th>
                                         <th>Previous Total<br>
                                             <?php if($previous_event_pair[0])
                                                     echo(date("m/d/Y", strtotime($previous_event_pair[0]->getDate())))?>
@@ -376,7 +429,7 @@
                                 </thead>
                                 <tbody>
                                     <?php 
-                        $categories = get_all_ItemCategory();
+                        $categories = get_all_active_ItemCategory();
                         foreach($categories AS $category): ?>
                             <tr>
                                 <div class="updateInv-row">
@@ -388,6 +441,10 @@
                                             value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
                                             name="<?php echo($category->getId())?>" 
                                             id="qty_<?php echo($category->getId())?>"></td>
+                                    <td><div class="pallet-column" style="display: block;">
+                                        <?php if(isset($pallet_totals[$category->getId()]))
+                                                    echo($pallet_totals[$category->getId()])?>
+                                    </div></td>
                                     <td><?php if(isset($prev_totals[$category->getId()]))
                                                     echo($prev_totals[$category->getId()])?></td>
                                     <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
@@ -401,6 +458,21 @@
                     </div>
                     <input type="submit" value="Submit Inventory" />
                 </form>
+                <script>
+                    function showPalletColumn() {
+                        var checkBox = document.getElementById("checkIncludePallets");
+                        var palletColumn = document.getElementsByClassName("pallet-column");
+                        if (checkBox.checked == true){
+                            for (var i = 0; i < palletColumn.length; i++) {
+                                palletColumn[i].style.display = "block";
+                            }
+                        } else {
+                            for (var i = 0; i < palletColumn.length; i++) {
+                                palletColumn[i].style.display = "none";
+                            }
+                        }
+                    }
+                </script>
                 <script>
                     /* if form Date is in the past or the future, confirm before submitting form */
                     function validateFormDate() {

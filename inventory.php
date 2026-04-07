@@ -10,67 +10,97 @@ if(!isset($_SESSION['_id'])) {
     exit;
 }
 
+$accessLevel = $_SESSION['access_level'] ?? 0;
+
 require_once(__DIR__ . '/database/dbinfo.php');
+require_once(__DIR__ . '/database/dbInventoryEvent.php');
+require_once(__DIR__ . '/database/dbItemCategory.php');
+require_once(__DIR__ . '/database/dbItemCounts.php');
 
-$conn = connect();
+// Get all inventory events
+$allEvents = get_all_inventoryEvents();
 
-// Get all distinct inventory events with their dates
-$eventResult = $conn->query("
-    SELECT ie.date, MAX(ic.inventoryEventId) as inventoryEventId
-    FROM dbitemcounts ic
-    LEFT JOIN dbinventoryevent ie ON ic.inventoryEventId = ie.id
-    GROUP BY ie.date
-    ORDER BY MAX(ic.inventoryEventId) DESC
-");
+// Build events array with unique dates (latest event per date)
 $events = [];
-if ($eventResult) {
-    while ($row = $eventResult->fetch_assoc()) {
-        $events[] = $row;
+$seenDates = [];
+foreach ($allEvents as $event) {
+    $date = $event->getDate();
+    if (!in_array($date, $seenDates)) {
+        $events[] = [
+            'inventoryEventId' => $event->getId(),
+            'date' => $date
+        ];
+        $seenDates[] = $date;
     }
 }
+
+// Sort events by date in descending order (newest first)
+usort($events, function($a, $b) {
+    return strcmp($b['date'], $a['date']);
+});
 
 // Get the selected week from query params, default to latest
 $selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0]['inventoryEventId'] : null);
 
 // Fetch inventory items with box information for the selected date
-if ($selectedWeek) {
-    $sql = "
-        SELECT 
-            dic.id,
-            dic.name as item_name,
-            dic.itemsPerBox,
-            dic.bananaBox,
-            COALESCE(SUM(CASE WHEN ie.location = 'Warehouse' THEN dbic.quantity ELSE 0 END), 0) as warehouse_boxes,
-            COALESCE(SUM(CASE WHEN ie.location = 'Pantry' THEN dbic.quantity ELSE 0 END), 0) as pantry_boxes,
-            COALESCE(SUM(dbic.quantity), 0) as total_boxes
-        FROM dbItemCategory dic
-        INNER JOIN dbitemcounts dbic ON dic.id = dbic.itemCategoryId
-        INNER JOIN dbinventoryevent ie ON dbic.inventoryEventId = ie.id
-        WHERE dic.status = 'Active'
-          AND DATE(ie.date) = (
-            SELECT DATE(ie2.date)
-            FROM dbinventoryevent ie2
-            WHERE ie2.id = ?
-          )
-        GROUP BY dic.id, dic.name, dic.itemsPerBox, dic.bananaBox
-        HAVING total_boxes > 0
-        ORDER BY dic.name
-    ";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $selectedWeek);
-    $stmt->execute();
-    $result = $stmt->get_result();
-} else {
-    $result = null;
-}
-
 $items = [];
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $items[] = $row;
+if ($selectedWeek) {
+    // Get the selected inventory event to find its date
+    $selectedEvent = retrieve_inventoryEvent($selectedWeek);
+    $selectedDate = $selectedEvent->getDate();
+    
+    // Get all events on the same date
+    $sameDateEvents = [];
+    foreach ($allEvents as $event) {
+        if ($event->getDate() === $selectedDate) {
+            $sameDateEvents[] = $event;
+        }
     }
+    
+    // Get all active item categories
+    $activeCategories = get_all_active_ItemCategory();
+    
+    // Build items array with location-specific counts
+    foreach ($activeCategories as $category) {
+        $categoryId = $category->getId();
+        $warehouseBoxes = 0;
+        $pantryBoxes = 0;
+        
+        // Check all events on the same date for this category
+        foreach ($sameDateEvents as $event) {
+            $eventCounts = get_itemCounts_by_inventoryEvent($event->getId());
+            foreach ($eventCounts as $count) {
+                if ($count->getItemCategory() === $categoryId) {
+                    if ($event->getLocation() === 'Warehouse') {
+                        $warehouseBoxes += $count->getQuantity();
+                    } elseif ($event->getLocation() === 'Pantry') {
+                        $pantryBoxes += $count->getQuantity();
+                    }
+                }
+            }
+        }
+        
+        $totalBoxes = $warehouseBoxes + $pantryBoxes;
+        
+        // Only include items with quantity > 0
+        if ($totalBoxes > 0) {
+            $items[] = [
+                'id' => $categoryId,
+                'item_name' => $category->getName(),
+                'itemsPerBox' => $category->getItemsPerBox(),
+                'bananaBox' => $category->getBananaBox(),
+                'warehouse_boxes' => $warehouseBoxes,
+                'pantry_boxes' => $pantryBoxes,
+                'total_boxes' => $totalBoxes
+            ];
+        }
+    }
+    
+    // Sort items by name
+    usort($items, function($a, $b) {
+        return strcmp($a['item_name'], $b['item_name']);
+    });
 }
-
 
 ?>
 
@@ -247,6 +277,16 @@ if ($result) {
         <div class="report-container">
             <h1 class="title">Inventory Log</h1>
 
+            <?php if($accessLevel >= 2): ?>
+                <div style="margin-bottom: 1.5rem;">
+                    <a href="viewEditDeleteInventory.php" style="text-decoration: none;">
+                        <button style="padding: 0.75rem 1.5rem; background-color: #dc2626; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; font-weight: 600;">
+                            Edit/Delete Inventory
+                        </button>
+                    </a>
+                </div>
+            <?php endif; ?>
+
             <div class="report-section">
                 <h2>Food Items</h2>
                 
@@ -267,7 +307,6 @@ if ($result) {
                     <div class="toolbar-left">
                         <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
                         <select id="sortSelect" class="toolbar-select">
-                            <option value="default">Default</option>
                             <option value="name-asc">Name (A-Z)</option>
                             <option value="name-desc">Name (Z-A)</option>
                         </select>
@@ -337,12 +376,7 @@ if ($result) {
                 var $tbody = $('#inventoryTable tbody');
                 var $rows = $tbody.find('tr').get();
 
-                if (sortValue === 'default') {
-                    // Restore original order - no sorting
-                    $rows.sort(function(a, b) {
-                        return $(a).data('original-index') - $(b).data('original-index');
-                    });
-                } else if (sortValue === 'name-asc') {
+                if (sortValue === 'name-asc') {
                     // Sort by name A-Z
                     $rows.sort(function(a, b) {
                         var nameA = $(a).find('td').eq(1).text().toLowerCase();

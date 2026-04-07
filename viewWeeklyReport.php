@@ -2,6 +2,21 @@
     session_cache_expire(30);
     session_start();
 
+    // Handle AJAX quantity update
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'updateQty') {
+        require_once('database/dbShoppingCount.php');
+        $id       = isset($_POST['id'])       ? (int)$_POST['id']       : 0;
+        $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
+        header('Content-Type: application/json');
+        if ($id > 0 && $quantity >= 0) {
+            $result = update_shoppingCount_quantity($id, $quantity);
+            echo json_encode(['success' => $result]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid input']);
+        }
+        exit;
+    }
+
     $loggedIn = false;
     $accessLevel = 0;
     $userID = null;
@@ -80,12 +95,66 @@
         }
     }
 
-    // Get previous week item counts (hybrid: same-day progression or previous event)
+    // Get previous week item counts (check same day older events first, then previous date)
     $previousCounts = array();
     if ($selectedWeek) {
-        $previousCountObjects = get_previous_counts_by_event($selectedWeek);
-        foreach($previousCountObjects as $count){
-            $previousCounts[$count->getItemCategory()] = $count;
+        $currentEvent = retrieve_inventoryEvent($selectedWeek);
+        /* Check if event exists (prevents crash if event was deleted) */
+        if(!$currentEvent) {
+            header('Location: viewWeeklyReport.php');
+            die();
+        }
+        $currentDate = $currentEvent->getDate();
+
+        /* Get all events on the current date, sorted by ID DESC */
+        $allEventsOnDate = get_all_inventoryEvents_by_date($currentDate);
+
+        /* Separate events by location */
+        $warehouseEvents = array();
+        $pantryEvents = array();
+        foreach($allEventsOnDate as $evt) {
+            if($evt->getLocation() == 'Warehouse') {
+                $warehouseEvents[] = $evt;
+            } else if($evt->getLocation() == 'Pantry') {
+                $pantryEvents[] = $evt;
+            }
+        }
+
+        /* Find the 2nd newest event for each location (index [1] = 2nd newest) */
+        $prevWarehouseEvent = isset($warehouseEvents[1]) ? $warehouseEvents[1] : null;
+        $prevPantryEvent = isset($pantryEvents[1]) ? $pantryEvents[1] : null;
+
+        /* If BOTH locations have no 2nd event, fall back to previous date */
+        if($prevWarehouseEvent === null && $prevPantryEvent === null) {
+            $previousCountObjects = get_previous_counts_by_event($selectedWeek);
+            foreach($previousCountObjects as $count){
+                $previousCounts[$count->getItemCategory()] = $count;
+            }
+        } else {
+            /* Get item counts from each location independently (use 0 if location doesn't have 2nd event) */
+            $prev_item_counts = array();
+            if($prevWarehouseEvent !== null){
+                $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($prevWarehouseEvent->getId()));
+            }
+            if($prevPantryEvent !== null){
+                $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($prevPantryEvent->getId()));
+            }
+
+            /* Sum up totals by category (Warehouse + Pantry) */
+            $prev_totals = array();
+            foreach($prev_item_counts as $item){
+                $categoryId = $item->getItemCategory();
+                if(isset($prev_totals[$categoryId])){
+                    $prev_totals[$categoryId] += $item->getQuantity();
+                } else {
+                    $prev_totals[$categoryId] = $item->getQuantity();
+                }
+            }
+
+            /* Create ItemCount objects for consistency with current counts */
+            foreach($prev_totals as $categoryId => $quantity){
+                $previousCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
+            }
         }
     }
 
@@ -127,6 +196,7 @@
             foreach ($counts as $count) {
                 $catId = $count->getItemCategory();
                 $basketItems[] = array(
+                    'id'        => $count->getId(),
                     'item_name' => isset($categoryMap[$catId]) ? $categoryMap[$catId] : 'Unknown (ID: ' . $catId . ')',
                     'quantity'  => $count->getQuantity()
                 );
@@ -447,8 +517,11 @@
         .drag-handle:active {
             cursor: grabbing;
         }
-        #basketTbody tr.drag-over {
+        #basketTbody tr.drag-over-top {
             border-top: 2px solid var(--accent-color);
+        }
+        #basketTbody tr.drag-over-bottom {
+            border-bottom: 2px solid var(--accent-color);
         }
         #basketTbody tr.dragging {
             opacity: 0.4;
@@ -509,10 +582,9 @@
                     <div class="toolbar-left">
                         <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
                         <select id="sortSelect" class="toolbar-select">
-                            <option value="default">Default</option>
                             <option value="name-asc">Name (A-Z)</option>
                             <option value="name-desc">Name (Z-A)</option>
-                            <option value="days-asc">Days Left (Low to High)</option>
+                            <option value="days-asc" selected>Days Left (Low to High)</option>
                             <option value="days-desc">Days Left (High to Low)</option>
                         </select>
                     </div>
@@ -616,7 +688,7 @@
                             <tbody id="basketTbody">
                                 <?php if (!empty($basketItems)): ?>
                                     <?php foreach ($basketItems as $i => $item): ?>
-                                        <tr draggable="true">
+                                        <tr draggable="true" data-count-id="<?= $item['id'] ?>">
                                             <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                             <td class="row-number"><?= $i + 1 ?></td>
                                             <td><?= htmlspecialchars($item['item_name']) ?></td>
@@ -631,7 +703,10 @@
                             </tbody>
                         </table>
                     </div>
-                    <button class="generate-btn" id="generatePdfBtn" style="margin-top: 1.25rem;">Generate Shopping List PDF</button>
+                    <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
+                        <button class="generate-btn" id="saveQuantitiesBtn">Save Quantities</button>
+                        <button class="generate-btn" id="generatePdfBtn">Generate Shopping List PDF</button>
+                    </div>
                 <?php endif; ?>
             </div>
 
@@ -656,12 +731,7 @@
                 var $tbody = $('#weeklyItemsTable tbody');
                 var $rows = $tbody.find('tr').get();
 
-                if (sortValue === 'default') {
-                    // Restore original order - no sorting
-                    $rows.sort(function(a, b) {
-                        return $(a).data('original-index') - $(b).data('original-index');
-                    });
-                } else if (sortValue === 'name-asc') {
+                if (sortValue === 'name-asc') {
                     // Sort by name A-Z
                     $rows.sort(function(a, b) {
                         var nameA = $(a).find('td').eq(1).text().toLowerCase();
@@ -740,6 +810,9 @@
                 $(this).data('original-index', index);
             });
 
+            // Trigger initial sort (Days Left Low to High)
+            $('#sortSelect').trigger('change');
+
             // Basket drag-and-drop reordering
             var basketTbody = document.getElementById('basketTbody');
             if (basketTbody) {
@@ -756,29 +829,36 @@
                     e.dataTransfer.dropEffect = 'move';
                     var target = e.target.closest('tr');
                     if (target && target !== dragSrc) {
-                        basketTbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('drag-over'); });
-                        target.classList.add('drag-over');
+                        basketTbody.querySelectorAll('tr').forEach(function(r) {
+                            r.classList.remove('drag-over-top', 'drag-over-bottom');
+                        });
+                        var rect = target.getBoundingClientRect();
+                        if (e.clientY < rect.top + rect.height / 2) {
+                            target.classList.add('drag-over-top');
+                        } else {
+                            target.classList.add('drag-over-bottom');
+                        }
                     }
                 });
 
                 basketTbody.addEventListener('dragleave', function(e) {
                     var target = e.target.closest('tr');
-                    if (target) target.classList.remove('drag-over');
+                    if (target) {
+                        target.classList.remove('drag-over-top', 'drag-over-bottom');
+                    }
                 });
 
                 basketTbody.addEventListener('drop', function(e) {
                     e.preventDefault();
                     var target = e.target.closest('tr');
                     if (target && target !== dragSrc) {
-                        var rows = Array.from(basketTbody.querySelectorAll('tr'));
-                        var srcIndex = rows.indexOf(dragSrc);
-                        var tgtIndex = rows.indexOf(target);
-                        if (srcIndex < tgtIndex) {
-                            basketTbody.insertBefore(dragSrc, target.nextSibling);
-                        } else {
+                        var rect = target.getBoundingClientRect();
+                        if (e.clientY < rect.top + rect.height / 2) {
                             basketTbody.insertBefore(dragSrc, target);
+                        } else {
+                            basketTbody.insertBefore(dragSrc, target.nextSibling);
                         }
-                        target.classList.remove('drag-over');
+                        target.classList.remove('drag-over-top', 'drag-over-bottom');
                         // Update row numbers
                         basketTbody.querySelectorAll('tr').forEach(function(r, i) {
                             var cell = r.querySelector('.row-number');
@@ -789,9 +869,28 @@
 
                 basketTbody.addEventListener('dragend', function(e) {
                     if (dragSrc) dragSrc.classList.remove('dragging');
-                    basketTbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('drag-over'); });
+                    basketTbody.querySelectorAll('tr').forEach(function(r) {
+                        r.classList.remove('drag-over-top', 'drag-over-bottom');
+                    });
                 });
             }
+            // Save quantity changes to database on button click
+            $('#saveQuantitiesBtn').on('click', function() {
+                var btn = $(this);
+                var requests = [];
+                $('#basketTbody tr').each(function() {
+                    var row = $(this);
+                    var countId = row.data('count-id');
+                    var quantity = parseInt(row.find('.basket-qty-input').val(), 10);
+                    if (!countId || isNaN(quantity) || quantity < 0) return;
+                    requests.push($.post('viewWeeklyReport.php', { action: 'updateQty', id: countId, quantity: quantity }));
+                });
+                $.when.apply($, requests).done(function() {
+                    btn.text('Saved!');
+                    setTimeout(function() { btn.text('Save Quantities'); }, 2000);
+                });
+            });
+
             // Generate Shopping List PDF
             var pdfBtn = document.getElementById('generatePdfBtn');
             if (pdfBtn) {

@@ -55,7 +55,7 @@
 <html>
     <head>
         <?php require_once('universal.inc') ?>
-        <title>Whiskey Valor | Event Search</title>
+        <title>CCDA | Event Search</title>
     </head>
     <body>
         <?php require_once('header.php') ?>
