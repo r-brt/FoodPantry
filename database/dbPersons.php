@@ -146,6 +146,21 @@ function retrieve_person_by_personId($personId) {
     return $thePerson;
 }
 
+//look up a person by their email for forgot password
+function retrieve_person_by_email($email) {
+    $con=connect();
+    $email = mysqli_real_escape_string($con, $email);
+    $query = "SELECT * FROM dbpersons WHERE email = '" . $email . "'";
+    $result = mysqli_query($con,$query);
+    if (mysqli_num_rows($result) !== 1) {
+        mysqli_close($con);
+        return false;
+    }
+    $result_row = mysqli_fetch_assoc($result);
+    $thePerson = make_a_person($result_row);
+    mysqli_close($con);
+    return $thePerson;
+}
 function create_person($id, $first_name, $last_name, $email, $type, $password) {
     $con = connect();
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);

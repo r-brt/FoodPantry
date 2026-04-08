@@ -1,86 +1,41 @@
-<?php
-    session_cache_expire(30);
-    session_start();
-    ini_set("display_errors",1);
-    error_reporting(E_ALL);
-    //$loggedIn = false;
-    $accessLevel =  $_SESSION['access_level'];
-    /*$userID = null;
-    if (isset($_SESSION['_id'])) {
-        $loggedIn = true;
-        // 0 = not logged in, 1 = standard user, 2 = manager (Admin), 3 super admin (TBI)
-        $accessLevel = $_SESSION['access_level'];
-        $userID = $_SESSION['_id'];
-    }
+<?php 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
-    // Was an ID supplied?
-    if ($_SERVER["REQUEST_METHOD"] == "GET" && !isset($_GET['id'])) {
-        header('Location: index.php');
-        die();
-    }*/
-
-    // Is user authorized to view this page?
-    if ($accessLevel < 2) {
-        header('Location: index.php');
-        die();
-    }
+require_once('database/dbinfo.php');
+require 'vendor/autoload.php';
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = $_POST['email'];
+    $reset = "http://localhost/foodpantry/changeForgottenPassword.php?email=" . urlencode($email);
+    $mail = new PHPMailer(true);
     
-    require_once('include/input-validation.php');
-    require_once('database/dbPersons.php');
+    try{
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'consuegraallison22@gmail.com';
+        $mail->Password = 'ujbdkenivdbcatat';
+        $mail->SMTPSecure = 'tls';
+        $mail->Port = 587;
 
-    // Does the person exist?
-    /*$thePerson = retrieve_person_by_personId($_GET['id']);
-    if (!$thePerson) {
-        echo "That user does not exist";
-        die();
-    }*/
+        $mail->setFrom('consuegraallison22@gmail.com', 'FoodPantry');
+        $mail->addAddress($email);
 
-    /* 
-    * _POST is empty when the page is first loaded.
-    *  Submitting the form on this page reloads the page with data in _POST
-    *  if _POST is not empty, process data from form
-    */
+        $mail->isHTML(false);
+        $mail->Subject = "Reset Password";
+        $mail->Body = "Clink link below to reset password:\n" . $reset;
 
-    $errors = [];
-    if (!empty($_POST)) {
-        if(isset($_POST["cancel_button"])){
-            header('Location: index.php');
-            die();
-        }
-        if(isset($_POST["create_button"])){
-            $id = $_POST["id"];
-            $first_name = $_POST["fname"];
-            $last_name = $_POST["lname"];
-            $email = $_POST["email"];
-            $type = $_POST["role"] ?? '';
-            $password = $_POST["password"];
+        $mail->send();
 
-            if(retrieve_person($_POST["id"])){
-                $errors[] = "Username already exists";
-            }
-            if(retrieve_person_by_email($_POST["email"])){
-                $errors[] = "Email already exists";
-            }
-            if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
-                $errors[] = "Invalid email";
-            }
-            if($accessLevel < 3 && $type == "superadmin"){
-                $errors[] = "Unable to change role";
-            }
-            if(empty($errors)){
-                if(create_person($id, $first_name, $last_name, $email, $type, $password)){
-                    header('Location: viewAuditUsers.php');
-                    die();
-                }
-                else{
-                    $errors[] = "Unable to create user";
-                }
-            }
-            
-        }
+    }catch (Exception $e) {
+        echo "That is not an email we have in our system";
     }
+    $successMessage = "If the email you imputed is in our system,
+    a link has been sent to that email to reset your password.";
+}
 ?>
-    
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -316,58 +271,22 @@
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Add User</h1>
-            <?php 
-                /* Display errors from submitting inventory */
-                if (!empty($errors)): ?>
-                <ul>
-                    <?php foreach($errors AS $error): ?>
-                        <li><?php echo("<h4 style=\"color:red;\"><i>Error: ".$error."</i></h4>"); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
+            <h1 class="title">Forgot Password</h1>
 
-            <!-- Update Inventory -->
+            <?php if (isset($successMessage))
+                echo "<p>$successMessage</p>"; ?>
+
+            <!-- Forgot Password Page -->
             <div class="report-section">
-                <h2>New User:</h2>
-                <form method="POST">
+                <form method="POST" action="forgotPassword.php">
                     <div class="updateInv-allRows">
                         <div class="updateInv-row">
-                            <label class="updateInv-label" for="id">Username: </label>
-                            <input type="text" class="updateInv-qty" name="id" required>
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="fname">First Name: </label>
-                            <input type="text" class="updateInv-qty" name="fname" required>
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="lname">Last Name: </label>
-                            <input type="text" class="updateInv-qty" name="lname" required>
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="email">Email: </label>
-                            <input type="text" class="updateInv-qty" name="email" required>
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="role">Role: </label>
-                            <select name="role" class="modify-role-select" required>
-                                <?php if ($accessLevel >= 3):?>
-                                    <option value="superadmin">superadmin</option>
-                                <?php endif;?>
-                                <option value="admin">admin</option>
-                                <option value="inventory_counter">inventory_counter</option>
-                            </select>
-                        </div>
-                        <div class="updateInv-row">
-                            <label class="updateInv-label" for="email">Password: </label>
-                            <input type="text" class="updateInv-qty" name="password" required>
+                            <label class="updateInv-label" for="email">Enter your email: </label>
+                            <input type="email" class="updateInv-qty" name="email" required>
                         </div>
                     </div>
                     <div class="modifyUsers-formBtns">
-                        <button name="create_button" class="modify-save-btn">Create</button>
-                        <button name="cancel_button" formnovalidate>Cancel</button>
-                        <hr>
-                        <hr>
+                        <button type="submit" class="modify-save-btn">Send Link to Reset your Password</button>
                     </div>
                 </form>
             </div>
