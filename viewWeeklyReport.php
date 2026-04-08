@@ -72,89 +72,143 @@
         return $b->getId() - $a->getId();
     });
 
-    // Group events by date and keep only the latest event ID per date
-    $dateToEventMap = array();
-    $uniqueDates = array();
-    foreach($allEventObjects as $event){
-        $date = $event->getDate();
-        if(!isset($dateToEventMap[$date])){
-            $dateToEventMap[$date] = $event->getId(); // First one is latest (already sorted by ID DESC)
-            $uniqueDates[] = $date;
+    // Build event pairs (warehouse + matching pantry)
+    $eventPairs = array();
+    foreach($allEventObjects as $event) {
+        if($event->getLocation() == 'Warehouse') {
+            $pantryEvent = get_matching_inventoryEvent($event);
+            $eventPairs[] = array(
+                'warehouse' => $event,
+                'pantry' => $pantryEvent,
+                'date' => $event->getDate(),
+                'warehouseId' => $event->getId(),
+                'pantryId' => $pantryEvent ? $pantryEvent->getId() : null
+            );
         }
+    }
+
+    // Also add pantry events with no matching warehouse
+    foreach($allEventObjects as $event) {
+        if($event->getLocation() == 'Pantry') {
+            $warehouseEvent = get_matching_inventoryEvent($event);
+            if($warehouseEvent === null) {
+                $eventPairs[] = array(
+                    'warehouse' => null,
+                    'pantry' => $event,
+                    'date' => $event->getDate(),
+                    'warehouseId' => null,
+                    'pantryId' => $event->getId()
+                );
+            }
+        }
+    }
+
+    // Re-sort pairs by date (newest first)
+    usort($eventPairs, function($a, $b) {
+        $dateDiff = strtotime($b['date']) - strtotime($a['date']);
+        if ($dateDiff != 0) {
+            return $dateDiff;
+        }
+        $aId = $a['warehouseId'] ?? $a['pantryId'];
+        $bId = $b['warehouseId'] ?? $b['pantryId'];
+        return $bId - $aId;
+    });
+
+    // Add sequence numbers for same-date entries
+    $dateCounts = array();
+    foreach($eventPairs as $index => $pair) {
+        $date = $pair['date'];
+        if(!isset($dateCounts[$date])) {
+            $dateCounts[$date] = 0;
+        }
+        $dateCounts[$date]++;
+    }
+    /* Assign sequence numbers (newest first, so #1 is most recent on that date) */
+    $dateSeq = array();
+    foreach($eventPairs as $index => $pair) {
+        $date = $pair['date'];
+        if(!isset($dateSeq[$date])) {
+            $dateSeq[$date] = 1;
+        }
+        $eventPairs[$index]['seq'] = $dateSeq[$date];
+        $eventPairs[$index]['totalOnDate'] = $dateCounts[$date];
+        $dateSeq[$date]++;
     }
 
     // Get the selected week from query params, default to latest
-    $selectedWeek = $_GET['week'] ?? (count($dateToEventMap) > 0 ? reset($dateToEventMap) : null);
+    $selectedWeek = $_GET['week'] ?? (count($eventPairs) > 0 ? ($eventPairs[0]['warehouseId'] ?? $eventPairs[0]['pantryId']) : null);
 
-    // Get current week item counts (combined Warehouse + Pantry)
-    $currentCounts = array();
-    if ($selectedWeek) {
-        $currentCountObjects = get_current_counts_by_event($selectedWeek);
-        foreach($currentCountObjects as $count){
-            $currentCounts[$count->getItemCategory()] = $count;
+    // Find the selected pair index
+    $selectedPairIndex = null;
+    foreach($eventPairs as $index => $pair) {
+        $pairId = $pair['warehouseId'] ?? $pair['pantryId'];
+        if($pairId == $selectedWeek) {
+            $selectedPairIndex = $index;
+            break;
         }
     }
 
-    // Get previous week item counts (check same day older events first, then previous date)
+    // Get current counts for selected pair
+    $currentCounts = array();
+    if($selectedPairIndex !== null) {
+        $selectedPair = $eventPairs[$selectedPairIndex];
+        $current_item_counts = array();
+
+        /* Get warehouse counts */
+        if($selectedPair['warehouse']) {
+            $current_item_counts = array_merge($current_item_counts, get_itemCounts_by_inventoryEvent($selectedPair['warehouseId']));
+        }
+        /* Get pantry counts */
+        if($selectedPair['pantry']) {
+            $current_item_counts = array_merge($current_item_counts, get_itemCounts_by_inventoryEvent($selectedPair['pantryId']));
+        }
+
+        /* Sum up totals by category */
+        $current_totals = array();
+        foreach($current_item_counts as $item) {
+            $categoryId = $item->getItemCategory();
+            if(isset($current_totals[$categoryId])) {
+                $current_totals[$categoryId] += $item->getQuantity();
+            } else {
+                $current_totals[$categoryId] = $item->getQuantity();
+            }
+        }
+
+        /* Create ItemCount objects */
+        foreach($current_totals as $categoryId => $quantity) {
+            $currentCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
+        }
+    }
+
+    // Get previous counts (the pair before selected in sorted list)
     $previousCounts = array();
-    if ($selectedWeek) {
-        $currentEvent = retrieve_inventoryEvent($selectedWeek);
-        /* Check if event exists (prevents crash if event was deleted) */
-        if(!$currentEvent) {
-            header('Location: viewWeeklyReport.php');
-            die();
+    if($selectedPairIndex !== null && isset($eventPairs[$selectedPairIndex + 1])) {
+        $previousPair = $eventPairs[$selectedPairIndex + 1];
+        $prev_item_counts = array();
+
+        /* Get warehouse counts */
+        if($previousPair['warehouse']) {
+            $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($previousPair['warehouseId']));
         }
-        $currentDate = $currentEvent->getDate();
-
-        /* Get all events on the current date, sorted by ID DESC */
-        $allEventsOnDate = get_all_inventoryEvents_by_date($currentDate);
-
-        /* Separate events by location */
-        $warehouseEvents = array();
-        $pantryEvents = array();
-        foreach($allEventsOnDate as $evt) {
-            if($evt->getLocation() == 'Warehouse') {
-                $warehouseEvents[] = $evt;
-            } else if($evt->getLocation() == 'Pantry') {
-                $pantryEvents[] = $evt;
-            }
+        /* Get pantry counts */
+        if($previousPair['pantry']) {
+            $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($previousPair['pantryId']));
         }
 
-        /* Find the 2nd newest event for each location (index [1] = 2nd newest) */
-        $prevWarehouseEvent = isset($warehouseEvents[1]) ? $warehouseEvents[1] : null;
-        $prevPantryEvent = isset($pantryEvents[1]) ? $pantryEvents[1] : null;
+        /* Sum up totals by category */
+        $prev_totals = array();
+        foreach($prev_item_counts as $item) {
+            $categoryId = $item->getItemCategory();
+            if(isset($prev_totals[$categoryId])) {
+                $prev_totals[$categoryId] += $item->getQuantity();
+            } else {
+                $prev_totals[$categoryId] = $item->getQuantity();
+            }
+        }
 
-        /* If BOTH locations have no 2nd event, fall back to previous date */
-        if($prevWarehouseEvent === null && $prevPantryEvent === null) {
-            $previousCountObjects = get_previous_counts_by_event($selectedWeek);
-            foreach($previousCountObjects as $count){
-                $previousCounts[$count->getItemCategory()] = $count;
-            }
-        } else {
-            /* Get item counts from each location independently (use 0 if location doesn't have 2nd event) */
-            $prev_item_counts = array();
-            if($prevWarehouseEvent !== null){
-                $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($prevWarehouseEvent->getId()));
-            }
-            if($prevPantryEvent !== null){
-                $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($prevPantryEvent->getId()));
-            }
-
-            /* Sum up totals by category (Warehouse + Pantry) */
-            $prev_totals = array();
-            foreach($prev_item_counts as $item){
-                $categoryId = $item->getItemCategory();
-                if(isset($prev_totals[$categoryId])){
-                    $prev_totals[$categoryId] += $item->getQuantity();
-                } else {
-                    $prev_totals[$categoryId] = $item->getQuantity();
-                }
-            }
-
-            /* Create ItemCount objects for consistency with current counts */
-            foreach($prev_totals as $categoryId => $quantity){
-                $previousCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
-            }
+        /* Create ItemCount objects */
+        foreach($prev_totals as $categoryId => $quantity) {
+            $previousCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
         }
     }
 
@@ -573,11 +627,11 @@
                 <div class="week-selector">
                     <label for="weekSelect">View Week:</label>
                     <select class="select" id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
-                        <?php if (count($dateToEventMap) > 0): ?>
-                            <?php foreach ($uniqueDates as $date): ?>
-                                <?php $eventId = $dateToEventMap[$date]; ?>
+                        <?php if (count($eventPairs) > 0): ?>
+                            <?php foreach ($eventPairs as $pair): ?>
+                                <?php $eventId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
                                 <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= date('M j, Y', strtotime($date)) ?>
+                                    <?= date('M j, Y', strtotime($pair['date'])) ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
