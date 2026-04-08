@@ -53,6 +53,8 @@
             }
             $password = $_POST['password'];
             $newPassword = $_POST['new-password'];
+            $reenteredPassword = $_POST['new-password-reenter'];
+
             $securePassword = isSecurePassword($_POST['new-password']);
             $user = retrieve_person($userID);
             if (!password_verify($password, $user->get_password())) {
@@ -61,6 +63,8 @@
                 $error2 = true;
             } else if (!$securePassword) {
                 $error3 = true;
+            } else if ($newPassword !== $reenteredPassword) {
+                $error4 = true;
             } else {
                 $hash = password_hash($newPassword, PASSWORD_BCRYPT);
                 change_password($userID, $hash);
@@ -73,7 +77,15 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <?php require_once('universal.inc') ?>
+<link rel="stylesheet" href="include/base.css">
+
+
+
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="css/base.css" type="text/css" />
+        
+
+        <link rel="icon" type="image/x-icon" href="images/ccda-logo-white.svg">        
         <title>CCDA | Change Password</title>
     </head>
     <body>
@@ -86,6 +98,8 @@
                 <p class="error-toast">New password must be different from current password.</p>
             <?php elseif (isset($error3)): ?>
                 <p class="error-toast">Your new password must contain at least 8 characters, one uppercase letter, one lowercase letter, and one number.</p>    
+            <?php elseif (isset($error4)): ?>
+                <p class="error-toast">Your new Password must be the same in both locations. </p>
             <?php endif ?>
             <form id="password-change" method="post">
                 <?php if (!$forced): ?>
@@ -98,7 +112,7 @@
                 <input type="password" id="new-password" name="new-password" placeholder="Enter new password" required>
                  <p id="password-error" class="error hidden">Password needs to be at least 8 characters long, contain at least one number, one uppercase letter, and one lowercase letter!</p>
                 <label for="reenter-new-password">New Password</label>
-                <input type="password" id="new-password-reenter" placeholder="Re-enter new password" required>
+                <input type="password" id="new-password-reenter" name="new-password-reenter" placeholder="Re-enter new password" required>
                 <p id="password-match-error" class="error hidden">Passwords must match!</p>
                 <input type="submit" id="submit" name="submit" value="Change Password">
                 <?php if (!$forced): ?>
