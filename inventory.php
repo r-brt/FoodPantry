@@ -276,20 +276,8 @@ if ($selectedWeek) {
     <main>
         <div class="report-container">
             <h1 class="title">Inventory Log</h1>
-
-            <?php if($accessLevel >= 2): ?>
-                <div style="margin-bottom: 1.5rem;">
-                    <a href="viewEditDeleteInventory.php" style="text-decoration: none;">
-                        <button style="padding: 0.75rem 1.5rem; background-color: #dc2626; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; font-weight: 600;">
-                            Edit/Delete Inventory
-                        </button>
-                    </a>
-                </div>
-            <?php endif; ?>
-
             <div class="report-section">
                 <h2>Food Items</h2>
-                
                 <div class="week-selector">
                     <label for="weekSelect">View Inventory:</label>
                     <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
@@ -354,7 +342,15 @@ if ($selectedWeek) {
                     </table>
                 </div>
             </div>
-
+            <?php if($accessLevel >= 2): ?>
+                <div style="margin-bottom: 1.5rem;">
+                    <a href="viewEditDeleteInventory.php" style="text-decoration: none;">
+                        <button style="padding: 0.75rem 1.5rem; background-color: #dc2626; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; font-weight: 600;">
+                            Edit/Delete Inventory
+                        </button>
+                    </a>
+                </div>
+            <?php endif; ?>
         </div>
     </main>
 
