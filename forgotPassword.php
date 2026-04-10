@@ -13,12 +13,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
-        $mail->Username = 'consuegraallison22@gmail.com';
-        $mail->Password = 'ujbdkenivdbcatat';
+        $mail->Username = '';
+        $mail->Password = '';
         $mail->SMTPSecure = 'tls';
-        $mail->Port = 587;
+        $mail->Port = ;
 
-        $mail->setFrom('consuegraallison22@gmail.com', 'FoodPantry');
+        $mail->setFrom('', 'FoodPantry');
         $mail->addAddress($email);
 
         $mail->isHTML(false);
