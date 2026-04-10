@@ -882,7 +882,7 @@ echo('<a href="generateReport.php" style="text-decoration: none;">
 <a href="viewWeeklyReport.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/clipboard-arrow-down.svg" alt="Report Icon">
-    <span>Generate Weekly Inventory Report</span>
+    <span>Weekly Inventory Report</span>
   </div>
 </a>
 

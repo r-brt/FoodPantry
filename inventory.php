@@ -108,7 +108,7 @@ if ($selectedWeek) {
 <html>
 <head>
     <?php require_once('universal.inc'); ?>
-    <title>Inventory | CCDA</title>
+    <title>Inventory Log | CCDA</title>
     <link rel="stylesheet" href="css/base.css">
     <style>
         .title {

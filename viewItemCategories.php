@@ -41,7 +41,7 @@
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>View Item Categories | CCDA</title>
+    <title>Manage Item Categories | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .title {
@@ -194,7 +194,7 @@
     <?php require_once('header.php'); ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Item Categories</h1>
+            <h1 class="title">Manage Item Categories</h1>
 
             <?php if (!empty($errors)): ?>
                 <ul>
