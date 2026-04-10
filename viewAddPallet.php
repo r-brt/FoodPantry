@@ -32,6 +32,11 @@
     $inputCategories = array();
     $inputQuantities = array();
     if (!empty($_POST)) {
+        if(isset($_POST["cancel_button"])){
+            header('Location: viewManagePallets.php');
+            die();
+        }
+
         foreach($_POST as $key => $value){
             if($key == "name"){
                 if($value == "Pallet"){
@@ -160,7 +165,7 @@
             /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
-            margin-bottom: 2rem;
+
         }
         .report-section h1 {
             font-size: 1.5rem;
@@ -290,6 +295,39 @@
             color: var(--page-font-color);
             font-size: 0.9rem;
         }
+        .updateInv-nameRow {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            justify-content: left;
+            gap: 1rem;
+        }
+        .updateInv-name {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            gap: 1rem;
+        }
+        .updateInv-nameLabel {
+            text-align: right;
+                width: 200px;
+                max-width: 400px;
+                min-width: 6rem;
+                flex-grow: 1;
+                text-align: right;
+                padding: 0rem  .5rem 0rem 0rem;
+        }
+        .updateInv-nameInput {
+            width: 200px;
+            max-width: 400px;
+            margin-bottom: .5rem !important;
+            padding: 0.4rem 0.6rem !important;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            font-size: 0.9rem;
+        }
         .generate-btn {
             padding: 0.5rem 1.5rem;
             background-color: var(--accent-color);
@@ -303,6 +341,59 @@
         }
         .generate-btn:hover {
             opacity: 0.85;
+        }
+        .modify-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            width: auto;
+            margin-bottom: 1rem;
+        }
+        .modify-btn:hover {
+            opacity: 0.85;
+        }
+        .modify-save-btn,
+        .modify-cancel-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            max-width: 500px;
+        }
+        .modify-delete-btn {
+            background-color: darkred;
+            color: var(--button-font-color);
+        }
+        .modify-deactivate-btn {
+            color: red;
+        }
+        .modify-activate-btn {
+            color: green;
+        }
+        .modify-delete-btn:hover{
+            opacity: 0.75;
+            background-color: darkred;
+        }
+        .modify-save-btn:hover,
+        .modify-cancel-btn:hover {
+            opacity: 0.85;
+        }
+        .modifyUsers-formBtns{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
         }
         @media only screen and (max-width: 768px) {
             .report-table th,
@@ -356,10 +447,10 @@
             <div class="report-section">
                 <h2>Pallet Input</h2>              
                 <form name="palletForm" method="POST" action="viewAddPallet.php">
-                    <div class="updateInv-optionRow">
-                        <div class="updateInv-option">
-                            <label class="updateInv-optionLabel" for="name">Pallet Name:</label>
-                            <input type="text" class="updateInv-qty" min="0" placeholder="Qty" 
+                    <div class="updateInv-nameRow">
+                        <div class="updateInv-name">
+                            <label class="updateInv-nameLabel" for="name">Pallet Name:</label>
+                            <input type="text" class="updateInv-nameInput" min="0" placeholder="Qty" 
                                             value="<?= $pallet_name == "PALLET_PLACEHOLDER_NAME" ? 'Pallet' : $pallet_name ?>"
                                             name="name" 
                                             id="name">
@@ -407,7 +498,7 @@
                                             <select name="category_<?php echo($row_count); ?>" id="category_<?php echo($row_count); ?>" onchange="updateCategoryColumns(this)">
                                                 <option value="">-- Select Category --</option>
                                                 <?php foreach($allCategories AS $cat): ?>
-                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?>" <?php if($cat->getId() == $categoryid) echo("selected")?>><?php echo($cat->getName())?></option>
+                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?>" <?php if($cat->getId() == $category->getId()) echo("selected")?>><?php echo($cat->getName())?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
@@ -446,10 +537,19 @@
                         
                                 </tbody>
                             </table>
+                            <div style="margin-bottom: 1rem;"></div>
+                            <button type="button" class="modify-btn" onclick="addCategoryRow()">Add Row</button>
                         </div>
                     </div>
-                    <input type="submit" value="Add New Pallet" />
-                    <button type="button" class="modify-btn" onclick="addCategoryRow()">Add Row Pallets</button>
+                    
+                    <div class="modifyUsers-formBtns">
+                        <button name="save_button" class="modify-save-btn">Save New Pallet</button>
+                    </div>
+                    <div class="modifyUsers-formBtns">
+                        <button name="cancel_button" class="modify-cancel-btn" formnovalidate>Cancel</button>
+                    </div>
+                    
+                    
                 </form>
             </div>
 
@@ -507,7 +607,7 @@
                 document.querySelector(".bb_" + rowId).innerHTML = isBananaBox;
                 document.querySelector(".ipb_" + rowId).innerHTML = itemsPerBox;
             }
-                        
+
         </script>
     </main>
 </body>
