@@ -26,71 +26,114 @@
     *  Submitting the form on this page reloads the page with data in _POST
     *  if _POST is not empty, process data from form
     */
-    $submit_success = false;
     $errors = [];
+    $pallet_name = "Pallet";
+    $updatedItems = array();
+    $inputCategories = array();
+    $inputQuantities = array();
     if (!empty($_POST)) {
-        $updatedItems = array();
-        foreach($_POST as $cat => $value){
-            if($cat == "name"){
-                $name = $value;
-                if($name == "Pallet"){
-                    $name = "PALLET_PLACEHOLDER_NAME";
+        foreach($_POST as $key => $value){
+            if($key == "name"){
+                if($value == "Pallet"){
+                    $pallet_name = "PALLET_PLACEHOLDER_NAME";
                 }
-                else if(!pallet_name_unique($name)){
+                else if(!pallet_name_unique($value)){
                     $errors[] = "Pallet name already exists";
-                    $updatedItems = array();
-                    break;
+                }
+                else if(empty($value)){
+                    $errors[] = "Pallet name cannot be empty";
+                }
+                else{
+                    $pallet_name = $value;
                 }
                 continue;
             }
-            /* only add items that have values to array */
-            if(!empty($value)){
-
-                /* try to convert value to a number. If it cannot convert, leave it as a string */
-                try{
-                    $value = +$value;
-                }
-                catch(TypeError  $e){ 
-                    $value = " ";
-                }
-
-                /* if error is found, empty the array of items and stop checking */
-                if(!is_int($value)){
-                    $errors[] = 'Quantities must be in whole numbers';
-                    $updatedItems = array();
-                    break;
-                }
-                else if($value < 0){
-                    $errors[] = 'Quantities must be greater than 0';
-                    $updatedItems = array();
-                    break;
-                }
-                /* accept items with 0 or greater quantity */
-                else if($value >= 0){
-                    $updatedItems[$cat] = $value;
-                }
+            $key_parts = explode("_", $key);
+            if(count($key_parts) != 2){
+                continue;
+            }
+            $key_type = $key_parts[0];
+            $key_id = $key_parts[1];
+            if($key_type == "category"){
+                $inputCategories[$key_id] = $value;
+            }
+            else if($key_type == "qty"){
+                $inputQuantities[$key_id] = $value;
             }
         }
 
-        /* if at least 1 item was updated, create inventory event and add items to database */
-        if(count($updatedItems) > 0){
-            $palletEventId = add_palletEvent($name, $personId);
-            if($name == "PALLET_PLACEHOLDER_NAME"){
-                $name = "Pallet " . $palletEventId;
-                update_palletEvent_name($palletEventId, $name);
+        // check for duplicate allCategories$allCategories
+        $dupe_category = array();
+        foreach(array_count_values($inputCategories) as $cat => $count)
+            if($count > 1) $dupe_category[] = $cat;
+
+        foreach($dupe_category as $cat){
+            $category = retrieve_ItemCategory($cat);
+            if(!empty($category)){
+                $errors[] = "Duplicate Category: " . $category->getName();
+            }
+        }
+
+        foreach($inputCategories as $id_key => $categoryId){
+            if(empty($categoryId)){
+                // if quantity is filled out but category is not, show error for missing category. 
+                // if category and quantity are both empty, no error.
+                if(!empty($inputQuantities[$id_key])){
+                    $errors[] = "Missing Category on row " . ($id_key+1);
+                }
+                continue;
+            }
+
+            $quantity = $inputQuantities[$id_key];
+            if(empty($quantity)){
+                $category = retrieve_ItemCategory($categoryId);
+                if(!empty($category)){
+                    $errors[] = "Missing Quantity for: " . $category->getName();
+                }
+                else{
+                    $errors[] = "Missing Quantity on row " . ($id_key+1);
+                }
+                continue;
+            }
+
+            /* try to convert quantity to a number. If it cannot convert, leave it as a string */
+            try{
+                $quantity = +$quantity;
+            }
+            catch(TypeError  $e){ 
+                $quantity = " ";
+            }
+
+            /* if error is found, empty the array of items and stop checking */
+            if(!is_int($quantity)){
+                $errors[] = 'Quantities must be in whole numbers';
+                break;
+            }
+            else if($quantity < 0){
+                $errors[] = 'Quantities must be greater than 0';
+                break;
+            }
+            /* accept items with 0 or greater quantity */
+            else if($quantity >= 0){
+                $updatedItems[$categoryId] = $quantity;
+            }
+        }
+
+        if(count($updatedItems) == 0 && empty($errors)){
+            $errors[] = 'Add at least 1 item to the pallet';
+        }
+        else if(count($updatedItems) > 0 && empty($errors)){
+            $palletEventId = add_palletEvent($pallet_name, $personId);
+            if($pallet_name == "PALLET_PLACEHOLDER_NAME"){
+                $pallet_name = "Pallet " . $palletEventId;
+                update_palletEvent_name($palletEventId, $pallet_name);
             }
             foreach($updatedItems as $categoryId => $quantity){
                 add_palletCount($palletEventId, $categoryId, $quantity);
             }
-
-            $submit_success = true;
+            header('Location: viewManagePallets.php');
+            die();
         } 
-        else{
-            /* if errors have already been detected array was emptied. Do no show error for missing data */
-            if(empty($errors)){
-                $errors[] = 'Enter quantity for at least 1 item';
-            }
-        }
     }    
 
 ?>
@@ -300,10 +343,6 @@
         <div class="report-container">
             <h1 class="title">Add New Pallet</h1>
             <?php 
-                /* Display success message after submitting pallet */
-                if($submit_success == true){
-                    echo("<h4 style=\"color:black;\"><i>Pallet Saved: ".$name."</i></h4>");
-                }
                 /* Display errors from submitting pallet */
                 if (!empty($errors)): ?>
                 <ul>
@@ -321,13 +360,13 @@
                         <div class="updateInv-option">
                             <label class="updateInv-optionLabel" for="name">Pallet Name:</label>
                             <input type="text" class="updateInv-qty" min="0" placeholder="Qty" 
-                                            value="Pallet"
+                                            value="<?= $pallet_name == "PALLET_PLACEHOLDER_NAME" ? 'Pallet' : $pallet_name ?>"
                                             name="name" 
                                             id="name">
                         </div>
                     </div>
                         <div class="table-wrapper">
-                            <table class="report-table">
+                            <table class="report-table" id="palletTable">
                                 <thead>
                                     <tr>
                                         <th>Item Name</th>
@@ -337,35 +376,139 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php 
-                        $categories = get_all_ItemCategory();
-                        foreach($categories AS $category): ?>
-                            <tr>
-                                <div class="updateInv-row">
-                                    <td><label class="updateInv-label" 
-                                            for="qty_<?php echo($category->getId())?>">
-                                            <?php echo($category->getName());?>
-                                    </label></td>
-                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
-                                            value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
-                                            name="<?php echo($category->getId())?>" 
-                                            id="qty_<?php echo($category->getId())?>"></td>
-                                    <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
-                                    <td style="text-align: center;"><?php echo($category->getItemsPerBox())?></td>
-                                </div>
-                            </tr>  
+                                     
+                        <?php $allCategories = get_all_active_ItemCategory(); ?>
+                        <?php $row_count = 0; ?>
+                        <?php foreach($inputCategories AS $categoryid): ?>
+                            <?php if(empty($categoryid)) : ?>
+                                <tr class="rowClass">
+                                    <div class="updateInv-row">
+                                        <td>
+                                            <select name="category_<?php echo($row_count); ?>" id="category_<?php echo($row_count); ?>" onchange="updateCategoryColumns(this)">
+                                                <option value="">-- Select Category --</option>
+                                                <?php foreach($allCategories AS $category): ?>
+                                                    <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>"><?php echo($category->getName())?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </td>
+                                        <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
+                                                value="<?php echo(isset($inputQuantities[$row_count]) ? $inputQuantities[$row_count] : ''); ?>"
+                                                name="qty_<?php echo($row_count); ?>" 
+                                                id="qty_<?php echo($row_count); ?>"></td>
+                                        <td style="text-align: center;"><div class="bb_<?php echo($row_count); ?>"></div></td>
+                                        <td style="text-align: center;"><div class="ipb_<?php echo($row_count); ?>"></div></td>
+                                    </div>
+                                </tr> 
+                            <?php else : ?>
+                                <?php $category = retrieve_ItemCategory($categoryid); ?>
+                                <tr class="rowClass">
+                                    <div class="updateInv-row">
+                                        <td>
+                                            <select name="category_<?php echo($row_count); ?>" id="category_<?php echo($row_count); ?>" onchange="updateCategoryColumns(this)">
+                                                <option value="">-- Select Category --</option>
+                                                <?php foreach($allCategories AS $cat): ?>
+                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?>" <?php if($cat->getId() == $categoryid) echo("selected")?>><?php echo($cat->getName())?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </td>
+                                        <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
+                                                value="<?php echo(isset($inputQuantities[$row_count]) ? $inputQuantities[$row_count] : ''); ?>"
+                                                name="qty_<?php echo($row_count); ?>" 
+                                                id="qty_<?php echo($row_count); ?>"></td>
+                                        <td style="text-align: center;"><div class="bb_<?php echo($row_count); ?>"><?php echo($category->getBananaBox() == 1 ? '✓' : '')?></div></td>
+                                        <td style="text-align: center;"><div class="ipb_<?php echo($row_count); ?>"><?php echo($category->getItemsPerBox())?></div></td>
+                                    </div>
+                                </tr>
+                            <?php endif; ?>
+                            <?php $row_count++; ?>
                         <?php endforeach; ?>
+                        <?php if(empty($inputCategories)) : ?>
+                            <tr class="rowClass">
+                                <div class="updateInv-row">
+                                    <td>
+                                        <select name="category_0" id="category_0" onchange="updateCategoryColumns(this)">
+                                            <option value="">-- Select Category --</option>
+                                            <?php foreach($allCategories AS $category): ?>
+                                                <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>"><?php echo($category->getName())?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
+                                            name="qty_0" 
+                                            id="qty_0"></td>
+                                    <td style="text-align: center;"><div class="bb_0"></div></td>
+                                    <td style="text-align: center;"><div class="ipb_0"></div></td>
+                                </div>
+                            </tr> 
+                            <?php $row_count++; ?>
+                        <?php endif; ?>
+                        <div id="row-counter-element" data-count="<?php echo $row_count; ?>"></div>
+                        
                                 </tbody>
                             </table>
                         </div>
                     </div>
                     <input type="submit" value="Add New Pallet" />
+                    <button type="button" class="modify-btn" onclick="addCategoryRow()">Add Row Pallets</button>
                 </form>
             </div>
 
         </div>
-    </main>
-    
 
+        <script>
+            const element = document.getElementById('row-counter-element');
+            var row_count = parseInt(element.getAttribute('data-count'), 10);
+
+            function addCategoryRow() {
+                // Find a <table> element with id="palletTable":
+                var table = document.getElementById("palletTable");
+
+                // Create an empty <tr> element and add it to the end of the table:
+                var row = table.insertRow();
+
+                // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
+                var name = row.insertCell(0);
+                var quantity = row.insertCell(1);
+                var bananaBox = row.insertCell(2);
+                var itemsPerBox = row.insertCell(3);
+                
+                let dropdown = document.getElementById("category_0");
+                let new_dropdown = dropdown.cloneNode(true);
+                new_dropdown.name = 'category_' + row_count;
+                new_dropdown.id = 'category_' + row_count;
+                new_dropdown.selectedIndex = 0;
+                name.append(new_dropdown);
+
+                let qty_input = document.getElementById("qty_0");
+                let new_qty_input = qty_input.cloneNode(true);
+                new_qty_input.name = 'qty_' + row_count;
+                new_qty_input.id = 'qty_' + row_count;
+                new_qty_input.value = "";
+                quantity.append(new_qty_input);
+
+                // Add some text to the new cells:
+                bananaBox.innerHTML = "<div class=\"bb_" + row_count + "\"></div>";
+                itemsPerBox.innerHTML = "<div class=\"ipb_" + row_count + "\"></div>";
+
+                row_count++;
+            }
+
+            function updateCategoryColumns(element){
+                const rowId = element.id.split("_")[1];
+                const categoryId = element.value.split("_")[0];
+                const bananaBox = element.value.split("_")[1];  
+                const itemsPerBox = element.value.split("_")[2];
+                if(categoryId == ""){
+                    document.querySelector(".bb_" + rowId).innerHTML = "";
+                    document.querySelector(".ipb_" + rowId).innerHTML = "";
+                    return;
+                }
+                const isBananaBox = bananaBox == 1 ? '✓' : '';
+                document.querySelector(".bb_" + rowId).innerHTML = isBananaBox;
+                document.querySelector(".ipb_" + rowId).innerHTML = itemsPerBox;
+            }
+                        
+        </script>
+    </main>
 </body>
 </html>
