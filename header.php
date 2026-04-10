@@ -870,7 +870,7 @@ echo('<a href="generateReport.php" style="text-decoration: none;">
 <a href="inventory.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/clipboard-list-alt.svg" alt="Inventory Icon">
-    <span>View Inventory Log</span>
+    <span>Inventory Log</span>
   </div>
 </a>
 <a href="viewUpdateInventory.php" style="text-decoration: none;">
@@ -883,6 +883,12 @@ echo('<a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/clipboard-arrow-down.svg" alt="Report Icon">
     <span>Weekly Inventory Report</span>
+  </div>
+</a>
+<a href="viewShoppingList.php" style="text-decoration: none;">
+  <div class="in-nav">
+    <img src="images/clipboard-list-alt.svg" alt="Report Icon">
+    <span>Shopping List</span>
   </div>
 </a>
 

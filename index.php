@@ -726,7 +726,7 @@
             <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Inventory Icon">
         </div>
         
-        <div class="large-text-sub" style="color:white;">View Inventory Log</div>
+        <div class="large-text-sub" style="color:white;">Inventory Log</div>
         <div class="graph-text" style="color:white;">Track inventory changes.</div>
     </div>
 
@@ -745,7 +745,7 @@
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/clipboard-arrow-down.svg" alt="Report Icon">
         </div>
-        <div class="large-text-sub" style="color:white;">Generate Weekly Inventory Report</div>
+        <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
         <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
     </div>
 
