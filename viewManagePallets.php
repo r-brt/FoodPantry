@@ -286,7 +286,7 @@
                     
                         <form action="viewAddPallet.php" style="display: inline;">
                             <div class="modifyUsers-formBtns">
-                                <button name="save_button" class="modify-save-btn">Add New Pallet</button>
+                                <button name="add_button" class="modify-save-btn">Add New Pallet</button>
                             </div>
                         </form>
                         <form action="viewUpdateInventory.php" style="display: inline;">
