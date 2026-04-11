@@ -17,44 +17,83 @@ require_once(__DIR__ . '/database/dbInventoryEvent.php');
 require_once(__DIR__ . '/database/dbItemCategory.php');
 require_once(__DIR__ . '/database/dbItemCounts.php');
 
-// Get all inventory events
-$allEvents = get_all_inventoryEvents();
+// Get all inventory events sorted by date (newest first), then by ID (highest first)
+$allEventObjects = get_all_inventoryEvents();
+usort($allEventObjects, function($a, $b) {
+    $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
+    if ($dateDiff != 0) {
+        return $dateDiff;
+    }
+    return $b->getId() - $a->getId();
+});
 
-// Build events array with unique dates (latest event per date)
-$events = [];
-$seenDates = [];
-foreach ($allEvents as $event) {
-    $date = $event->getDate();
-    if (!in_array($date, $seenDates)) {
-        $events[] = [
-            'inventoryEventId' => $event->getId(),
-            'date' => $date
-        ];
-        $seenDates[] = $date;
+// Build event pairs (warehouse + matching pantry)
+$eventPairs = array();
+foreach($allEventObjects as $event) {
+    if($event->getLocation() == 'Warehouse') {
+        $pantryEvent = get_matching_inventoryEvent($event);
+        $eventPairs[] = array(
+            'warehouse' => $event,
+            'pantry' => $pantryEvent,
+            'date' => $event->getDate(),
+            'warehouseId' => $event->getId(),
+            'pantryId' => $pantryEvent ? $pantryEvent->getId() : null
+        );
     }
 }
 
-// Sort events by date in descending order (newest first)
-usort($events, function($a, $b) {
-    return strcmp($b['date'], $a['date']);
+// Also add pantry events with no matching warehouse
+foreach($allEventObjects as $event) {
+    if($event->getLocation() == 'Pantry') {
+        $warehouseEvent = get_matching_inventoryEvent($event);
+        if($warehouseEvent === null) {
+            $eventPairs[] = array(
+                'warehouse' => null,
+                'pantry' => $event,
+                'date' => $event->getDate(),
+                'warehouseId' => null,
+                'pantryId' => $event->getId()
+            );
+        }
+    }
+}
+
+// Re-sort pairs by date (newest first)
+usort($eventPairs, function($a, $b) {
+    $dateDiff = strtotime($b['date']) - strtotime($a['date']);
+    if ($dateDiff != 0) {
+        return $dateDiff;
+    }
+    $aId = $a['warehouseId'] ?? $a['pantryId'];
+    $bId = $b['warehouseId'] ?? $b['pantryId'];
+    return $bId - $aId;
 });
 
 // Get the selected week from query params, default to latest
-$selectedWeek = $_GET['week'] ?? (count($events) > 0 ? $events[0]['inventoryEventId'] : null);
+$selectedWeek = $_GET['week'] ?? (count($eventPairs) > 0 ? ($eventPairs[0]['warehouseId'] ?? $eventPairs[0]['pantryId']) : null);
 
-// Fetch inventory items with box information for the selected date
+// Find the selected pair index
+$selectedPairIndex = null;
+foreach($eventPairs as $index => $pair) {
+    $pairId = $pair['warehouseId'] ?? $pair['pantryId'];
+    if($pairId == $selectedWeek) {
+        $selectedPairIndex = $index;
+        break;
+    }
+}
+
+// Fetch inventory items with box information for the selected pair
 $items = [];
-if ($selectedWeek) {
-    // Get the selected inventory event to find its date
-    $selectedEvent = retrieve_inventoryEvent($selectedWeek);
-    $selectedDate = $selectedEvent->getDate();
-    
-    // Get all events on the same date
+if ($selectedPairIndex !== null) {
+    $selectedPair = $eventPairs[$selectedPairIndex];
     $sameDateEvents = [];
-    foreach ($allEvents as $event) {
-        if ($event->getDate() === $selectedDate) {
-            $sameDateEvents[] = $event;
-        }
+    
+    // Collect warehouse and pantry events from the pair
+    if ($selectedPair['warehouse']) {
+        $sameDateEvents[] = $selectedPair['warehouse'];
+    }
+    if ($selectedPair['pantry']) {
+        $sameDateEvents[] = $selectedPair['pantry'];
     }
     
     // Get all active item categories
@@ -281,10 +320,11 @@ if ($selectedWeek) {
                 <div class="week-selector">
                     <label for="weekSelect">View Inventory:</label>
                     <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
-                        <?php if (count($events) > 0): ?>
-                            <?php foreach ($events as $event): ?>
-                                <option value="<?= htmlspecialchars($event['inventoryEventId']) ?>" <?= ($event['inventoryEventId'] == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($event['date'] ?? 'Unknown Date') ?>
+                        <?php if (count($eventPairs) > 0): ?>
+                            <?php foreach ($eventPairs as $pair): ?>
+                                <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
+                                <option value="<?= htmlspecialchars($pairId) ?>" <?= ($pairId == $selectedWeek) ? 'selected' : '' ?>>
+                                    <?= date('m/d/Y', strtotime($pair['date'])) ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>

@@ -21,7 +21,7 @@ require_once('database/dbinfo.php');
 //     return $today > $lastDayOfMonth;
 // }
 
-$selectedWeekDate = $_POST['week'] ?? '';
+$selectedWeek = $_POST['week'] ?? '';
 $rawItemCategories = $_POST['name'] ?? '';
 $selectedItemCategories = is_array($rawItemCategories) ? $rawItemCategories : [$rawItemCategories];
 
@@ -31,30 +31,27 @@ if (in_array('', $selectedItemCategories, true) || empty($selectedItemCategories
     $selectedItemCategories = array_values(array_filter($selectedItemCategories));
 }
 
-$selectedLocation = $_POST['location'] ?? '';
 $format = $_POST['format'] ?? 'csv';
 
 $con = connect();
 
-$eventSql = "
-    SELECT id 
-    FROM dbinventoryevent 
-    WHERE DATE(date) = ? AND location = ?
-";
-
-$eventStmt = $con->prepare($eventSql);
-$eventStmt->bind_param("ss", $selectedWeekDate, $selectedLocation);
-$eventStmt->execute();
-$eventResult = $eventStmt->get_result();
-
-if ($eventResult->num_rows === 0) {
-    echo "No inventory event found for the selected date and location.";
+// Verify the event exists
+if (empty($selectedWeek)) {
+    echo "No inventory event selected.";
     exit();
 }
 
-$eventRow = $eventResult->fetch_assoc();
-$selectedWeek = $eventRow['id'];
-$eventStmt->close();
+$eventCheckSql = "SELECT id FROM dbinventoryevent WHERE id = ?";
+$eventCheckStmt = $con->prepare($eventCheckSql);
+$eventCheckStmt->bind_param("i", $selectedWeek);
+$eventCheckStmt->execute();
+$eventCheckResult = $eventCheckStmt->get_result();
+
+if ($eventCheckResult->num_rows === 0) {
+    echo "No inventory event found for the selected date.";
+    exit();
+}
+$eventCheckStmt->close();
 
 $sql = "SELECT dic.id, dic.name as item_name, 
         dbic.quantity as boxes, 
