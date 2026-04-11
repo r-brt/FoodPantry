@@ -424,7 +424,7 @@
             <?php
                 /* Display success message after submitting inventory */
                 if($submit_success == true){
-                    echo("<h4 style=\"color:black;\"><i>Inventory Submitted: ".date("F jS, Y", strtotime($date))." (Warehouse & Pantry)</i></h4>");
+                    echo("<h4 style=\"color:black;\"><i>Inventory Submitted: ".date("m/d/Y", strtotime($date))." (Warehouse & Pantry)</i></h4>");
                 }
                 /* Display errors from submitting inventory */
                 if (!empty($errors)): ?>

@@ -631,7 +631,7 @@
                             <?php foreach ($eventPairs as $pair): ?>
                                 <?php $eventId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
                                 <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= date('M j, Y', strtotime($pair['date'])) ?>
+                                    <?= date('m/d/Y', strtotime($pair['date'])) ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>

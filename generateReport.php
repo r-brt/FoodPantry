@@ -19,20 +19,60 @@ $fiscalYearEnd = $fiscalYearStart + 1;
 
 // Database connection and data fetching
 require_once('database/dbinfo.php');
+require_once('database/dbInventoryEvent.php');
 $conn = connect();
 
-// Fetch inventory events with dates and locations
-$eventResult = $conn->query("
-    SELECT DISTINCT ie.date, ie.location
-    FROM dbinventoryevent ie
-    ORDER BY ie.date DESC, ie.location ASC
-");
-$events = [];
-if ($eventResult) {
-    while ($row = $eventResult->fetch_assoc()) {
-        $events[] = $row;
+// Get all inventory events sorted by date (newest first), then by ID (highest first)
+$allEventObjects = get_all_inventoryEvents();
+usort($allEventObjects, function($a, $b) {
+    $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
+    if ($dateDiff != 0) {
+        return $dateDiff;
+    }
+    return $b->getId() - $a->getId();
+});
+
+// Build event pairs (warehouse + matching pantry)
+$eventPairs = array();
+foreach($allEventObjects as $event) {
+    if($event->getLocation() == 'Warehouse') {
+        $pantryEvent = get_matching_inventoryEvent($event);
+        $eventPairs[] = array(
+            'warehouse' => $event,
+            'pantry' => $pantryEvent,
+            'date' => $event->getDate(),
+            'warehouseId' => $event->getId(),
+            'pantryId' => $pantryEvent ? $pantryEvent->getId() : null
+        );
     }
 }
+
+// Also add pantry events with no matching warehouse
+foreach($allEventObjects as $event) {
+    if($event->getLocation() == 'Pantry') {
+        $warehouseEvent = get_matching_inventoryEvent($event);
+        if($warehouseEvent === null) {
+            $eventPairs[] = array(
+                'warehouse' => null,
+                'pantry' => $event,
+                'date' => $event->getDate(),
+                'warehouseId' => null,
+                'pantryId' => $event->getId()
+            );
+        }
+    }
+}
+
+// Re-sort pairs by date (newest first)
+usort($eventPairs, function($a, $b) {
+    $dateDiff = strtotime($b['date']) - strtotime($a['date']);
+    if ($dateDiff != 0) {
+        return $dateDiff;
+    }
+    $aId = $a['warehouseId'] ?? $a['pantryId'];
+    $bId = $b['warehouseId'] ?? $b['pantryId'];
+    return $bId - $aId;
+});
 
 // Fetch food categories
 $categoryResult = $conn->query("
@@ -84,7 +124,8 @@ if ($selectedCategory) {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CCDA | Attendance Reports</title>
+    <title>Inventory Analytics | CCDA</title>
+    <link rel="icon" type="image/x-icon" href="images/ccda-logo-white.svg">
     <!--<script src="js/data-filters.js" defer></script>-->
     <link href="css/base.css" rel="stylesheet">
     <?php require_once('header.php'); ?>
@@ -362,18 +403,14 @@ if ($selectedCategory) {
                         <label for="weekSelect">Select Week to Export</label>
                         <select name="week" id="weekSelect" required>
                             <option value="">-- Select Week --</option>
-                            <?php 
-                                $uniqueDates = [];
-                                foreach ($events as $event) {
-                                    if (!in_array($event['date'], $uniqueDates)) {
-                                        $uniqueDates[] = $event['date'];
-                                    }
-                                }
-                                foreach ($uniqueDates as $date): ?>
-                                <option value="<?= htmlspecialchars($date) ?>">
-                                    <?= htmlspecialchars($date) ?>
-                                </option>
-                            <?php endforeach; ?>
+                            <?php if (count($eventPairs) > 0): ?>
+                                <?php foreach ($eventPairs as $pair): ?>
+                                    <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
+                                    <option value="<?= htmlspecialchars($pairId) ?>">
+                                        <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
                     </div>
 
@@ -390,14 +427,7 @@ if ($selectedCategory) {
                         </ul>
                     </div>
 
-                    <div class="form-section">
-                        <label for="locationSelect">Location</label>
-                        <select name="location" id="locationSelect" required>
-                            <option value="">-- Select Location --</option>
-                            <option value="Warehouse">Warehouse</option>
-                            <option value="Pantry">Pantry</option>
-                        </select>
-                    </div>
+
 
                     <div class="form-section">
                         <label for="format">File Format</label>
@@ -409,7 +439,7 @@ if ($selectedCategory) {
 
                     <div style="margin-top: 2rem;">
                         <input type="hidden" value="<?php echo $_SESSION['_id']; ?>" name="admin" id="admin">
-                        <input type="hidden" value="<?php echo date("d-M-Y H:i:s e") ?>" name="time" id="time">
+                        <input type="hidden" value="<?php echo date("m/d/Y H:i:s e") ?>" name="time" id="time">
                         <button type="submit" name="generate_button" class="generate-btn">Export to Spreadsheet</button>
                     </div>
                 </form>
@@ -454,7 +484,7 @@ if ($selectedCategory) {
                                     ?>
                                     <tr>
                                         <td class="row-number"><?= $index + 1 ?></td>
-                                        <td><?= htmlspecialchars($row['eventDate']) ?></td>
+                                        <td><?= date('m/d/Y', strtotime($row['eventDate'])) ?></td>
                                         <td><?= htmlspecialchars($currentBoxes) ?></td>
                                         <td><?= htmlspecialchars($totalItems) ?></td>
                                         <td><?= ($previousBoxes !== null) ? ($changeBoxes >= 0 ? '+' : '') . htmlspecialchars($changeBoxes) : '—' ?></td>
