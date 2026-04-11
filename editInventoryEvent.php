@@ -75,9 +75,21 @@
     /* Handle form submission */
     $errors = [];
     $success = false;
+    $deleted = false;
     if (!empty($_POST)) {
         if(isset($_POST['cancel_button'])) {
-            header('Location: viewEditDeleteInventory.php');
+            header('Location: inventory.php');
+            die();
+        }
+        else if(isset($_POST['delete_button'])) {
+            /* Delete both warehouse and pantry events */
+            if($warehouseEvent) {
+                remove_inventoryEvent($warehouseEvent->getId());
+            }
+            if($pantryEvent) {
+                remove_inventoryEvent($pantryEvent->getId());
+            }
+            header('Location: inventory.php');
             die();
         }
         else if(isset($_POST['save_button'])) {
@@ -225,6 +237,7 @@
         }
         .updateInv-qty {
             width: 80px;
+            box-sizing: border-box;
             padding: 0.4rem 0.6rem;
             border: 1px solid var(--shadow-and-border-color);
             border-radius: 0.25rem;
@@ -238,34 +251,36 @@
         }
         .modifyUsers-formBtns {
             display: flex;
-            gap: 0.5rem;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
             margin-top: 1.5rem;
         }
-        .modify-save-btn {
-            padding: 0.6rem 1.5rem;
+        .modify-save-btn,
+        .modify-cancel-btn,
+        .modify-delete-btn {
+            padding: 0.5rem 1.5rem;
             background-color: var(--accent-color);
             color: var(--button-font-color);
             border: none;
             border-radius: 0.25rem;
             cursor: pointer;
+            font-size: 0.95rem;
             font-weight: 500;
-            font-size: 1rem;
+            max-width: 500px;
         }
-        .modify-save-btn:hover {
-            opacity: 0.85;
+        .modify-delete-btn {
+            background-color: darkred;
+            color: var(--button-font-color);
         }
-        .modify-cancel-btn {
-            padding: 0.6rem 1.5rem;
-            background-color: rgba(0,0,0,0.2);
-            color: var(--page-font-color);
-            border: none;
-            border-radius: 0.25rem;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 1rem;
+        .modify-delete-btn:hover {
+            opacity: 0.75;
+            background-color: darkred;
         }
+        .modify-save-btn:hover,
         .modify-cancel-btn:hover {
-            background-color: rgba(0,0,0,0.3);
+            opacity: 0.85;
         }
         .back-btn {
             display: inline-block;
@@ -297,7 +312,7 @@
 <body>
     <?php require_once('header.php') ?>
     <main class="edit-container">
-        <a href="viewEditDeleteInventory.php" class="back-btn">← Back</a>
+        <a href="inventory.php" class="back-btn">← Back</a>
 
         <h1 class="title">Edit Inventory</h1>
 
@@ -387,12 +402,10 @@
             </table>
 
             <div class="modifyUsers-formBtns">
-                <button type="submit" name="save_button" class="modify-save-btn">
-                    Save Changes
-                </button>
-                <button type="submit" name="cancel_button" class="modify-cancel-btn">
-                    Cancel
-                </button>
+                <button type="submit" name="save_button" class="modify-save-btn">Save Changes</button>
+                <button type="submit" name="cancel_button" class="modify-cancel-btn" formnovalidate>Cancel</button>
+                <hr>
+                <button type="submit" name="delete_button" class="modify-delete-btn" onclick="return confirm('<?= date('m/d/Y', strtotime($eventDate)) ?>\nAre you sure you want to delete this inventory?\nThis action cannot be undone.')" formnovalidate>Delete Inventory</button>
             </div>
         </form>
     </main>

@@ -384,7 +384,7 @@ if ($selectedPairIndex !== null) {
             </div>
             <?php if($accessLevel >= 2): ?>
                 <div style="margin-bottom: 1.5rem;">
-                    <a href="viewEditDeleteInventory.php" style="text-decoration: none;">
+                    <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" style="text-decoration: none;">
                         <button style="padding: 0.75rem 1.5rem; background-color: #dc2626; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; font-weight: 600;">
                             Edit/Delete Inventory
                         </button>
