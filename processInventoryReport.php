@@ -5,6 +5,10 @@ error_reporting(E_ALL);
 session_cache_expire(30);
 session_start();
 
+require 'vendor/autoload.php';
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
 if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 2) {
     header('Location: login.php');
     die();
@@ -109,6 +113,52 @@ if ($format === 'csv') {
         ]);
     }
     fclose($output);
+    exit();
+}
+
+// XLSX EXPORT
+if ($format === 'xlsx') {
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle('Inventory Report');
+
+    // Column Headers
+    $sheet->setCellValue('A1', 'Item Name');
+    $sheet->setCellValue('B1', 'Boxes');
+    $sheet->setCellValue('C1', 'Items Per Box');
+    $sheet->setCellValue('D1', 'Total Count');
+
+    // Header Style
+    $headerStyle = [
+        'font' => ['bold' => true],
+        'fill' => [
+            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+            'startColor' => ['rgb' => '88CCEE']
+        ]
+    ];
+    $sheet->getStyle('A1:D1')->applyFromArray($headerStyle);
+
+    // Data
+    $rowNum = 2;
+    foreach ($reportData as $row) {
+        $sheet->setCellValue('A' . $rowNum, $row['item_name']);
+        $sheet->setCellValue('B' . $rowNum, $row['boxes']);
+        $sheet->setCellValue('C' . $rowNum, $row['itemsPerBox']);
+        $sheet->setCellValue('D' . $rowNum, $row['total_count']);
+        $rowNum++;
+    }
+
+    // Column Sizing
+    foreach (range('A', 'D') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="inventory_report_' . $selectedWeek . '.xlsx"');
+    header('Cache-Control: max-age=0');
+
+    $writer = new Xlsx($spreadsheet);
+    $writer->save('php://output');
     exit();
 }
 

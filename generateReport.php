@@ -432,6 +432,7 @@ if ($selectedCategory) {
                     <div class="form-section">
                         <label for="format">File Format</label>
                         <select name="format" id="format">
+                            <option value="xlsx">Excel (.xlsx)</option>
                             <option value="excel">Excel (.xls)</option>
                             <option value="csv">CSV (.csv)</option>
                         </select>

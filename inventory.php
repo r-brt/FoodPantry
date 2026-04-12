@@ -386,7 +386,7 @@ if ($selectedPairIndex !== null) {
                 <div style="margin-bottom: 1.5rem;">
                     <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" style="text-decoration: none;">
                         <button style="padding: 0.75rem 1.5rem; background-color: #dc2626; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; font-weight: 600;">
-                            Edit/Delete Inventory
+                            Edit/Delete Weekly Inventory
                         </button>
                     </a>
                 </div>
