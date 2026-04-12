@@ -131,6 +131,11 @@
             $palletEventId = add_palletEvent($pallet_name, $personId);
             if($pallet_name == "PALLET_PLACEHOLDER_NAME"){
                 $pallet_name = "Pallet " . $palletEventId;
+                $name_counter = 1;
+                while(!pallet_name_unique($pallet_name)){
+                    $name_counter++;
+                    $pallet_name = "Pallet " . $palletEventId . " (" . $name_counter . ")";
+                }
                 update_palletEvent_name($palletEventId, $pallet_name);
             }
             foreach($updatedItems as $categoryId => $quantity){
