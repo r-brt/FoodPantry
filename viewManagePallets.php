@@ -213,9 +213,29 @@
             gap: 0.75rem;
             margin-bottom: 1.25rem;
         }
+        .pallet-linkBtns{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            text-decoration: none;
+            border-radius: 0.25rem;
+        }
+        .back-btn:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
         div.table-wrapper {
                 overflow-x: auto;
-            }
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -231,7 +251,9 @@
 <body>
     <?php require_once('header.php'); ?>
     <main>
+        
         <div class="report-container">
+            <a href="viewUpdateInventory.php" class="back-btn">← Back</a>
             <h1 class="title">Manage Pallets</h1>
                 
                 <?php 
@@ -283,19 +305,12 @@
                         </div>
                     </div>';
                     }?>
-                    
-                        <form action="viewAddPallet.php" style="display: inline;">
-                            <div class="modifyUsers-formBtns">
-                                <button name="add_button" class="modify-save-btn">Add New Pallet</button>
-                            </div>
-                        </form>
-                        <form action="viewUpdateInventory.php" style="display: inline;">
-                            <div class="modifyUsers-formBtns">
-                                <button name="cancel_button" class="modify-cancel-btn" formnovalidate>Back</button>
-                            </div>
-                        </form>
+
+            <a href="viewAddPallet.php" class="pallet-linkBtns"><button name="add_button" class="modify-save-btn">Add New Pallet</button></a>
+            <a href="viewUpdateInventory.php" class="pallet-linkBtns"><button name="cancel_button" class="modify-cancel-btn">Back</button></a>
+
                         
-                    </div>
+        </div>
          
     </main>
 
