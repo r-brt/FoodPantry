@@ -85,10 +85,10 @@
             $key_type = $key_parts[0];
             $key_id = $key_parts[1];
             if($key_type == "category"){
-                $inputCategories[$key_id] = $value;
+                $inputCategories[] = $value;
             }
             else if($key_type == "qty"){
-                $inputQuantities[$key_id] = $value;
+                $inputQuantities[] = $value;
             }
         }
 
@@ -440,6 +440,14 @@
             gap: 0.75rem;
             margin-bottom: 1.25rem;
         }
+        .delete-row-btn {
+            background-color: darkred;
+            color: var(--button-font-color);
+        }
+        .delete-row-btn:hover{
+            opacity: 0.75;
+            background-color: darkred;
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -509,6 +517,7 @@
                                         <th>Boxes</th>
                                         <th>Banana Box</th>
                                         <th>Items Per Box</th>
+                                        <th> </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -533,6 +542,7 @@
                                                 id="qty_<?php echo($row_count); ?>"></td>
                                         <td style="text-align: center;"><div class="bb_<?php echo($row_count); ?>"></div></td>
                                         <td style="text-align: center;"><div class="ipb_<?php echo($row_count); ?>"></div></td>
+                                        <td style="text-align: center;"><button type="button" class="delete-row-btn" onclick="removeRow(this)">Remove</button></td>
                                     </div>
                                 </tr> 
                             <?php else : ?>
@@ -553,6 +563,7 @@
                                                 id="qty_<?php echo($row_count); ?>"></td>
                                         <td style="text-align: center;"><div class="bb_<?php echo($row_count); ?>"><?php echo($category->getBananaBox() == 1 ? '✓' : '')?></div></td>
                                         <td style="text-align: center;"><div class="ipb_<?php echo($row_count); ?>"><?php echo($category->getItemsPerBox())?></div></td>
+                                        <td style="text-align: center;"><button type="button" class="delete-row-btn" onclick="removeRow(this)">Remove</button></td>
                                     </div>
                                 </tr>
                             <?php endif; ?>
@@ -574,6 +585,7 @@
                                             id="qty_0"></td>
                                     <td style="text-align: center;"><div class="bb_0"></div></td>
                                     <td style="text-align: center;"><div class="ipb_0"></div></td>
+                                    <td style="text-align: center;"><button type="button" class="delete-row-btn" onclick="removeRow(this)">Remove</button></td>
                                 </div>
                             </tr> 
                             <?php $row_count++; ?>
@@ -619,15 +631,16 @@
                 var quantity = row.insertCell(1);
                 var bananaBox = row.insertCell(2);
                 var itemsPerBox = row.insertCell(3);
+                var removeRow = row.insertCell(4);
                 
-                let dropdown = document.getElementById("category_0");
+                let dropdown = document.querySelector('[id^=category_]');
                 let new_dropdown = dropdown.cloneNode(true);
                 new_dropdown.name = 'category_' + row_count;
                 new_dropdown.id = 'category_' + row_count;
                 new_dropdown.selectedIndex = 0;
                 name.append(new_dropdown);
 
-                let qty_input = document.getElementById("qty_0");
+                let qty_input = document.querySelector('[id^=qty_]');
                 let new_qty_input = qty_input.cloneNode(true);
                 new_qty_input.name = 'qty_' + row_count;
                 new_qty_input.id = 'qty_' + row_count;
@@ -637,6 +650,7 @@
                 // Add some text to the new cells:
                 bananaBox.innerHTML = "<div class=\"bb_" + row_count + "\"></div>";
                 itemsPerBox.innerHTML = "<div class=\"ipb_" + row_count + "\"></div>";
+                removeRow.innerHTML = "<button type=\"button\" class=\"delete-row-btn\" onclick=\"removeRow(this)\">Remove</button>";
 
                 row_count++;
             }
@@ -654,6 +668,16 @@
                 const isBananaBox = bananaBox == 1 ? '✓' : '';
                 document.querySelector(".bb_" + rowId).innerHTML = isBananaBox;
                 document.querySelector(".ipb_" + rowId).innerHTML = itemsPerBox;
+            }
+
+            function removeRow(button){
+                const table = document.getElementById("palletTable");
+                if(table.rows.length <= 2){
+                    alert("Pallet must have at least 1 item");
+                    return;
+                }
+                button.closest("tr").remove();
+                
             }
 
         </script>
