@@ -379,9 +379,27 @@
             font-size: 0.95rem;
             font-weight: 500;
             margin-bottom: 0.5rem;
+            border: 1px solid black;
         }
         .modify-btn:hover {
             opacity: 0.85;
+        }
+        .manage-pallet-lnk {
+            white-space: nowrap;
+            width: 100%;
+            padding: 0.5rem 1rem;
+        }
+        .manage-pallet-lnk button {
+            padding: 0.5rem 1rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            text-align: center;
         }
         @media only screen and (max-width: 768px) {
             .report-table th,
@@ -452,7 +470,7 @@
                             <label class="updateInv-optionLabel" for="checkIncludePallets">Include Pallets:</label>
                             <input type="checkbox" id="checkIncludePallets" name="checkIncludePallets" value="1" onclick="showPalletColumn()"
                                 <?php if (empty($_POST) || isset($_POST['checkIncludePallets'])) echo("checked");?>>
-                            <button class="modify-btn" formaction="viewManagePallets.php">Manage Pallets</button>
+                            <a href="viewManagePallets.php" class="manage-pallet-lnk"><button type="button" >Manage Pallets</button></a>
 
                         </div>
                         <div class="table-wrapper">
