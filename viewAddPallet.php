@@ -31,7 +31,6 @@
     $updatedItems = array();
     $inputCategories = array();
     $inputQuantities = array();
-    $post_count = 0;
     if (!empty($_POST)) {
         if(isset($_POST["cancel_button"])){
             header('Location: viewManagePallets.php');
@@ -54,7 +53,6 @@
                 }
                 continue;
             }
-            $post_count++;
             $key_parts = explode("_", $key);
             if(count($key_parts) != 2){
                 continue;
@@ -481,7 +479,6 @@
                         <?php $allCategories = get_all_active_ItemCategory(); ?>
                         <?php $row_count = 0; ?>
                         <?php foreach($inputCategories AS $categoryid): ?>
-                            <?php echo "Category ID: " . $categoryid . "<br>"; ?>
                             <?php if(empty($categoryid)) : ?>
                                 <tr class="rowClass">
                                     <div class="updateInv-row">
