@@ -150,10 +150,22 @@
     <title>Add Pallet | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        pageheader {
+            margin-top: 3rem;
+            display: flex; justify-content: center; align-items: center;
+        }
         .title {
+            position: fixed;
+            text-align: center;
+            height: 3.5rem;
+            width: 40%;
+            z-index: 1000;
             font-size: 2rem;
             font-weight: 600;
-            color: var(--secondary-accent-color); 
+            color: var(--secondary-accent-color);
+            background-color: white;
+            padding-top: 0;
+            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
         }
         .report-container {
             max-width: 1100px;
@@ -428,11 +440,13 @@
         }
     </style>
 </head>
+<pageheader>
+    <h1 class="title">Add New Pallet</h1>
+</pageheader>
 <body>
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Add New Pallet</h1>
             <?php 
                 /* Display errors from submitting pallet */
                 if (!empty($errors)): ?>
