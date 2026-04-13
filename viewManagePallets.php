@@ -268,7 +268,7 @@
     <main>
         
         <div class="report-container">
-                
+                <a href="viewUpdateInventory.php" class="back-btn">← Back</a>
                 <?php 
                 /* display table for each pallet */
                 foreach(get_all_palletEvents() as $pallet){
