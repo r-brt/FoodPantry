@@ -392,6 +392,10 @@
                 </div>
 
                 <?php if ($selectedFamilySize !== null): ?>
+                    <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
+                        <button class="generate-btn" id="saveQuantitiesBtn">Save Quantities</button>
+                        <button class="generate-btn" id="generatePdfBtn">Generate PDF</button>
+                    </div>
                     <div class="table-wrapper" style="margin-top: 1rem;" id="basketTableWrapper">
                         <table class="report-table" id="basketTable">
                             <thead>
@@ -419,10 +423,6 @@
                                 <?php endif; ?>
                             </tbody>
                         </table>
-                    </div>
-                    <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
-                        <button class="generate-btn" id="saveQuantitiesBtn">Save Quantities</button>
-                        <button class="generate-btn" id="generatePdfBtn">Generate PDF</button>
                     </div>
                 <?php endif; ?>
             </div>
