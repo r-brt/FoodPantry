@@ -122,7 +122,7 @@ if ($selectedPairIndex !== null) {
         $totalBoxes = $warehouseBoxes + $pantryBoxes;
         
         // Only include items with quantity > 0
-        if ($totalBoxes > 0) {
+        
             $items[] = [
                 'id' => $categoryId,
                 'item_name' => $category->getName(),
@@ -132,7 +132,7 @@ if ($selectedPairIndex !== null) {
                 'pantry_boxes' => $pantryBoxes,
                 'total_boxes' => $totalBoxes
             ];
-        }
+        
     }
     
     // Sort items by name
