@@ -20,6 +20,7 @@ $fiscalYearEnd = $fiscalYearStart + 1;
 // Database connection and data fetching
 require_once('database/dbinfo.php');
 require_once('database/dbInventoryEvent.php');
+require_once('database/dbItemCounts.php');
 $conn = connect();
 
 // Get all inventory events sorted by date (newest first), then by ID (highest first)
@@ -139,6 +140,10 @@ if ($resultAll) {
         $allTrendData[] = $row;
     }
 }
+
+// Get monthly inventory totals
+$monthlyData = get_monthly_inventory_totals();
+$availableMonths = array_keys($monthlyData);
 ?>
 
 <!DOCTYPE html>
@@ -672,6 +677,34 @@ if ($resultAll) {
             <!-- Monthly Summaries Section -->
             <div class="report-section" id="monthlySection" style="display: none;">
                 <h2>Monthly Summaries</h2>
+
+                <div class="form-section">
+                    <label for="monthSelect">Select Month</label>
+                    <select id="monthSelect" style="padding: 0.5rem 0.75rem; border: 1px solid var(--shadow-and-border-color); border-radius: 0.25rem; background-color: rgba(0,0,0,0.2); color: var(--page-font-color); cursor: pointer; width: fit-content;">
+                        <?php foreach ($availableMonths as $month): ?>
+                            <option value="<?= htmlspecialchars($month) ?>">
+                                <?= date('F Y', strtotime($month . '-01')) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="report-table" id="monthlyTable" style="max-width: 500px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Item Name</th>
+                                <th style="width: 100px;">Total Boxes</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="form-section" style="margin-top: 1rem;">
+                    <button type="button" id="downloadMonthlyPdfBtn" class="generate-btn">Export to PDF</button>
+                </div>
             </div>
 
         </div>
@@ -915,6 +948,84 @@ if ($resultAll) {
 
                 // Save
                 pdf.save('graph_' + new Date().toISOString().slice(0,10).replace(/-/g, '_') + '.pdf');
+            });
+
+            // Monthly summaries
+            var monthlyData = <?= json_encode($monthlyData) ?>;
+
+            function updateMonthlyTable() {
+                var selectedMonth = document.getElementById('monthSelect').value;
+                var tbody = document.querySelector('#monthlyTable tbody');
+                tbody.innerHTML = '';
+
+                if (monthlyData[selectedMonth]) {
+                    var items = Object.values(monthlyData[selectedMonth]);
+                    items.sort(function(a, b) {
+                        return a.itemName.localeCompare(b.itemName);
+                    });
+
+                    items.forEach(function(item, index) {
+                        var row = '<tr><td class="row-number">' + (index + 1) + '</td>' +
+                                  '<td>' + item.itemName + '</td>' +
+                                  '<td>' + item.total_boxes + '</td></tr>';
+                        tbody.innerHTML += row;
+                    });
+                }
+            }
+
+            var monthSelect = document.getElementById('monthSelect');
+            if (monthSelect) {
+                monthSelect.addEventListener('change', updateMonthlyTable);
+                updateMonthlyTable();
+            }
+
+            // Monthly PDF export
+            document.getElementById('downloadMonthlyPdfBtn').addEventListener('click', function() {
+                var selectedMonth = document.getElementById('monthSelect').value;
+                var monthText = document.getElementById('monthSelect').options[document.getElementById('monthSelect').selectedIndex].text;
+
+                if (!monthlyData[selectedMonth]) {
+                    alert('No data available for this month.');
+                    return;
+                }
+
+                var { jsPDF } = window.jspdf;
+                var pdf = new jsPDF('portrait', 'mm', 'a4');
+
+                pdf.setFontSize(18);
+                pdf.text('Monthly Inventory Summary', 14, 15);
+
+                pdf.setFontSize(11);
+                pdf.text('Month: ' + monthText, 14, 25);
+                pdf.text('Generated: ' + new Date().toLocaleDateString(), 14, 32);
+
+                var items = Object.values(monthlyData[selectedMonth]);
+                items.sort(function(a, b) {
+                    return a.itemName.localeCompare(b.itemName);
+                });
+
+                var yPos = 45;
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('#', 14, yPos);
+                pdf.text('Item Name', 25, yPos);
+                pdf.text('Total Boxes', 120, yPos);
+                pdf.setFont(undefined, 'normal');
+
+                yPos += 8;
+                items.forEach(function(item, index) {
+                    if (yPos > 270) {
+                        pdf.addPage();
+                        yPos = 20;
+                    }
+                    pdf.text(String(index + 1), 14, yPos);
+                    pdf.text(item.itemName, 25, yPos);
+                    pdf.text(String(item.total_boxes), 120, yPos);
+                    yPos += 7;
+                });
+
+                var filename = 'monthly_summary_' + selectedMonth + '.pdf';
+                pdf.save(filename);
             });
         });
     </script>
