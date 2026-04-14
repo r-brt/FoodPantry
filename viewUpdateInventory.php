@@ -217,15 +217,14 @@
         .title {
             position: fixed;
             text-align: center;
-            height: 3.5rem;
-            width: 40%;
-            z-index: 1000;
+            height: 3.6rem;
+            width: 100%;
+            z-index: 9;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
             background-color: white;
-            padding-top: 0;
-            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            padding-top: .5rem;
         }
         .report-container {
             max-width: 1100px;
@@ -266,6 +265,8 @@
             background-color: var(--main-color);
             color: var(--button-font-color);
             font-weight: 500;
+            position: sticky;
+            top: 8.7rem;
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -418,6 +419,9 @@
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+            }
+            .report-table th{
+                position: static;
             }
             .report-container {
                 padding: 0.5rem;
