@@ -208,7 +208,7 @@
         return filter_var($url, FILTER_VALIDATE_URL);
     }
 
-      function isSecurePassword($pass) {
+    function isSecurePassword($pass) {
         // Check if password is at least 8 characters long
         if (strlen($pass) < 8) {
             return false;
@@ -230,7 +230,7 @@
         }
     
         // If all checks pass, return true
-        return $pass;
+        return true;
     }
 
 //There was a question mark followed by a > here before
