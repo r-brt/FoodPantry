@@ -167,13 +167,9 @@ if ($resultAll) {
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            margin-bottom: 0.5rem;
             background-color: white;
             padding-top: 0;
             mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
-        }
-        .center-header {
-            margin-bottom: 0.5rem;
         }
         .report-container {
             max-width: 1100px;
@@ -849,7 +845,11 @@ if ($resultAll) {
                                 text: 'Graph'
                             },
                             legend: {
-                                position: 'top'
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'line'
+                                }
                             },
                             tooltip: {
                                 enabled: false
