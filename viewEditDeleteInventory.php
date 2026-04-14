@@ -139,11 +139,22 @@
             margin: 2rem auto;
             padding: 1rem 2rem;
         }
+        pageheader {
+            margin-top: 3rem;
+            display: flex; justify-content: center; align-items: center;
+        }
         .title {
+            position: fixed;
+            text-align: center;
+            height: 3.5rem;
+            width: 40%;
+            z-index: 1000;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            margin-bottom: 1.5rem;
+            background-color: white;
+            padding-top: 0;
+            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
         }
         .inventory-table {
             width: 100%;
@@ -235,10 +246,12 @@
         }
     </style>
 </head>
+<pageheader>
+    <h1 class="title">Edit/Delete Inventory</h1>
+</pageheader>
 <body>
     <?php require_once('header.php') ?>
     <main class="main-container">
-        <h1 class="title">Edit/Delete Inventory</h1>
 
         <!-- Success Message -->
         <?php if(isset($_GET['deleted']) && $_GET['deleted'] == 'success'): ?>
