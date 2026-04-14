@@ -117,6 +117,28 @@ if ($selectedCategory) {
     }
     $stmt->close();
 }
+
+// Fetch ALL items trend data for graphs
+$allTrendData = [];
+$sqlAll = "
+    SELECT
+        DATE(ie.date) as eventDate,
+        dic.id as categoryId,
+        dic.name as itemName,
+        COALESCE(SUM(dbic.quantity), 0) as total_boxes
+    FROM dbinventoryevent ie
+    LEFT JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
+    LEFT JOIN dbitemcategory dic ON dbic.itemCategoryId = dic.id
+    WHERE dic.id IS NOT NULL
+    GROUP BY DATE(ie.date), dic.id, dic.name
+    ORDER BY DATE(ie.date) ASC, dic.name ASC
+";
+$resultAll = $conn->query($sqlAll);
+if ($resultAll) {
+    while ($row = $resultAll->fetch_assoc()) {
+        $allTrendData[] = $row;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -128,24 +150,30 @@ if ($selectedCategory) {
     <link rel="icon" type="image/x-icon" href="images/ccda-logo-white.svg">
     <!--<script src="js/data-filters.js" defer></script>-->
     <link href="css/base.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <?php require_once('header.php'); ?>
     <style>
         .title {
             font-size: 2rem;
             font-weight: 600;
-            color: var(--secondary-accent-color); 
+            color: var(--secondary-accent-color);
+            margin-bottom: 0.5rem;
+        }
+        .center-header {
+            margin-bottom: 0.5rem;
         }
         .report-container {
             max-width: 1100px;
             margin: 0 auto 4rem auto;
-            padding: 1rem;
+            padding: 0.5rem 1rem;
         }
         .report-section {
             background-color: white;
             /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
         .report-section h1 {
             font-size: 1.5rem;
@@ -244,6 +272,54 @@ if ($selectedCategory) {
             min-width: 200px;
         }
         .week-selector select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .report-type-select {
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            min-width: 320px;
+            width: auto;
+            font-size: 1rem;
+        }
+        .report-type-select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .report-type-section {
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .report-type-section .form-section {
+            margin-bottom: 0;
+        }
+        .date-range-selector {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .date-select-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .date-select-group label {
+            color: var(--page-font-color);
+            font-weight: 500;
+        }
+        .date-select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            min-width: 160px;
+            width: auto;
+        }
+        .date-select:hover {
             background-color: rgba(0,0,0,0.3);
         }
         .row-green {
@@ -393,9 +469,22 @@ if ($selectedCategory) {
 
     <main>
         <div class="report-container">
-            
+
+            <!-- Report Type Selector -->
+            <div class="report-section report-type-section">
+                <div class="form-section">
+                    <label for="reportTypeSelect">Select Report Type</label>
+                    <select id="reportTypeSelect" class="report-type-select">
+                        <option value="export">Export Inventory to Spreadsheet</option>
+                        <option value="trends">Trends</option>
+                        <option value="graphs">Graphs</option>
+                        <option value="monthly">Monthly Summaries</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Export Section -->
-            <div class="report-section">
+            <div class="report-section" id="exportSection">
                 <h2>Export Inventory to Spreadsheet</h2>
                 
                 <form method="POST" action="processInventoryReport.php">
@@ -447,7 +536,7 @@ if ($selectedCategory) {
             </div>
 
             <!-- Category Trend Section -->
-            <div class="report-section">
+            <div class="report-section" id="trendsSection" style="display: none;">
                 <h2>Food Item Trends</h2>
                 
                 <div class="form-section">
@@ -510,9 +599,315 @@ if ($selectedCategory) {
                 </div>
             </div>
 
+            <!-- Graphs Section -->
+            <div class="report-section" id="graphsSection" style="display: none;">
+                <h2>Graphs</h2>
+
+                <!-- Date Range Selector -->
+                <div class="form-section">
+                    <label>Select Date Range</label>
+                    <div class="date-range-selector">
+                        <?php
+                        // Get unique dates from event pairs
+                        $uniqueDates = array_unique(array_column($eventPairs, 'date'));
+                        sort($uniqueDates); // Oldest first
+                        $uniqueDatesDesc = array_reverse($uniqueDates); // Newest first
+                        ?>
+                        <div class="date-select-group">
+                            <label for="graphFromDate">From:</label>
+                            <select id="graphFromDate" class="date-select">
+                                <?php foreach ($uniqueDates as $date): ?>
+                                    <option value="<?= htmlspecialchars($date) ?>">
+                                        <?= date('m/d/Y', strtotime($date)) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="date-select-group">
+                            <label for="graphToDate">To:</label>
+                            <select id="graphToDate" class="date-select">
+                                <?php foreach ($uniqueDatesDesc as $date): ?>
+                                    <option value="<?= htmlspecialchars($date) ?>">
+                                        <?= date('m/d/Y', strtotime($date)) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Item Selector -->
+                <div class="form-section">
+                    <label>Select Items</label>
+                    <ul class="checkbox">
+                        <li><input type="checkbox" id="graphSelectAll" class="graph-item-checkbox" value="all">All</input></li>
+                        <?php foreach ($categories as $category): ?>
+                            <li><input type="checkbox" class="graph-item-checkbox graph-item-single" value="<?= htmlspecialchars($category['id']) ?>">
+                                <?= htmlspecialchars($category['name']) ?>
+                            </input></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+
+                <!-- Show Graph Button -->
+                <div class="form-section">
+                    <button type="button" id="showGraphBtn" class="generate-btn">Show Graph</button>
+                </div>
+
+                <!-- Graph Canvas -->
+                <div class="form-section" id="graphContainer" style="display: none;">
+                    <canvas id="inventoryChart"></canvas>
+                    <div style="margin-top: 1rem;">
+                        <button type="button" id="downloadPdfBtn" class="generate-btn">Export to PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Summaries Section -->
+            <div class="report-section" id="monthlySection" style="display: none;">
+                <h2>Monthly Summaries</h2>
+            </div>
+
         </div>
 
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var reportTypeSelect = document.getElementById('reportTypeSelect');
+            var exportSection = document.getElementById('exportSection');
+            var trendsSection = document.getElementById('trendsSection');
+            var graphsSection = document.getElementById('graphsSection');
+            var monthlySection = document.getElementById('monthlySection');
+
+            function showSelectedSection() {
+                var selected = reportTypeSelect.value;
+
+                // Hide all sections
+                exportSection.style.display = 'none';
+                trendsSection.style.display = 'none';
+                graphsSection.style.display = 'none';
+                monthlySection.style.display = 'none';
+
+                // Show selected section
+                if (selected === 'export') {
+                    exportSection.style.display = 'block';
+                } else if (selected === 'trends') {
+                    trendsSection.style.display = 'block';
+                } else if (selected === 'graphs') {
+                    graphsSection.style.display = 'block';
+                } else if (selected === 'monthly') {
+                    monthlySection.style.display = 'block';
+                }
+            }
+
+            // Initial display
+            showSelectedSection();
+
+            // Listen for changes
+            reportTypeSelect.addEventListener('change', showSelectedSection);
+
+            // Graph "All" checkbox handling
+            var graphSelectAll = document.getElementById('graphSelectAll');
+            var graphItemCheckboxes = document.querySelectorAll('.graph-item-single');
+
+            graphSelectAll.addEventListener('change', function() {
+                if (this.checked) {
+                    var confirmed = confirm('Are you sure you want to select all items? This may make the graph harder to read.');
+                    if (!confirmed) {
+                        this.checked = false;
+                    } else {
+                        // Uncheck individual items when "All" is selected
+                        graphItemCheckboxes.forEach(function(cb) {
+                            cb.checked = false;
+                        });
+                    }
+                }
+            });
+
+            // Uncheck "All" if any individual item is checked
+            graphItemCheckboxes.forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    if (this.checked) {
+                        graphSelectAll.checked = false;
+                    }
+                });
+            });
+
+            // All trend data from PHP
+            var allTrendData = <?= json_encode($allTrendData) ?>;
+            var categoriesList = <?= json_encode($categories) ?>;
+
+            // Chart instance
+            var inventoryChart = null;
+
+            // Show Graph button handler
+            document.getElementById('showGraphBtn').addEventListener('click', function() {
+                var fromDate = document.getElementById('graphFromDate').value;
+                var toDate = document.getElementById('graphToDate').value;
+                var selectAll = document.getElementById('graphSelectAll').checked;
+                var selectedItems = [];
+
+                if (selectAll) {
+                    selectedItems = categoriesList.map(function(c) { return c.id.toString(); });
+                } else {
+                    graphItemCheckboxes.forEach(function(cb) {
+                        if (cb.checked) {
+                            selectedItems.push(cb.value);
+                        }
+                    });
+                }
+
+                if (selectedItems.length === 0) {
+                    alert('Please select at least one item.');
+                    return;
+                }
+
+                // Filter data by date range and selected items
+                var filteredData = allTrendData.filter(function(d) {
+                    var dateMatch = d.eventDate >= fromDate && d.eventDate <= toDate;
+                    var itemMatch = selectedItems.includes(d.categoryId.toString());
+                    return dateMatch && itemMatch;
+                });
+
+                // Get unique dates for x-axis
+                var dates = [...new Set(filteredData.map(function(d) { return d.eventDate; }))].sort();
+
+                // Generate colors dynamically based on number of items
+                function generateColors(count) {
+                    var colors = [];
+                    for (var i = 0; i < count; i++) {
+                        var hue = (i * 360 / count) % 360;
+                        colors.push('hsl(' + hue + ', 70%, 50%)');
+                    }
+                    return colors;
+                }
+
+                var colors = generateColors(selectedItems.length);
+                var datasets = [];
+                var colorIndex = 0;
+
+                selectedItems.forEach(function(itemId) {
+                    var itemData = filteredData.filter(function(d) { return d.categoryId.toString() === itemId; });
+                    if (itemData.length > 0) {
+                        var itemName = itemData[0].itemName;
+                        var dataPoints = dates.map(function(date) {
+                            var found = itemData.find(function(d) { return d.eventDate === date; });
+                            return found ? parseInt(found.total_boxes) : 0;
+                        });
+
+                        datasets.push({
+                            label: itemName,
+                            data: dataPoints,
+                            borderColor: colors[colorIndex],
+                            backgroundColor: colors[colorIndex].replace('50%)', '50%, 0.2)').replace('hsl', 'hsla'),
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            spanGaps: true
+                        });
+                        colorIndex++;
+                    }
+                });
+
+                // Show graph container
+                document.getElementById('graphContainer').style.display = 'block';
+
+                // Destroy previous chart if exists
+                if (inventoryChart) {
+                    inventoryChart.destroy();
+                }
+
+                // Create chart
+                var ctx = document.getElementById('inventoryChart').getContext('2d');
+                inventoryChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates.map(function(d) {
+                            // Parse date string directly to avoid timezone issues
+                            var parts = d.split('-');
+                            return parts[1] + '/' + parts[2] + '/' + parts[0];
+                        }),
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Graph'
+                            },
+                            legend: {
+                                position: 'top'
+                            },
+                            tooltip: {
+                                enabled: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Total Boxes'
+                                },
+                                ticks: {
+                                    stepSize: 10,
+                                    callback: function(value) {
+                                        return value;
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
+            // PDF Download
+            document.getElementById('downloadPdfBtn').addEventListener('click', function() {
+                if (!inventoryChart) {
+                    alert('Please generate a graph first.');
+                    return;
+                }
+
+                var { jsPDF } = window.jspdf;
+                var pdf = new jsPDF('landscape', 'mm', 'a4');
+
+                // Title
+                pdf.setFontSize(18);
+                pdf.text('Graph', 14, 15);
+
+                // Date range info
+                pdf.setFontSize(11);
+                var fromDate = document.getElementById('graphFromDate');
+                var toDate = document.getElementById('graphToDate');
+                var fromText = fromDate.options[fromDate.selectedIndex].text;
+                var toText = toDate.options[toDate.selectedIndex].text;
+                pdf.text('Date Range: ' + fromText + ' to ' + toText, 14, 25);
+                pdf.text('Generated: ' + new Date().toLocaleDateString(), 14, 32);
+
+                // Get chart as image
+                var chartImage = inventoryChart.toBase64Image();
+                pdf.addImage(chartImage, 'PNG', 14, 40, 270, 140);
+
+                // Save
+                pdf.save('graph_' + new Date().toISOString().slice(0,10).replace(/-/g, '_') + '.pdf');
+            });
+        });
+    </script>
 
 </body>
 </html>
