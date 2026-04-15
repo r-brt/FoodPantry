@@ -45,21 +45,21 @@
     $include_pallets = false;
     $errors = [];
     if (!empty($_POST)) {
-        $updatedItems = array();
+        $warehouseItems = array();
+        $pantryItems = array();
+        $date = null;
+
         foreach($_POST as $name => $value){
-            if($name == "location"){
-                $location = $value;
-                if($location != "Warehouse" && $location != "Pantry"){
-                    $errors[] = 'Invalid Location';
-                }               
-            }
-            else if($name == "date"){
+            if($name == "date"){
                 $date = $value;
             }
             else if($name == "checkIncludePallets"){
                 $include_pallets = true;
             }
-            else{
+            /* warehouse quantities have prefix "warehouse_" */
+            else if(strpos($name, 'warehouse_') === 0){
+                $categoryId = str_replace('warehouse_', '', $name);
+
                 /* only add items that have values to array */
                 if(!empty($value)){
 
@@ -67,63 +67,111 @@
                     try{
                         $value = +$value;
                     }
-                    catch(TypeError  $e){ 
+                    catch(TypeError $e){
                         $value = " ";
                     }
 
-                    /* if error is found, empty the array of items and stop checking */
+                    /* if error is found, empty the arrays and stop checking */
                     if(!is_int($value)){
-                        $errors[] = 'Quantities must be in whole numbers';
-                        $updatedItems = array();
+                        $errors[] = 'Warehouse quantities must be in whole numbers';
+                        $warehouseItems = array();
+                        $pantryItems = array();
                         break;
                     }
                     else if($value < 0){
-                        $errors[] = 'Quantities must be greater than 0';
-                        $updatedItems = array();
+                        $errors[] = 'Warehouse quantities cannot be negative';
+                        $warehouseItems = array();
+                        $pantryItems = array();
                         break;
                     }
                     /* accept items with 0 or greater quantity */
                     else if($value >= 0){
-                        $updatedItems[$name] = $value;
+                        $warehouseItems[$categoryId] = $value;
+                    }
+                }
+            }
+            /* pantry quantities have prefix "pantry_" */
+            else if(strpos($name, 'pantry_') === 0){
+                $categoryId = str_replace('pantry_', '', $name);
+
+                /* only add items that have values to array */
+                if(!empty($value)){
+
+                    /* try to convert value to a number. If it cannot convert, leave it as a string */
+                    try{
+                        $value = +$value;
+                    }
+                    catch(TypeError $e){
+                        $value = " ";
+                    }
+
+                    /* if error is found, empty the arrays and stop checking */
+                    if(!is_int($value)){
+                        $errors[] = 'Pantry quantities must be in whole numbers';
+                        $warehouseItems = array();
+                        $pantryItems = array();
+                        break;
+                    }
+                    else if($value < 0){
+                        $errors[] = 'Pantry quantities cannot be negative';
+                        $warehouseItems = array();
+                        $pantryItems = array();
+                        break;
+                    }
+                    /* accept items with 0 or greater quantity */
+                    else if($value >= 0){
+                        $pantryItems[$categoryId] = $value;
                     }
                 }
             }
         }
 
+        /* add pallet totals to Warehouse only */
         if($include_pallets){
             foreach($pallet_totals as $categoryId => $quantity){
-                if(isset($updatedItems[$categoryId])){
-                    $updatedItems[$categoryId] += $quantity;
+                if(isset($warehouseItems[$categoryId])){
+                    $warehouseItems[$categoryId] += $quantity;
                 }
                 else{
-                    $updatedItems[$categoryId] = $quantity;
+                    $warehouseItems[$categoryId] = $quantity;
                 }
             }
         }
 
-        /* if at least 1 item was updated, create inventory event and add items to database */
-        if(count($updatedItems) > 0){
+        /* if at least 1 item was entered, create inventory events and add items to database */
+        if(empty($errors) && (count($warehouseItems) > 0 || count($pantryItems) > 0)){
 
             /* auto-fill missing items with 0 for complete analytics data */
-            if(empty($errors)){
-                $allCategories = get_all_ItemCategory();
-                foreach($allCategories as $category){
-                    $categoryId = $category->getId();
-                    if(!isset($updatedItems[$categoryId])){
-                        $updatedItems[$categoryId] = 0;
-                    }
+            $allCategories = get_all_ItemCategory();
+            foreach($allCategories as $category){
+                $categoryId = $category->getId();
+                if(!isset($warehouseItems[$categoryId])){
+                    $warehouseItems[$categoryId] = 0;
+                }
+                if(!isset($pantryItems[$categoryId])){
+                    $pantryItems[$categoryId] = 0;
                 }
             }
+
+            /* create BOTH warehouse and pantry events */
             $personId = retrieve_person($userID)->get_personId();
-            $inventoryEventId = add_inventoryEvent($personId, $location, $date);
-            foreach($updatedItems as $categoryId => $quantity){
-                add_itemCount($inventoryEventId, $categoryId, $quantity);
+
+            /* create warehouse inventory event */
+            $warehouseEventId = add_inventoryEvent($personId, 'Warehouse', $date);
+            foreach($warehouseItems as $categoryId => $quantity){
+                add_itemCount($warehouseEventId, $categoryId, $quantity);
+            }
+
+            /* create pantry inventory event */
+            $pantryEventId = add_inventoryEvent($personId, 'Pantry', $date);
+            foreach($pantryItems as $categoryId => $quantity){
+                add_itemCount($pantryEventId, $categoryId, $quantity);
             }
 
             $submit_success = true;
-        } 
+        }
         else{
-            /* if errors have already been detected array was emptied. Do no show error for missing data */
+            /* if errors have already been detected array was emptied. Do not show error for missing data */
             if(empty($errors)){
                 $errors[] = 'Enter quantity for at least 1 item';
             }
@@ -162,10 +210,21 @@
     <title>Update Inventory | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        pageheader {
+            margin-top: 3rem;
+            display: flex; justify-content: center; align-items: center;
+        }
         .title {
+            position: fixed;
+            text-align: center;
+            height: 3.6rem;
+            width: 100%;
+            z-index: 9;
             font-size: 2rem;
             font-weight: 600;
-            color: var(--secondary-accent-color); 
+            color: var(--secondary-accent-color);
+            background-color: white;
+            padding-top: .5rem;
         }
         .report-container {
             max-width: 1100px;
@@ -206,6 +265,8 @@
             background-color: var(--main-color);
             color: var(--button-font-color);
             font-weight: 500;
+            position: sticky;
+            top: 8.7rem;
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -331,15 +392,36 @@
             font-size: 0.95rem;
             font-weight: 500;
             margin-bottom: 0.5rem;
+            border: 1px solid black;
         }
         .modify-btn:hover {
             opacity: 0.85;
+        }
+        .manage-pallet-lnk {
+            white-space: nowrap;
+            width: 100%;
+            padding: 0.5rem 1rem;
+        }
+        .manage-pallet-lnk button {
+            padding: 0.5rem 1rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            text-align: center;
         }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+            }
+            .report-table th{
+                position: static;
             }
             .report-container {
                 padding: 0.5rem;
@@ -368,15 +450,17 @@
         }
     </style>
 </head>
+<pageheader>
+    <h1 class="title">Update Inventory</h1>
+</pageheader>
 <body>
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Update Inventory</h1>
-            <?php 
+            <?php
                 /* Display success message after submitting inventory */
                 if($submit_success == true){
-                    echo("<h4 style=\"color:black;\"><i>Inventory Submitted: ".date("F jS, Y", strtotime($date))."  -  ".$location."</i></h4>");
+                    echo("<h4 style=\"color:black;\"><i>Inventory Submitted: ".date("m/d/Y", strtotime($date))." (Warehouse & Pantry)</i></h4>");
                 }
                 /* Display errors from submitting inventory */
                 if (!empty($errors)): ?>
@@ -393,15 +477,10 @@
                 <form name="invForm" onsubmit="return validateFormDate()" method="POST" action="viewUpdateInventory.php">
                     <div class="updateInv-optionRow">
                         <div class="updateInv-option">
-                            <label class="updateInv-optionLabel" for="location">Choose a Location:</label>
-                            <select name="location" id="location">
-                                <option value="Warehouse">Warehouse</option>
-                                <option value="Pantry" <?php if (!empty($_POST) && $_POST['location'] == "Pantry") echo("selected");?>>Pantry</option>
-                            </select>
                         </div>
                         <div class="updateInv-option">
                             <label class="updateInv-optionLabel" for="date">Inventory Date:</label>
-                            <input type="date" name="date" id="date" 
+                            <input type="date" name="date" id="date"
                                 value="<?php if (!empty($errors)) echo($_POST['date']); else echo date('Y-m-d');?>">
                         </div>
                     </div>
@@ -409,15 +488,16 @@
                             <label class="updateInv-optionLabel" for="checkIncludePallets">Include Pallets:</label>
                             <input type="checkbox" id="checkIncludePallets" name="checkIncludePallets" value="1" onclick="showPalletColumn()"
                                 <?php if (empty($_POST) || isset($_POST['checkIncludePallets'])) echo("checked");?>>
-                            <button class="modify-btn" formaction="viewManagePallets.php">Manage Pallets</button>
-                            
+                            <a href="viewManagePallets.php" class="manage-pallet-lnk"><button type="button" >Manage Pallets</button></a>
+
                         </div>
                         <div class="table-wrapper">
                             <table class="report-table">
                                 <thead>
                                     <tr>
                                         <th>Item Name</th>
-                                        <th>Boxes</th>
+                                        <th>Warehouse</th>
+                                        <th>Pantry</th>
                                         <th><div class="pallet-column" style="display: block;">Pallet Boxes</div></th>
                                         <th>Previous Total<br>
                                             <?php if($previous_event_pair[0])
@@ -428,19 +508,23 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php 
+                                    <?php
                         $categories = get_all_active_ItemCategory();
                         foreach($categories AS $category): ?>
                             <tr>
                                 <div class="updateInv-row">
-                                    <td><label class="updateInv-label" 
-                                            for="qty_<?php echo($category->getId())?>">
+                                    <td><label class="updateInv-label"
+                                            for="warehouse_<?php echo($category->getId())?>">
                                             <?php echo($category->getName());?>
                                     </label></td>
-                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
-                                            value="<?php if (!empty($errors)) echo($_POST[$category->getId()]);?>"
-                                            name="<?php echo($category->getId())?>" 
-                                            id="qty_<?php echo($category->getId())?>"></td>
+                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="0"
+                                            value="<?php if (!empty($errors)) echo($_POST['warehouse_'.$category->getId()]);?>"
+                                            name="warehouse_<?php echo($category->getId())?>"
+                                            id="warehouse_<?php echo($category->getId())?>"></td>
+                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="0"
+                                            value="<?php if (!empty($errors)) echo($_POST['pantry_'.$category->getId()]);?>"
+                                            name="pantry_<?php echo($category->getId())?>"
+                                            id="pantry_<?php echo($category->getId())?>"></td>
                                     <td><div class="pallet-column" style="display: block;">
                                         <?php if(isset($pallet_totals[$category->getId()]))
                                                     echo($pallet_totals[$category->getId()])?>
@@ -450,7 +534,7 @@
                                     <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
                                     <td style="text-align: center;"><?php echo($category->getItemsPerBox())?></td>
                                 </div>
-                            </tr>  
+                            </tr>
                         <?php endforeach; ?>
                                 </tbody>
                             </table>

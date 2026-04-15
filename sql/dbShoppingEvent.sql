@@ -2,10 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Mar 27, 2026 at 05:01 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Host: localhost
+-- Generation Time: Apr 13, 2026 at 09:20 PM
+-- Server version: 10.4.28-MariaDB
+-- PHP Version: 8.2.4
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -27,7 +27,6 @@ SET time_zone = "+00:00";
 -- Table structure for table `dbshoppingevent`
 --
 
-DROP TABLE IF EXISTS `dbshoppingevent`;
 CREATE TABLE `dbshoppingevent` (
   `id` int(11) NOT NULL,
   `personId` varchar(11) NOT NULL,
@@ -40,9 +39,9 @@ CREATE TABLE `dbshoppingevent` (
 --
 
 INSERT INTO `dbshoppingevent` (`id`, `personId`, `familySize`, `date`) VALUES
-(1001, '3', '1-3', '2026-01-20'),
+(1001, '3', '1-3 Curb', '2026-01-20'),
 (1002, '3', '1-3-IH', '2026-01-20'),
-(1003, '2', '4+', '2026-02-04'),
+(1003, '2', '4+ Curb', '2026-02-04'),
 (1004, '2', '4+-IH', '2026-02-04'),
 (1005, '2', '8+-IH', '2026-02-04');
 
@@ -64,7 +63,7 @@ ALTER TABLE `dbshoppingevent`
 -- AUTO_INCREMENT for table `dbshoppingevent`
 --
 ALTER TABLE `dbshoppingevent`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1005;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1006;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

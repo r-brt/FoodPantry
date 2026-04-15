@@ -34,33 +34,53 @@
     require_once('database/dbItemCounts.php');
     require_once('database/dbShoppingEvent.php');
     require_once('database/dbShoppingCount.php');
+    require_once('database/dbConsumption.php'); 
 
     // Consumption rates (items per day) - This is the available list for the moment.
-    $consumptionRates = [
-        'Pancake' => 10.97,
-        'Oatmeal' => 10.97,
-        'Mixed Veg' => 22.17,
-        'Chicken' => 13.49,
-        'Cereal' => 13.49,
-        'Fruit' => 22.17,
-        'Snacks' => 21.93,
-        'Pasta' => 17.83,
-        'Tomato - Canned' => 26.75,
-        'Spaghetti Sauce' => 13.49,
-        'Corn' => 35.19,
-        'Beans - Canned' => 38.19,
-        'Beans - Dry' => 22.41,
-        'Tuna' => 26.75,
-        'Ramen' => 53.25,
-        'M&C' => 53.25,
-        'Green Beans' => 35.19,
-        'Canned Meals' => 13.73,
-        'Spaghetti' => 17.59,
-        'Soup' => 35.19,
-        'Peanut Butter' => 13.25,
-        'Jelly' => 13.25,
-        'Oil' => 13.25
-    ];
+  //  $consumptionRates = [
+  //      'Pancake' => 10.97,
+  //      'Oatmeal' => 10.97,
+  //      'Mixed Veg' => 22.17,
+  //      'Chicken' => 13.49,
+  //      'Cereal' => 13.49,
+  //      'Fruit' => 22.17,
+  //      'Snacks' => 21.93,
+  //      'Pasta' => 17.83,
+  //      'Tomato - Canned' => 26.75,
+  //      'Spaghetti Sauce' => 13.49,
+  //      'Corn' => 35.19,
+  //      'Beans - Canned' => 38.19,
+  //      'Beans - Dry' => 22.41,
+  //      'Tuna' => 26.75,
+  //      'Ramen' => 53.25,
+  //      'M&C' => 53.25,
+  //      'Green Beans' => 35.19,
+  //      'Canned Meals' => 13.73,
+  //      'Spaghetti' => 17.59,
+  //      'Soup' => 35.19,
+  //      'Peanut Butter' => 13.25,
+  //      'Jelly' => 13.25,
+  //      'Oil' => 13.25
+  //  ];
+
+    $consumptionRates = [];
+    $allCategories = get_all_ItemCategory();
+    foreach ($allCategories as $category) {
+        $categoryId = $category->getId();
+        $consumptions = get_consumptions_by_itemCategory($categoryId);
+        if(!empty($consumptions)) {
+            usort($consumptions, function($a, $b) {
+                $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
+                if ($dateDiff != 0) return $dateDiff;
+                return $b->getId() - $a->getId();
+            });
+            $consumptionRates[$category->getName()] = $consumptions[0]->getItemsConsumed();
+        }
+        
+    }
+
+
+
 
     // Get all inventory events sorted by date (newest first), then by ID (highest first)
     $allEventObjects = get_all_inventoryEvents();
@@ -72,89 +92,143 @@
         return $b->getId() - $a->getId();
     });
 
-    // Group events by date and keep only the latest event ID per date
-    $dateToEventMap = array();
-    $uniqueDates = array();
-    foreach($allEventObjects as $event){
-        $date = $event->getDate();
-        if(!isset($dateToEventMap[$date])){
-            $dateToEventMap[$date] = $event->getId(); // First one is latest (already sorted by ID DESC)
-            $uniqueDates[] = $date;
+    // Build event pairs (warehouse + matching pantry)
+    $eventPairs = array();
+    foreach($allEventObjects as $event) {
+        if($event->getLocation() == 'Warehouse') {
+            $pantryEvent = get_matching_inventoryEvent($event);
+            $eventPairs[] = array(
+                'warehouse' => $event,
+                'pantry' => $pantryEvent,
+                'date' => $event->getDate(),
+                'warehouseId' => $event->getId(),
+                'pantryId' => $pantryEvent ? $pantryEvent->getId() : null
+            );
         }
+    }
+
+    // Also add pantry events with no matching warehouse
+    foreach($allEventObjects as $event) {
+        if($event->getLocation() == 'Pantry') {
+            $warehouseEvent = get_matching_inventoryEvent($event);
+            if($warehouseEvent === null) {
+                $eventPairs[] = array(
+                    'warehouse' => null,
+                    'pantry' => $event,
+                    'date' => $event->getDate(),
+                    'warehouseId' => null,
+                    'pantryId' => $event->getId()
+                );
+            }
+        }
+    }
+
+    // Re-sort pairs by date (newest first)
+    usort($eventPairs, function($a, $b) {
+        $dateDiff = strtotime($b['date']) - strtotime($a['date']);
+        if ($dateDiff != 0) {
+            return $dateDiff;
+        }
+        $aId = $a['warehouseId'] ?? $a['pantryId'];
+        $bId = $b['warehouseId'] ?? $b['pantryId'];
+        return $bId - $aId;
+    });
+
+    // Add sequence numbers for same-date entries
+    $dateCounts = array();
+    foreach($eventPairs as $index => $pair) {
+        $date = $pair['date'];
+        if(!isset($dateCounts[$date])) {
+            $dateCounts[$date] = 0;
+        }
+        $dateCounts[$date]++;
+    }
+    /* Assign sequence numbers (newest first, so #1 is most recent on that date) */
+    $dateSeq = array();
+    foreach($eventPairs as $index => $pair) {
+        $date = $pair['date'];
+        if(!isset($dateSeq[$date])) {
+            $dateSeq[$date] = 1;
+        }
+        $eventPairs[$index]['seq'] = $dateSeq[$date];
+        $eventPairs[$index]['totalOnDate'] = $dateCounts[$date];
+        $dateSeq[$date]++;
     }
 
     // Get the selected week from query params, default to latest
-    $selectedWeek = $_GET['week'] ?? (count($dateToEventMap) > 0 ? reset($dateToEventMap) : null);
+    $selectedWeek = $_GET['week'] ?? (count($eventPairs) > 0 ? ($eventPairs[0]['warehouseId'] ?? $eventPairs[0]['pantryId']) : null);
 
-    // Get current week item counts (combined Warehouse + Pantry)
-    $currentCounts = array();
-    if ($selectedWeek) {
-        $currentCountObjects = get_current_counts_by_event($selectedWeek);
-        foreach($currentCountObjects as $count){
-            $currentCounts[$count->getItemCategory()] = $count;
+    // Find the selected pair index
+    $selectedPairIndex = null;
+    foreach($eventPairs as $index => $pair) {
+        $pairId = $pair['warehouseId'] ?? $pair['pantryId'];
+        if($pairId == $selectedWeek) {
+            $selectedPairIndex = $index;
+            break;
         }
     }
 
-    // Get previous week item counts (check same day older events first, then previous date)
+    // Get current counts for selected pair
+    $currentCounts = array();
+    if($selectedPairIndex !== null) {
+        $selectedPair = $eventPairs[$selectedPairIndex];
+        $current_item_counts = array();
+
+        /* Get warehouse counts */
+        if($selectedPair['warehouse']) {
+            $current_item_counts = array_merge($current_item_counts, get_itemCounts_by_inventoryEvent($selectedPair['warehouseId']));
+        }
+        /* Get pantry counts */
+        if($selectedPair['pantry']) {
+            $current_item_counts = array_merge($current_item_counts, get_itemCounts_by_inventoryEvent($selectedPair['pantryId']));
+        }
+
+        /* Sum up totals by category */
+        $current_totals = array();
+        foreach($current_item_counts as $item) {
+            $categoryId = $item->getItemCategory();
+            if(isset($current_totals[$categoryId])) {
+                $current_totals[$categoryId] += $item->getQuantity();
+            } else {
+                $current_totals[$categoryId] = $item->getQuantity();
+            }
+        }
+
+        /* Create ItemCount objects */
+        foreach($current_totals as $categoryId => $quantity) {
+            $currentCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
+        }
+    }
+
+    // Get previous counts (the pair before selected in sorted list)
     $previousCounts = array();
-    if ($selectedWeek) {
-        $currentEvent = retrieve_inventoryEvent($selectedWeek);
-        /* Check if event exists (prevents crash if event was deleted) */
-        if(!$currentEvent) {
-            header('Location: viewWeeklyReport.php');
-            die();
+    if($selectedPairIndex !== null && isset($eventPairs[$selectedPairIndex + 1])) {
+        $previousPair = $eventPairs[$selectedPairIndex + 1];
+        $prev_item_counts = array();
+
+        /* Get warehouse counts */
+        if($previousPair['warehouse']) {
+            $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($previousPair['warehouseId']));
         }
-        $currentDate = $currentEvent->getDate();
-
-        /* Get all events on the current date, sorted by ID DESC */
-        $allEventsOnDate = get_all_inventoryEvents_by_date($currentDate);
-
-        /* Separate events by location */
-        $warehouseEvents = array();
-        $pantryEvents = array();
-        foreach($allEventsOnDate as $evt) {
-            if($evt->getLocation() == 'Warehouse') {
-                $warehouseEvents[] = $evt;
-            } else if($evt->getLocation() == 'Pantry') {
-                $pantryEvents[] = $evt;
-            }
+        /* Get pantry counts */
+        if($previousPair['pantry']) {
+            $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($previousPair['pantryId']));
         }
 
-        /* Find the 2nd newest event for each location (index [1] = 2nd newest) */
-        $prevWarehouseEvent = isset($warehouseEvents[1]) ? $warehouseEvents[1] : null;
-        $prevPantryEvent = isset($pantryEvents[1]) ? $pantryEvents[1] : null;
+        /* Sum up totals by category */
+        $prev_totals = array();
+        foreach($prev_item_counts as $item) {
+            $categoryId = $item->getItemCategory();
+            if(isset($prev_totals[$categoryId])) {
+                $prev_totals[$categoryId] += $item->getQuantity();
+            } else {
+                $prev_totals[$categoryId] = $item->getQuantity();
+            }
+        }
 
-        /* If BOTH locations have no 2nd event, fall back to previous date */
-        if($prevWarehouseEvent === null && $prevPantryEvent === null) {
-            $previousCountObjects = get_previous_counts_by_event($selectedWeek);
-            foreach($previousCountObjects as $count){
-                $previousCounts[$count->getItemCategory()] = $count;
-            }
-        } else {
-            /* Get item counts from each location independently (use 0 if location doesn't have 2nd event) */
-            $prev_item_counts = array();
-            if($prevWarehouseEvent !== null){
-                $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($prevWarehouseEvent->getId()));
-            }
-            if($prevPantryEvent !== null){
-                $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($prevPantryEvent->getId()));
-            }
-
-            /* Sum up totals by category (Warehouse + Pantry) */
-            $prev_totals = array();
-            foreach($prev_item_counts as $item){
-                $categoryId = $item->getItemCategory();
-                if(isset($prev_totals[$categoryId])){
-                    $prev_totals[$categoryId] += $item->getQuantity();
-                } else {
-                    $prev_totals[$categoryId] = $item->getQuantity();
-                }
-            }
-
-            /* Create ItemCount objects for consistency with current counts */
-            foreach($prev_totals as $categoryId => $quantity){
-                $previousCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
-            }
+        /* Create ItemCount objects */
+        foreach($prev_totals as $categoryId => $quantity) {
+            $previousCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
         }
     }
 
@@ -165,43 +239,6 @@
     $categoryMap = array();
     foreach ($allCategories as $cat) {
         $categoryMap[$cat->getId()] = $cat->getName();
-    }
-
-    // Get all shopping events and extract unique family sizes
-    $allShoppingEvents = get_all_shoppingEvents();
-    $familySizes = array();
-    foreach ($allShoppingEvents as $event) {
-        $fs = $event->getFamilySize();
-        if (!in_array($fs, $familySizes)) {
-            $familySizes[] = $fs;
-        }
-    }
-    sort($familySizes);
-
-    // If a family size is selected, find the most recent event and load its counts
-    $selectedFamilySize = isset($_GET['familySize']) ? $_GET['familySize'] : null;
-    $basketItems = array();
-    if ($selectedFamilySize !== null) {
-        $filtered = array_filter($allShoppingEvents, function($e) use ($selectedFamilySize) {
-            return $e->getFamilySize() == $selectedFamilySize;
-        });
-        usort($filtered, function($a, $b) {
-            $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
-            if ($dateDiff != 0) return $dateDiff;
-            return $b->getId() - $a->getId();
-        });
-        if (!empty($filtered)) {
-            $latestEvent = reset($filtered);
-            $counts = get_shoppingCounts_by_shoppingEvent($latestEvent->getId());
-            foreach ($counts as $count) {
-                $catId = $count->getItemCategory();
-                $basketItems[] = array(
-                    'id'        => $count->getId(),
-                    'item_name' => isset($categoryMap[$catId]) ? $categoryMap[$catId] : 'Unknown (ID: ' . $catId . ')',
-                    'quantity'  => $count->getQuantity()
-                );
-            }
-        }
     }
 
     // Build weekly items array
@@ -232,35 +269,47 @@
             $monthsLeft = round($weeksLeft / 4);
         }
 
-        // Only show items with current inventory > 0
-        if ($currentBoxes > 0) {
-            $weeklyItems[] = array(
-                'item_name' => $itemName,
-                'days_left' => $daysLeft,
-                'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
-                'current_boxes' => $currentBoxes,
-                'current_items_per_box' => $itemsPerBox,
-                'total_items' => $totalItems,
-                'weeks_left' => $weeksLeft,
-                'months_left' => $monthsLeft
-            );
-        }
+        // Show all items including those with 0 quantity
+        $weeklyItems[] = array(
+            'item_name' => $itemName,
+            'days_left' => $daysLeft,
+            'previous_boxes' => $previousBoxes !== null ? $previousBoxes : 'N/A',
+            'current_boxes' => $currentBoxes,
+            'current_items_per_box' => $itemsPerBox,
+            'total_items' => $totalItems,
+            'weeks_left' => $weeksLeft,
+            'months_left' => $monthsLeft
+        );
     }
+
 ?>
     
 <!DOCTYPE html>
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>Weekly Inventory Report | Whiskey Valor Foundation</title>
+    <title>Weekly Inventory Report | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/jspdf.umd.min.js"></script>
     <script src="js/jspdf.plugin.autotable.min.js"></script>
     <style>
+        pageheader {
+            margin-top: 3rem;
+            display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
+        }
         .title {
+            text-align: center;
+            height: 3.5rem;
+            width:auto;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
         }
         .report-container {
             max-width: 1100px;
@@ -301,6 +350,8 @@
             background-color: var(--main-color);
             color: var(--button-font-color);
             font-weight: 500;
+            position: sticky;
+            top: 100px; /* height of page header */
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -526,7 +577,52 @@
         #basketTbody tr.dragging {
             opacity: 0.4;
         }
+        .data-entry-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            max-width: 500px;
+        }
+        .data-entry-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .data-entry-label {
+            color: var(--page-font-color);
+            width: 160px;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+        .data-entry-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            flex: 1;
+        }
+        .feedback-msg {
+            display: inline-block;
+            margin-left: 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .feedback-success {
+            color: rgb(34, 197, 94);
+        }
+        .feedback-error {
+            color: rgb(239, 68, 68);
+        }
         @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+            }
             .report-table th,
             .report-table td {
                 padding: 0.5rem;
@@ -550,14 +646,23 @@
             .toolbar-search {
                 width: 100%;
             }
+            .data-entry-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .data-entry-label {
+                width: auto;
+            }
         }
     </style>
 </head>
+<pageheader>
+    <h1 class="title">Weekly Inventory Report</h1>
+</pageheader>
 <body>
     <?php require_once('header.php') ?>
     <main>
         <div class="report-container">
-            <h1 class="title">Weekly Inventory Report</h1>
 
             <!-- Weekly Items -->
             <div class="report-section">
@@ -566,11 +671,11 @@
                 <div class="week-selector">
                     <label for="weekSelect">View Week:</label>
                     <select class="select" id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
-                        <?php if (count($dateToEventMap) > 0): ?>
-                            <?php foreach ($uniqueDates as $date): ?>
-                                <?php $eventId = $dateToEventMap[$date]; ?>
+                        <?php if (count($eventPairs) > 0): ?>
+                            <?php foreach ($eventPairs as $pair): ?>
+                                <?php $eventId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
                                 <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= date('M j, Y', strtotime($date)) ?>
+                                    <?= date('m/d/Y', strtotime($pair['date'])) ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -613,25 +718,25 @@
                             <?php if (count($weeklyItems) > 0): ?>
                                 <?php foreach ($weeklyItems as $item): ?>
                                     <?php
-                                        // Combined-days algorithm:
-                                        // 1 week = 7 days, 1 month = 4 weeks = 28 days
-                                        // totalColorDays = (months × 28) + (weeks × 7) + days
                                         $rowClass = '';
-                                        $daysVal   = is_numeric($item['days_left'])   ? (int)$item['days_left']   : null;
-                                        $weeksVal  = is_numeric($item['weeks_left'])  ? (int)$item['weeks_left']  : null;
-                                        $monthsVal = is_numeric($item['months_left']) ? (int)$item['months_left'] : null;
+                                        $daysVal = is_numeric($item['days_left']) ? (int)$item['days_left'] : null;
 
                                         if ($daysVal !== null) {
-                                            $totalColorDays = ($monthsVal * 28) + ($weeksVal * 7) + $daysVal;
-
-                                            if ($totalColorDays >= 120) {
-                                                $rowClass = 'row-green';   // multiple months left
-                                            } elseif ($totalColorDays >= 50) {
-                                                $rowClass = 'row-yellow';  // a few weeks left
+                                            if ($daysVal >= 120) {
+                                                $rowClass = 'row-green';
+                                            } elseif ($daysVal >= 50) {
+                                                $rowClass = 'row-yellow';
                                             } else {
-                                                $rowClass = 'row-red';     // 1 week and a few days left
+                                                $rowClass = 'row-red';
                                             }
                                         }
+
+                                        // $weeksVal  = is_numeric($item['weeks_left'])  ? (int)$item['weeks_left']  : null;
+                                        // $monthsVal = is_numeric($item['months_left']) ? (int)$item['months_left'] : null;
+                                        // $totalColorDays = ($monthsVal * 28) + ($weeksVal * 7) + $daysVal;
+                                        // if ($totalColorDays >= 120) { $rowClass = 'row-green'; }
+                                        // elseif ($totalColorDays >= 50) { $rowClass = 'row-yellow'; }
+                                        // else { $rowClass = 'row-red'; }
                                     ?>
                                     <tr class="<?= $rowClass ?>">
                                         <td class="row-number"></td>
@@ -653,61 +758,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Generate Basket -->
-            <div class="report-section">
-                <h2>Shopping List</h2>
-                <p style="color: var(--page-font-color); margin-bottom: 1rem;">Select a family size to view the recommended basket items and quantities.</p>
-
-                <div class="week-selector">
-                    <label for="familySizeSelect">Family Size:</label>
-                    <select class="select" id="familySizeSelect" name="familySize"
-                        onchange="window.location.href='?week=<?= htmlspecialchars($selectedWeek ?? '') ?>&familySize=' + encodeURIComponent(this.value)">
-                        <option value="">-- Select Family Size --</option>
-                        <?php foreach ($familySizes as $fs): ?>
-                            <option value="<?= htmlspecialchars($fs) ?>"
-                                <?= ($fs == $selectedFamilySize) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($fs) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <?php if ($selectedFamilySize !== null): ?>
-                    <div class="table-wrapper" style="margin-top: 1rem;" id="basketTableWrapper">
-                        <table class="report-table" id="basketTable">
-                            <thead>
-                                <tr>
-                                    <th style="width: 36px;"></th>
-                                    <th style="width: 50px;">#</th>
-                                    <th>Item Name</th>
-                                    <th>Quantity</th>
-                                </tr>
-                            </thead>
-                            <tbody id="basketTbody">
-                                <?php if (!empty($basketItems)): ?>
-                                    <?php foreach ($basketItems as $i => $item): ?>
-                                        <tr draggable="true" data-count-id="<?= $item['id'] ?>">
-                                            <td class="drag-handle" title="Drag to reorder">&#8597;</td>
-                                            <td class="row-number"><?= $i + 1 ?></td>
-                                            <td><?= htmlspecialchars($item['item_name']) ?></td>
-                                            <td><input type="number" class="basket-qty-input" value="<?= htmlspecialchars($item['quantity']) ?>" min="0"></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="4" class="empty-state">No items found for this family size.</td>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
-                        <button class="generate-btn" id="saveQuantitiesBtn">Save Quantities</button>
-                        <button class="generate-btn" id="generatePdfBtn">Generate Shopping List PDF</button>
-                    </div>
-                <?php endif; ?>
             </div>
 
         </div>
@@ -872,77 +922,6 @@
                     basketTbody.querySelectorAll('tr').forEach(function(r) {
                         r.classList.remove('drag-over-top', 'drag-over-bottom');
                     });
-                });
-            }
-            // Save quantity changes to database on button click
-            $('#saveQuantitiesBtn').on('click', function() {
-                var btn = $(this);
-                var requests = [];
-                $('#basketTbody tr').each(function() {
-                    var row = $(this);
-                    var countId = row.data('count-id');
-                    var quantity = parseInt(row.find('.basket-qty-input').val(), 10);
-                    if (!countId || isNaN(quantity) || quantity < 0) return;
-                    requests.push($.post('viewWeeklyReport.php', { action: 'updateQty', id: countId, quantity: quantity }));
-                });
-                $.when.apply($, requests).done(function() {
-                    btn.text('Saved!');
-                    setTimeout(function() { btn.text('Save Quantities'); }, 2000);
-                });
-            });
-
-            // Generate Shopping List PDF
-            var pdfBtn = document.getElementById('generatePdfBtn');
-            if (pdfBtn) {
-                pdfBtn.addEventListener('click', function() {
-                    var { jsPDF } = window.jspdf;
-                    var doc = new jsPDF();
-
-                    var familySize = '<?= htmlspecialchars($selectedFamilySize ?? '') ?>';
-                    var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-                    // Header
-                    doc.setFontSize(18);
-                    doc.setTextColor(40, 40, 40);
-                    doc.text('Shopping List', 14, 20);
-
-                    doc.setFontSize(11);
-                    doc.setTextColor(100, 100, 100);
-                    doc.text('Family Size: ' + familySize, 14, 29);
-                    doc.text('Date: ' + today, 14, 36);
-
-                    // Read rows in current DOM order
-                    var rows = [];
-                    document.querySelectorAll('#basketTbody tr').forEach(function(tr, i) {
-                        var cells = tr.querySelectorAll('td');
-                        if (cells.length < 4) return;
-                        var itemName = cells[2].textContent.trim();
-                        var qtyInput = cells[3].querySelector('input');
-                        var qty = qtyInput ? qtyInput.value : cells[3].textContent.trim();
-                        rows.push([(i + 1).toString(), itemName, qty]);
-                    });
-
-                    doc.autoTable({
-                        startY: 44,
-                        head: [['#', 'Item Name', 'Quantity']],
-                        body: rows,
-                        headStyles: {
-                            fillColor: [44, 62, 80],
-                            textColor: 255,
-                            fontStyle: 'bold'
-                        },
-                        alternateRowStyles: {
-                            fillColor: [245, 245, 245]
-                        },
-                        columnStyles: {
-                            0: { cellWidth: 12, halign: 'center' },
-                            2: { cellWidth: 30, halign: 'center' }
-                        },
-                        styles: { fontSize: 11 },
-                        margin: { left: 14, right: 14 }
-                    });
-
-                    doc.save('shopping-list-' + familySize.replace(/[^a-z0-9]/gi, '-') + '.pdf');
                 });
             }
         });
