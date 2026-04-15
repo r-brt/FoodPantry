@@ -157,6 +157,7 @@ $availableMonths = array_keys($monthlyData);
     <link href="css/base.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <?php require_once('header.php'); ?>
     <style>
         pageheader {
@@ -459,6 +460,36 @@ $availableMonths = array_keys($monthlyData);
             font-weight: 500;
             width: 50px;
         }
+        .pagination {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .pagination button:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .pagination button.active {
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border-color: var(--accent-color);
+        }
+        .pagination-info {
+            text-align: center;
+            color: var(--page-font-color);
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -551,14 +582,31 @@ $availableMonths = array_keys($monthlyData);
                 <h2>Food Item Trends</h2>
                 
                 <div class="form-section">
-                    <label for="categorySelect">Select Food Item Category</label>
-                    <select id="categorySelect" onchange="window.location.href='?category=' + this.value">
+                    <label>Select Food Item Categories</label>
+                    <ul class="checkbox">
+                        <li><input type="checkbox" id="trendsSelectAll" class="trend-category-checkbox" value="all">All</input></li>
                         <?php foreach ($categories as $category): ?>
-                            <option value="<?= htmlspecialchars($category['id']) ?>" <?= ($category['id'] == $selectedCategory) ? 'selected' : '' ?>>
+                            <li><input type="checkbox" class="trend-category-checkbox trend-category-single" value="<?= htmlspecialchars($category['id']) ?>">
                                 <?= htmlspecialchars($category['name']) ?>
-                            </option>
+                            </input></li>
                         <?php endforeach; ?>
+                    </ul>
+                </div>
+
+                <div class="form-section">
+                    <button type="button" id="showTrendsBtn" class="generate-btn">Show Trends</button>
+                </div>
+
+                <div class="form-section" id="trendsExportSection" style="display: none;">
+                    <label for="trendsExportFormat">Export Format</label>
+                    <select name="trendsExportFormat" id="trendsExportFormat">
+                        <option value="xlsx">Excel (.xlsx)</option>
+                        <option value="pdf">PDF (.pdf)</option>
                     </select>
+                </div>
+
+                <div class="form-section" id="trendsExportButtonSection" style="display: none;">
+                    <button type="button" id="trendsExportBtn" class="generate-btn">Export Trends</button>
                 </div>
 
                 <div class="table-wrapper">
@@ -567,47 +615,22 @@ $availableMonths = array_keys($monthlyData);
                             <tr>
                                 <th style="width: 50px;">#</th>
                                 <th>Date</th>
+                                <th>Category</th>
                                 <th>Total Boxes</th>
-                                <th>Total Items</th>
                                 <th>Change</th>
                                 <th>% Change</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php if (count($trendData) > 0): ?>
-                                <?php foreach ($trendData as $index => $row): ?>
-                                    <?php
-                                        $previousBoxes = ($index > 0) ? $trendData[$index - 1]['total_boxes'] : null;
-                                        $currentBoxes = $row['total_boxes'];
-                                        $changeBoxes = ($previousBoxes !== null) ? ($currentBoxes - $previousBoxes) : 0;
-                                        $percentChange = ($previousBoxes !== null && $previousBoxes > 0) ? (($changeBoxes / $previousBoxes) * 100) : 0;
-                                        $totalItems = $currentBoxes * $row['itemsPerBox'];
-                                    ?>
-                                    <tr>
-                                        <td class="row-number"><?= $index + 1 ?></td>
-                                        <td><?= date('m/d/Y', strtotime($row['eventDate'])) ?></td>
-                                        <td><?= htmlspecialchars($currentBoxes) ?></td>
-                                        <td><?= htmlspecialchars($totalItems) ?></td>
-                                        <td><?= ($previousBoxes !== null) ? ($changeBoxes >= 0 ? '+' : '') . htmlspecialchars($changeBoxes) : '—' ?></td>
-                                        <td>
-                                            <?php if ($previousBoxes !== null): ?>
-                                                <span class="change-percentage <?= $changeBoxes > 0 ? 'change-positive' : ($changeBoxes < 0 ? 'change-negative' : 'change-neutral') ?>">
-                                                    <?= ($changeBoxes >= 0 ? '+' : '') . number_format($percentChange, 1) ?>%
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="change-percentage change-neutral">—</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="6" class="empty-state">No data available for this category.</td>
-                                </tr>
-                            <?php endif; ?>
+                        <tbody id="trendTableBody">
+                            <tr>
+                                <td colspan="6" class="empty-state">Select categories and click "Show Trends" to view data.</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <div class="pagination" id="trendPagination"></div>
+                <div class="pagination-info" id="trendPaginationInfo"></div>
             </div>
 
             <!-- Graphs Section -->
@@ -776,9 +799,390 @@ $availableMonths = array_keys($monthlyData);
             // All trend data from PHP
             var allTrendData = <?= json_encode($allTrendData) ?>;
             var categoriesList = <?= json_encode($categories) ?>;
+            var trendsCurrentPage = 1;
+            var trendsPageSize = 50;
 
             // Chart instance
             var inventoryChart = null;
+
+            // Trends "All" checkbox handling
+            var trendsSelectAll = document.getElementById('trendsSelectAll');
+            var trendsCategoryCheckboxes = document.querySelectorAll('.trend-category-single');
+
+            if (trendsSelectAll) {
+                trendsSelectAll.addEventListener('change', function() {
+                    trendsCategoryCheckboxes.forEach(function(cb) {
+                        cb.checked = this.checked;
+                    }.bind(this));
+                });
+
+                trendsCategoryCheckboxes.forEach(function(cb) {
+                    cb.addEventListener('change', function() {
+                        var allChecked = Array.from(trendsCategoryCheckboxes).every(c => c.checked);
+                        trendsSelectAll.checked = allChecked;
+                    });
+                });
+
+                // Show Trends button handler
+                document.getElementById('showTrendsBtn').addEventListener('click', function() {
+                    var selectedCategories = [];
+                    trendsCategoryCheckboxes.forEach(function(cb) {
+                        if (cb.checked) {
+                            selectedCategories.push(cb.value);
+                        }
+                    });
+
+                    if (selectedCategories.length === 0) {
+                        alert('Please select at least one category.');
+                        return;
+                    }
+
+                    trendsCurrentPage = 1;
+                    displayTrendsPage(selectedCategories);
+                    
+                    // Show export sections
+                    document.getElementById('trendsExportSection').style.display = 'block';
+                    document.getElementById('trendsExportButtonSection').style.display = 'block';
+                });
+
+                function displayTrendsPage(selectedCategories) {
+                    var filteredData = allTrendData.filter(function(d) {
+                        return selectedCategories.includes(d.categoryId.toString());
+                    });
+
+                    if (filteredData.length === 0) {
+                        document.getElementById('trendTableBody').innerHTML = '<tr><td colspan="6" class="empty-state">No data available for selected categories.</td></tr>';
+                        document.getElementById('trendPagination').innerHTML = '';
+                        document.getElementById('trendPaginationInfo').innerHTML = '';
+                        return;
+                    }
+
+                    // Sort by categoryId (ascending) then by date (ascending)
+                    filteredData.sort(function(a, b) {
+                        var categoryCompare = parseInt(a.categoryId) - parseInt(b.categoryId);
+                        if (categoryCompare !== 0) {
+                            return categoryCompare;
+                        }
+                        return a.eventDate.localeCompare(b.eventDate);
+                    });
+
+                    // Build previous values map for percentage calculation by category
+                    var previousValueMap = {};
+                    for (var i = 0; i < filteredData.length; i++) {
+                        var d = filteredData[i];
+                        var key = d.categoryId + '_' + d.eventDate;
+                        if (i > 0 && parseInt(filteredData[i - 1].categoryId) === parseInt(d.categoryId)) {
+                            previousValueMap[key] = parseInt(filteredData[i - 1].total_boxes);
+                        } else {
+                            previousValueMap[key] = null;
+                        }
+                    }
+
+                    // Paginate
+                    var totalPages = Math.ceil(filteredData.length / trendsPageSize);
+                    var startIndex = (trendsCurrentPage - 1) * trendsPageSize;
+                    var endIndex = startIndex + trendsPageSize;
+                    var pageData = filteredData.slice(startIndex, endIndex);
+
+                    // Build table rows
+                    var tbody = document.getElementById('trendTableBody');
+                    tbody.innerHTML = '';
+                    pageData.forEach(function(row, index) {
+                        var rowNum = startIndex + index + 1;
+                        var key = row.categoryId + '_' + row.eventDate;
+                        var previousBoxes = previousValueMap[key];
+                        var currentBoxes = parseInt(row.total_boxes);
+                        var changeBoxes = (previousBoxes !== null) ? (currentBoxes - previousBoxes) : 0;
+                        var percentChange = (previousBoxes !== null && previousBoxes > 0) ? ((changeBoxes / previousBoxes) * 100) : 0;
+
+                        var dateObj = new Date(row.eventDate + 'T00:00:00');
+                        var dateStr = (dateObj.getMonth() + 1) + '/' + dateObj.getDate() + '/' + dateObj.getFullYear();
+
+                        var changeClass = 'change-neutral';
+                        if (changeBoxes > 0) changeClass = 'change-positive';
+                        else if (changeBoxes < 0) changeClass = 'change-negative';
+
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td class="row-number">' + rowNum + '</td>' +
+                                       '<td>' + dateStr + '</td>' +
+                                       '<td>' + row.itemName + '</td>' +
+                                       '<td>' + currentBoxes + '</td>' +
+                                       '<td>' + ((previousBoxes !== null) ? (changeBoxes >= 0 ? '+' : '') + changeBoxes : '—') + '</td>' +
+                                       '<td><span class="change-percentage ' + changeClass + '">' +
+                                       ((previousBoxes !== null) ? (changeBoxes >= 0 ? '+' : '') + percentChange.toFixed(1) + '%' : '—') +
+                                       '</span></td>';
+                        tbody.appendChild(tr);
+                    });
+
+                    // Build pagination controls
+                    var paginationDiv = document.getElementById('trendPagination');
+                    paginationDiv.innerHTML = '';
+
+                    if (totalPages > 1) {
+                        if (trendsCurrentPage > 1) {
+                            var prevBtn = document.createElement('button');
+                            prevBtn.textContent = '< Previous';
+                            prevBtn.onclick = function() {
+                                trendsCurrentPage--;
+                                displayTrendsPage(selectedCategories);
+                            };
+                            paginationDiv.appendChild(prevBtn);
+                        }
+
+                        for (var i = 1; i <= totalPages; i++) {
+                            var btn = document.createElement('button');
+                            btn.textContent = i;
+                            if (i === trendsCurrentPage) {
+                                btn.classList.add('active');
+                            }
+                            btn.onclick = function(pageNum) {
+                                return function() {
+                                    trendsCurrentPage = pageNum;
+                                    displayTrendsPage(selectedCategories);
+                                };
+                            }(i);
+                            paginationDiv.appendChild(btn);
+                        }
+
+                        if (trendsCurrentPage < totalPages) {
+                            var nextBtn = document.createElement('button');
+                            nextBtn.textContent = 'Next >';
+                            nextBtn.onclick = function() {
+                                trendsCurrentPage++;
+                                displayTrendsPage(selectedCategories);
+                            };
+                            paginationDiv.appendChild(nextBtn);
+                        }
+                    }
+
+                    // Update pagination info
+                    var infoDiv = document.getElementById('trendPaginationInfo');
+                    if (filteredData.length > 0) {
+                        infoDiv.textContent = 'Showing ' + (startIndex + 1) + ' to ' + Math.min(endIndex, filteredData.length) + ' of ' + filteredData.length + ' entries';
+                    } else {
+                        infoDiv.textContent = '';
+                    }
+                }
+
+                // Export Trends to XLSX
+                function exportTrendsXlsx(selectedCategories) {
+                    // Check if XLSX is available
+                    if (typeof XLSX === 'undefined') {
+                        alert('Excel export library is loading. Please try again in a moment.');
+                        console.error('XLSX library not available');
+                        return;
+                    }
+
+                    var filteredData = allTrendData.filter(function(d) {
+                        return selectedCategories.includes(d.categoryId.toString());
+                    });
+
+                    if (filteredData.length === 0) {
+                        alert('No data to export. Please select categories and display trends first.');
+                        return;
+                    }
+
+                    try {
+                        // Sort by categoryId then by date (same as display)
+                        filteredData.sort(function(a, b) {
+                            var categoryCompare = parseInt(a.categoryId) - parseInt(b.categoryId);
+                            if (categoryCompare !== 0) {
+                                return categoryCompare;
+                            }
+                            return a.eventDate.localeCompare(b.eventDate);
+                        });
+
+                        // Build previous values map
+                        var previousValueMap = {};
+                        for (var i = 0; i < filteredData.length; i++) {
+                            var d = filteredData[i];
+                            var key = d.categoryId + '_' + d.eventDate;
+                            if (i > 0 && parseInt(filteredData[i - 1].categoryId) === parseInt(d.categoryId)) {
+                                previousValueMap[key] = parseInt(filteredData[i - 1].total_boxes);
+                            } else {
+                                previousValueMap[key] = null;
+                            }
+                        }
+
+                        // Prepare data for export
+                        var exportData = [];
+                        exportData.push(['#', 'Date', 'Category', 'Total Boxes', 'Change', '% Change']);
+
+                        filteredData.forEach(function(row, index) {
+                            var key = row.categoryId + '_' + row.eventDate;
+                            var previousBoxes = previousValueMap[key];
+                            var currentBoxes = parseInt(row.total_boxes);
+                            var changeBoxes = (previousBoxes !== null) ? (currentBoxes - previousBoxes) : 0;
+                            var percentChange = (previousBoxes !== null && previousBoxes > 0) ? ((changeBoxes / previousBoxes) * 100) : 0;
+
+                            var dateObj = new Date(row.eventDate + 'T00:00:00');
+                            var dateStr = (dateObj.getMonth() + 1) + '/' + dateObj.getDate() + '/' + dateObj.getFullYear();
+
+                            exportData.push([
+                                index + 1,
+                                dateStr,
+                                row.itemName,
+                                currentBoxes,
+                                (previousBoxes !== null) ? (changeBoxes >= 0 ? '+' : '') + changeBoxes : '—',
+                                (previousBoxes !== null) ? (changeBoxes >= 0 ? '+' : '') + percentChange.toFixed(1) + '%' : '—'
+                            ]);
+                        });
+
+                        // Create workbook
+                        var ws = XLSX.utils.aoa_to_sheet(exportData);
+                        var wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, 'Trends');
+
+                        // Set column widths
+                        ws['!cols'] = [
+                            { wch: 5 },   // #
+                            { wch: 12 },  // Date
+                            { wch: 20 },  // Category
+                            { wch: 13 },  // Total Boxes
+                            { wch: 10 },  // Change
+                            { wch: 12 }   // % Change
+                        ];
+
+                        // Generate filename with current date
+                        var now = new Date();
+                        var filename = 'Food_Trends_' + (now.getMonth() + 1) + '-' + now.getDate() + '-' + now.getFullYear() + '.xlsx';
+
+                        // Download file
+                        XLSX.writeFile(wb, filename);
+                    } catch (e) {
+                        alert('Error exporting to Excel: ' + e.message);
+                        console.error('Excel export error:', e);
+                    }
+                }
+
+                // Export Trends to PDF
+                function exportTrendsPdf(selectedCategories) {
+                    var filteredData = allTrendData.filter(function(d) {
+                        return selectedCategories.includes(d.categoryId.toString());
+                    });
+
+                    if (filteredData.length === 0) {
+                        alert('No data to export. Please select categories and display trends first.');
+                        return;
+                    }
+
+                    // Sort by categoryId then by date (same as display)
+                    filteredData.sort(function(a, b) {
+                        var categoryCompare = parseInt(a.categoryId) - parseInt(b.categoryId);
+                        if (categoryCompare !== 0) {
+                            return categoryCompare;
+                        }
+                        return a.eventDate.localeCompare(b.eventDate);
+                    });
+
+                    // Build previous values map
+                    var previousValueMap = {};
+                    for (var i = 0; i < filteredData.length; i++) {
+                        var d = filteredData[i];
+                        var key = d.categoryId + '_' + d.eventDate;
+                        if (i > 0 && parseInt(filteredData[i - 1].categoryId) === parseInt(d.categoryId)) {
+                            previousValueMap[key] = parseInt(filteredData[i - 1].total_boxes);
+                        } else {
+                            previousValueMap[key] = null;
+                        }
+                    }
+
+                    // Create PDF
+                    var { jsPDF } = window.jspdf;
+                    var doc = new jsPDF('portrait', 'mm', 'a4');
+                    
+                    // Add title
+                    doc.setFontSize(16);
+                    doc.text('Food Item Trends Report', 14, 15);
+                    
+                    // Add date and categories info
+                    doc.setFontSize(10);
+                    var now = new Date();
+                    var dateStr = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();
+                    doc.text('Generated: ' + dateStr, 14, 22);
+                    
+                    // Add table headers
+                    var yPos = 35;
+                    doc.setFont(undefined, 'bold');
+                    doc.text('#', 14, yPos);
+                    doc.text('Date', 25, yPos);
+                    doc.text('Category', 50, yPos);
+                    doc.text('Boxes', 110, yPos);
+                    doc.text('Change', 135, yPos);
+                    doc.text('% Change', 160, yPos);
+                    
+                    doc.setFont(undefined, 'normal');
+                    yPos += 8;
+                    
+                    // Add data rows
+                    filteredData.forEach(function(row, index) {
+                        // Check if we need a new page
+                        if (yPos > 270) {
+                            doc.addPage();
+                            yPos = 20;
+                            // Re-add headers on new page
+                            doc.setFont(undefined, 'bold');
+                            doc.text('#', 14, yPos);
+                            doc.text('Date', 25, yPos);
+                            doc.text('Category', 50, yPos);
+                            doc.text('Boxes', 110, yPos);
+                            doc.text('Change', 135, yPos);
+                            doc.text('% Change', 160, yPos);
+                            doc.setFont(undefined, 'normal');
+                            yPos += 8;
+                        }
+                        
+                        var key = row.categoryId + '_' + row.eventDate;
+                        var previousBoxes = previousValueMap[key];
+                        var currentBoxes = parseInt(row.total_boxes);
+                        var changeBoxes = (previousBoxes !== null) ? (currentBoxes - previousBoxes) : 0;
+                        var percentChange = (previousBoxes !== null && previousBoxes > 0) ? ((changeBoxes / previousBoxes) * 100) : 0;
+
+                        var dateObj = new Date(row.eventDate + 'T00:00:00');
+                        var datePdf = (dateObj.getMonth() + 1) + '/' + dateObj.getDate() + '/' + dateObj.getFullYear();
+                        
+                        doc.text(String(index + 1), 14, yPos);
+                        doc.text(datePdf, 25, yPos);
+                        doc.text(row.itemName.substring(0, 20), 50, yPos);
+                        doc.text(String(currentBoxes), 110, yPos);
+                        doc.text((previousBoxes !== null) ? (changeBoxes >= 0 ? '+' : '') + changeBoxes : '—', 135, yPos);
+                        doc.text((previousBoxes !== null) ? (changeBoxes >= 0 ? '+' : '') + percentChange.toFixed(1) + '%' : '—', 160, yPos);
+                        
+                        yPos += 7;
+                    });
+                    
+                    // Generate filename
+                    var filename = 'Food_Trends_' + (now.getMonth() + 1) + '-' + now.getDate() + '-' + now.getFullYear() + '.pdf';
+                    doc.save(filename);
+                }
+
+                // Add event listeners for export buttons
+                var trendsExportBtn = document.getElementById('trendsExportBtn');
+                var trendsExportFormat = document.getElementById('trendsExportFormat');
+
+                if (trendsExportBtn) {
+                    trendsExportBtn.addEventListener('click', function() {
+                        var selectedCategories = [];
+                        trendsCategoryCheckboxes.forEach(function(cb) {
+                            if (cb.checked && cb.value !== 'all') {
+                                selectedCategories.push(cb.value);
+                            }
+                        });
+
+                        if (selectedCategories.length === 0) {
+                            alert('Please select at least one category.');
+                            return;
+                        }
+
+                        var format = trendsExportFormat.value;
+                        if (format === 'xlsx') {
+                            exportTrendsXlsx(selectedCategories);
+                        } else if (format === 'pdf') {
+                            exportTrendsPdf(selectedCategories);
+                        }
+                    });
+                }
+            }
 
             // Show Graph button handler
             document.getElementById('showGraphBtn').addEventListener('click', function() {
