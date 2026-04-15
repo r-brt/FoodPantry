@@ -34,33 +34,53 @@
     require_once('database/dbItemCounts.php');
     require_once('database/dbShoppingEvent.php');
     require_once('database/dbShoppingCount.php');
+    require_once('database/dbConsumption.php'); 
 
     // Consumption rates (items per day) - This is the available list for the moment.
-    $consumptionRates = [
-        'Pancake' => 10.97,
-        'Oatmeal' => 10.97,
-        'Mixed Veg' => 22.17,
-        'Chicken' => 13.49,
-        'Cereal' => 13.49,
-        'Fruit' => 22.17,
-        'Snacks' => 21.93,
-        'Pasta' => 17.83,
-        'Tomato - Canned' => 26.75,
-        'Spaghetti Sauce' => 13.49,
-        'Corn' => 35.19,
-        'Beans - Canned' => 38.19,
-        'Beans - Dry' => 22.41,
-        'Tuna' => 26.75,
-        'Ramen' => 53.25,
-        'M&C' => 53.25,
-        'Green Beans' => 35.19,
-        'Canned Meals' => 13.73,
-        'Spaghetti' => 17.59,
-        'Soup' => 35.19,
-        'Peanut Butter' => 13.25,
-        'Jelly' => 13.25,
-        'Oil' => 13.25
-    ];
+  //  $consumptionRates = [
+  //      'Pancake' => 10.97,
+  //      'Oatmeal' => 10.97,
+  //      'Mixed Veg' => 22.17,
+  //      'Chicken' => 13.49,
+  //      'Cereal' => 13.49,
+  //      'Fruit' => 22.17,
+  //      'Snacks' => 21.93,
+  //      'Pasta' => 17.83,
+  //      'Tomato - Canned' => 26.75,
+  //      'Spaghetti Sauce' => 13.49,
+  //      'Corn' => 35.19,
+  //      'Beans - Canned' => 38.19,
+  //      'Beans - Dry' => 22.41,
+  //      'Tuna' => 26.75,
+  //      'Ramen' => 53.25,
+  //      'M&C' => 53.25,
+  //      'Green Beans' => 35.19,
+  //      'Canned Meals' => 13.73,
+  //      'Spaghetti' => 17.59,
+  //      'Soup' => 35.19,
+  //      'Peanut Butter' => 13.25,
+  //      'Jelly' => 13.25,
+  //      'Oil' => 13.25
+  //  ];
+
+    $consumptionRates = [];
+    $allCategories = get_all_ItemCategory();
+    foreach ($allCategories as $category) {
+        $categoryId = $category->getId();
+        $consumptions = get_consumptions_by_itemCategory($categoryId);
+        if(!empty($consumptions)) {
+            usort($consumptions, function($a, $b) {
+                $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
+                if ($dateDiff != 0) return $dateDiff;
+                return $b->getId() - $a->getId();
+            });
+            $consumptionRates[$category->getName()] = $consumptions[0]->getItemsConsumed();
+        }
+        
+    }
+
+
+
 
     // Get all inventory events sorted by date (newest first), then by ID (highest first)
     $allEventObjects = get_all_inventoryEvents();
@@ -268,7 +288,7 @@
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>Weekly Inventory Report | Whiskey Valor Foundation</title>
+    <title>Weekly Inventory Report | CCDA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/jspdf.umd.min.js"></script>
     <script src="js/jspdf.plugin.autotable.min.js"></script>
@@ -698,25 +718,25 @@
                             <?php if (count($weeklyItems) > 0): ?>
                                 <?php foreach ($weeklyItems as $item): ?>
                                     <?php
-                                        // Combined-days algorithm:
-                                        // 1 week = 7 days, 1 month = 4 weeks = 28 days
-                                        // totalColorDays = (months × 28) + (weeks × 7) + days
                                         $rowClass = '';
-                                        $daysVal   = is_numeric($item['days_left'])   ? (int)$item['days_left']   : null;
-                                        $weeksVal  = is_numeric($item['weeks_left'])  ? (int)$item['weeks_left']  : null;
-                                        $monthsVal = is_numeric($item['months_left']) ? (int)$item['months_left'] : null;
+                                        $daysVal = is_numeric($item['days_left']) ? (int)$item['days_left'] : null;
 
                                         if ($daysVal !== null) {
-                                            $totalColorDays = ($monthsVal * 28) + ($weeksVal * 7) + $daysVal;
-
-                                            if ($totalColorDays >= 120) {
-                                                $rowClass = 'row-green';   // multiple months left
-                                            } elseif ($totalColorDays >= 50) {
-                                                $rowClass = 'row-yellow';  // a few weeks left
+                                            if ($daysVal >= 120) {
+                                                $rowClass = 'row-green';
+                                            } elseif ($daysVal >= 50) {
+                                                $rowClass = 'row-yellow';
                                             } else {
-                                                $rowClass = 'row-red';     // 1 week and a few days left
+                                                $rowClass = 'row-red';
                                             }
                                         }
+
+                                        // $weeksVal  = is_numeric($item['weeks_left'])  ? (int)$item['weeks_left']  : null;
+                                        // $monthsVal = is_numeric($item['months_left']) ? (int)$item['months_left'] : null;
+                                        // $totalColorDays = ($monthsVal * 28) + ($weeksVal * 7) + $daysVal;
+                                        // if ($totalColorDays >= 120) { $rowClass = 'row-green'; }
+                                        // elseif ($totalColorDays >= 50) { $rowClass = 'row-yellow'; }
+                                        // else { $rowClass = 'row-red'; }
                                     ?>
                                     <tr class="<?= $rowClass ?>">
                                         <td class="row-number"></td>
