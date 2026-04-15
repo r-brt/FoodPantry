@@ -1091,7 +1091,7 @@ document.querySelectorAll(".icon-butt").forEach(el => {
   window.addEventListener("load", updateDateAndCheckBoxes);
 </script>
 <!-- Accessibility Button + Modal -->
-<button class="accessibility-btn" id="accessibilityBtn" aria-haspopup="dialog" aria-controls="accessibilityModal" title="Accessibility settings">
+<!-- <button class="accessibility-btn" id="accessibilityBtn" aria-haspopup="dialog" aria-controls="accessibilityModal" title="Accessibility settings">
     <img src="images/accessibility-menu.png" alt="Accessibility Menu">
 </button>
 
@@ -1124,12 +1124,12 @@ document.querySelectorAll(".icon-butt").forEach(el => {
 
         <!-- Color scheme removed; keeping font controls only -->
 
-        <div class="accessibility-actions">
+        <!-- <div class="accessibility-actions">
             <button class="reset" id="accReset">Reset</button>
             <button class="save" id="accSave">Save</button>
         </div>
     </div>
-</div>
+</div> -->
 
 <script>
     (function(){
