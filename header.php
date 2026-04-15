@@ -808,6 +808,8 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['viewmodifyuser.php'] = 2;
         $permission_array['viewitemcategories.php'] = 1;
         $permission_array['viewmodifyitemcategory.php'] = 1;
+        $permission_array['viewshoppinglist.php'] = 2;
+        $permission_array['viewconsumptionrates.php'] = 2;
         // LOWERCASE
 
 
@@ -896,6 +898,12 @@ echo('<a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/clipboard-list-alt.svg" alt="Report Icon">
     <span>Shopping List</span>
+  </div>
+</a>
+<a href="viewConsumptionRates.php" style="text-decoration: none;">
+  <div class="in-nav">
+    <img src="images/clipboard-list-alt.svg" alt="Report Icon">
+    <span>Consumption Rates</span>
   </div>
 </a>
 
