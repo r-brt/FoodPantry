@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `dbshoppingevent` (
   `id` int(11) NOT NULL,
   `personId` varchar(11) NOT NULL,
-  `familySize` varchar(11) NOT NULL,
+  `familySize` varchar(30) NOT NULL,
   `date` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -39,11 +39,11 @@ CREATE TABLE `dbshoppingevent` (
 --
 
 INSERT INTO `dbshoppingevent` (`id`, `personId`, `familySize`, `date`) VALUES
-(1001, '3', '1-3 Curb', '2026-01-20'),
-(1002, '3', '1-3-IH', '2026-01-20'),
-(1003, '2', '4+ Curb', '2026-02-04'),
-(1004, '2', '4+-IH', '2026-02-04'),
-(1005, '2', '8+-IH', '2026-02-04');
+(1001, '3', '1-3 Curbside', '2026-01-20'),
+(1002, '3', '1-3 In-House', '2026-01-20'),
+(1003, '2', '4+ Curbside', '2026-02-04'),
+(1004, '2', '4+ In-House', '2026-02-04'),
+(1005, '2', '8+ In-House', '2026-02-04');
 
 --
 -- Indexes for dumped tables
