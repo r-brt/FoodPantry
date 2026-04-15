@@ -153,7 +153,8 @@
     sort($familySizes);
 
     // If a family size is selected, load its basket counts (with group info)
-    $selectedFamilySize      = isset($_GET['familySize']) ? $_GET['familySize'] : null;
+    // Default to the first (smallest) family size so the page is never blank on load
+    $selectedFamilySize      = isset($_GET['familySize']) ? $_GET['familySize'] : (count($familySizes) > 0 ? $familySizes[0] : null);
     $selectedShoppingEventId = null;
     $basketGroups            = array(); // groupId => ['id','name','items'=>[...]]
     $basketUngrouped         = array();
