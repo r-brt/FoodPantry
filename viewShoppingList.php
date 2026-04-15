@@ -414,10 +414,11 @@
                         <table class="report-table" id="basketTable">
                             <thead>
                                 <tr>
-                                    <th style="width: 36px;"></th>
-                                    <th style="width: 50px;">#</th>
+                                    <th style="width: 0px;"></th>
+                                    <th style="width: 25px;">#</th>
                                     <th>Item Name</th>
                                     <th>Quantity</th>
+                                    <th>Notes</th>
                                 </tr>
                             </thead>
                             <tbody id="basketTbody">
@@ -428,6 +429,7 @@
                                             <td class="row-number"><?= $i + 1 ?></td>
                                             <td><?= htmlspecialchars($item['item_name']) ?></td>
                                             <td><input type="number" class="basket-qty-input" value="<?= htmlspecialchars($item['quantity']) ?>" min="0"></td>
+                                            <td><input type="text" class="basket-notes-input" placeholder="Optional..." style="width: 100%; padding: 0.3rem 0.5rem; border-radius: 0.25rem; border: 1px solid transparent; background: transparent; color: var(--page-font-color);"></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
@@ -663,22 +665,31 @@
                     doc.text('Date: ' + today, 14, 36);
 
                     var rows = [];
+                    var includeNotes = false;
                     document.querySelectorAll('#basketTbody tr').forEach(function(tr, i) {
                         var cells = tr.querySelectorAll('td');
-                        if (cells.length < 4) return;
+                        if (cells.length < 5) return;
                         var itemName = cells[2].textContent.trim();
-                        var qtyInput = cells[3].querySelector('input');
-                        var qty = qtyInput ? qtyInput.value : cells[3].textContent.trim();
-                        rows.push([(i + 1).toString(), itemName, qty]);
+                        var qty = cells[3].querySelector('input').value;
+                        var notesInput = cells[4].querySelector('input');
+                        var notes = notesInput ? notesInput.value.trim() : "";
+
+                        if(notes !== "") {
+                            includeNotes = true;
+                        }
+                        rows.push([(i + 1).toString(), itemName, qty, notes]);
                     });
 
                     doc.autoTable({
                         startY: 44,
-                        head: [['#', 'Item Name', 'Quantity']],
-                        body: rows,
+                        head: includeNotes ? [['#', 'Item Name', 'Quantity', 'Notes']]
+                                :[['#', 'Item Name', 'Quantity']],
+                        body: includeNotes
+                            ? rows
+                            : rows.map(r => [r[0], r[1], r[2]]),
                         headStyles: { fillColor: [44, 62, 80], textColor: 255, fontStyle: 'bold' },
                         alternateRowStyles: { fillColor: [245, 245, 245] },
-                        columnStyles: { 0: { cellWidth: 12, halign: 'center' }, 2: { cellWidth: 30, halign: 'center' } },
+                        //columnStyles: { 0: { cellWidth: 12, halign: 'center' }, 2: { cellWidth: 30, halign: 'center' } },
                         styles: { fontSize: 11 },
                         margin: { left: 14, right: 14 }
                     });

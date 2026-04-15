@@ -6,7 +6,7 @@ require_once('database/dbinfo.php');
 require 'vendor/autoload.php';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
-    $reset = "http://localhost/foodpantry/changeForgottenPassword.php?email=" . urlencode($email);
+    $reset = "http://jenniferp231.sg-host.com/changeForgottenPassword.php?email=" . urlencode($email);
     $mail = new PHPMailer(true);
     
     try{
