@@ -3,10 +3,12 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require_once('database/dbinfo.php');
+require_once('emailEncryption.php');
 require 'vendor/autoload.php';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
-    $reset = "http://jenniferp231.sg-host.com/changeForgottenPassword.php?email=" . urlencode($email);
+    $reset = "http://jenniferp231.sg-host.com/changeForgottenPassword.php?email=" . encryptEmail($email);
+    //$reset = "http://localhost/foodpantry/changeForgottenPassword.php?email=" . encryptEmail($email);
     $mail = new PHPMailer(true);
     
     try{
@@ -30,8 +32,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }catch (Exception $e) {
         echo "That is not an email we have in our system";
     }
-    $successMessage = "If the email you imputed is in our system,
-    a link has been sent to that email to reset your password.";
+    $successMessage = "If the email you inputed is in our system,
+    a link has been sent to reset your password.";
 }
 ?>
 
