@@ -808,6 +808,8 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['viewmodifyuser.php'] = 2;
         $permission_array['viewitemcategories.php'] = 1;
         $permission_array['viewmodifyitemcategory.php'] = 1;
+        $permission_array['viewshoppinglist.php'] = 2;
+        $permission_array['viewconsumptionrates.php'] = 2;
         // LOWERCASE
 
 
@@ -896,6 +898,12 @@ echo('<a href="generateReport.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/clipboard-list-alt.svg" alt="Report Icon">
     <span>Shopping List</span>
+  </div>
+</a>
+<a href="viewConsumptionRates.php" style="text-decoration: none;">
+  <div class="in-nav">
+    <img src="images/clipboard-list-alt.svg" alt="Report Icon">
+    <span>Consumption Rates</span>
   </div>
 </a>
 
@@ -1091,7 +1099,7 @@ document.querySelectorAll(".icon-butt").forEach(el => {
   window.addEventListener("load", updateDateAndCheckBoxes);
 </script>
 <!-- Accessibility Button + Modal -->
-<button class="accessibility-btn" id="accessibilityBtn" aria-haspopup="dialog" aria-controls="accessibilityModal" title="Accessibility settings">
+<!-- <button class="accessibility-btn" id="accessibilityBtn" aria-haspopup="dialog" aria-controls="accessibilityModal" title="Accessibility settings">
     <img src="images/accessibility-menu.png" alt="Accessibility Menu">
 </button>
 
@@ -1124,12 +1132,12 @@ document.querySelectorAll(".icon-butt").forEach(el => {
 
         <!-- Color scheme removed; keeping font controls only -->
 
-        <div class="accessibility-actions">
+        <!-- <div class="accessibility-actions">
             <button class="reset" id="accReset">Reset</button>
             <button class="save" id="accSave">Save</button>
         </div>
     </div>
-</div>
+</div> -->
 
 <script>
     (function(){

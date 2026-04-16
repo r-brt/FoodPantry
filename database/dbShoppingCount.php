@@ -140,5 +140,71 @@ function get_most_recent_shoppingCounts_up_to_event($maxEventId){
     return $shoppingCount_array;
 }
 
+/*
+ * Update the notes for a ShoppingCount row; returns true on success.
+ */
+function update_shoppingCount_notes($id, $notes) {
+    $con    = connect();
+    $notes  = mysqli_real_escape_string($con, $notes);
+    $result = mysqli_query($con, 'UPDATE dbshoppingcounts SET notes = "' . $notes . '" WHERE id = ' . (int)$id);
+    mysqli_close($con);
+    return (bool)$result;
+}
+
+// ---- Item-group helpers -------------------------------------------------------
+
+/**
+ * Create a new group for a shopping event; returns the new group id.
+ */
+function create_shoppingCount_group($shoppingEventId, $groupName) {
+    $con  = connect();
+    $name = mysqli_real_escape_string($con, $groupName);
+    mysqli_query($con, 'INSERT INTO dbshoppingcountgroup (shoppingEventId, groupName) VALUES(' .
+        (int)$shoppingEventId . ', "' . $name . '")');
+    $id = mysqli_insert_id($con);
+    mysqli_close($con);
+    return $id;
+}
+
+/**
+ * Rename a group; returns true on success.
+ */
+function rename_shoppingCount_group($groupId, $groupName) {
+    $con  = connect();
+    $name = mysqli_real_escape_string($con, $groupName);
+    $ok   = mysqli_query($con, 'UPDATE dbshoppingcountgroup SET groupName = "' . $name .
+        '" WHERE id = ' . (int)$groupId);
+    mysqli_close($con);
+    return (bool)$ok;
+}
+
+/**
+ * Assign a shopping-count row to a group.
+ */
+function assign_to_group($countId, $groupId) {
+    $con = connect();
+    mysqli_query($con, 'UPDATE dbshoppingcounts SET groupId = ' . (int)$groupId .
+        ' WHERE id = ' . (int)$countId);
+    mysqli_close($con);
+}
+
+/**
+ * Remove a shopping-count row from its group (sets groupId to NULL).
+ */
+function remove_from_group($countId) {
+    $con = connect();
+    mysqli_query($con, 'UPDATE dbshoppingcounts SET groupId = NULL WHERE id = ' . (int)$countId);
+    mysqli_close($con);
+}
+
+/**
+ * Delete a group and ungroup all its members.
+ */
+function delete_shoppingCount_group($groupId) {
+    $con = connect();
+    mysqli_query($con, 'UPDATE dbshoppingcounts SET groupId = NULL WHERE groupId = ' . (int)$groupId);
+    mysqli_query($con, 'DELETE FROM dbshoppingcountgroup WHERE id = ' . (int)$groupId);
+    mysqli_close($con);
+}
 
 
