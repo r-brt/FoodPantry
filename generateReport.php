@@ -33,36 +33,40 @@ usort($allEventObjects, function($a, $b) {
     return $b->getId() - $a->getId();
 });
 
-// Build event pairs (warehouse + matching pantry)
+// Build event triplets (warehouse + pantry + pallet)
 $eventPairs = array();
 foreach($allEventObjects as $event) {
     if($event->getLocation() == 'Warehouse') {
-        $pantryEvent = get_matching_inventoryEvent($event);
+        $matches = get_matching_inventoryEvent($event);
+        $pantryEvent = $matches['Pantry'] ?? null;
+        $palletEvent = $matches['Pallet'] ?? null;
         $eventPairs[] = array(
             'warehouse' => $event,
             'pantry' => $pantryEvent,
+            'pallet' => $palletEvent,
             'date' => $event->getDate(),
             'warehouseId' => $event->getId(),
-            'pantryId' => $pantryEvent ? $pantryEvent->getId() : null
+            'pantryId' => $pantryEvent ? $pantryEvent->getId() : null,
+            'palletId' => $palletEvent ? $palletEvent->getId() : null
         );
     }
 }
 
-// Also add pantry events with no matching warehouse
-foreach($allEventObjects as $event) {
-    if($event->getLocation() == 'Pantry') {
-        $warehouseEvent = get_matching_inventoryEvent($event);
-        if($warehouseEvent === null) {
-            $eventPairs[] = array(
-                'warehouse' => null,
-                'pantry' => $event,
-                'date' => $event->getDate(),
-                'warehouseId' => null,
-                'pantryId' => $event->getId()
-            );
-        }
-    }
-}
+// OLD CODE - orphan pantry logic (no longer needed with triplets)
+// foreach($allEventObjects as $event) {
+//     if($event->getLocation() == 'Pantry') {
+//         $warehouseEvent = get_matching_inventoryEvent($event);
+//         if($warehouseEvent === null) {
+//             $eventPairs[] = array(
+//                 'warehouse' => null,
+//                 'pantry' => $event,
+//                 'date' => $event->getDate(),
+//                 'warehouseId' => null,
+//                 'pantryId' => $event->getId()
+//             );
+//         }
+//     }
+// }
 
 // Re-sort pairs by date (newest first)
 usort($eventPairs, function($a, $b) {
@@ -119,7 +123,7 @@ if ($selectedCategory) {
     $stmt->close();
 }
 
-// Fetch ALL items trend data for graphs
+// Fetch ALL items trend data for trends table (combines all events per date)
 $allTrendData = [];
 $sqlAll = "
     SELECT
@@ -138,6 +142,34 @@ $resultAll = $conn->query($sqlAll);
 if ($resultAll) {
     while ($row = $resultAll->fetch_assoc()) {
         $allTrendData[] = $row;
+    }
+}
+
+// Fetch graph data (latest event only per date)
+$allGraphData = [];
+$sqlGraph = "
+    SELECT
+        DATE(ie.date) as eventDate,
+        dic.id as categoryId,
+        dic.name as itemName,
+        COALESCE(SUM(dbic.quantity), 0) as total_boxes
+    FROM dbinventoryevent ie
+    LEFT JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
+    LEFT JOIN dbitemcategory dic ON dbic.itemCategoryId = dic.id
+    WHERE dic.id IS NOT NULL
+    AND ie.id >= (
+        SELECT MAX(ie2.id)
+        FROM dbinventoryevent ie2
+        WHERE DATE(ie2.date) = DATE(ie.date)
+        AND ie2.location = 'Warehouse'
+    )
+    GROUP BY DATE(ie.date), dic.id, dic.name
+    ORDER BY DATE(ie.date) ASC, dic.name ASC
+";
+$resultGraph = $conn->query($sqlGraph);
+if ($resultGraph) {
+    while ($row = $resultGraph->fetch_assoc()) {
+        $allGraphData[] = $row;
     }
 }
 
@@ -798,6 +830,7 @@ $availableMonths = array_keys($monthlyData);
 
             // All trend data from PHP
             var allTrendData = <?= json_encode($allTrendData) ?>;
+            var allGraphData = <?= json_encode($allGraphData) ?>;
             var categoriesList = <?= json_encode($categories) ?>;
             var trendsCurrentPage = 1;
             var trendsPageSize = 50;
@@ -1206,8 +1239,8 @@ $availableMonths = array_keys($monthlyData);
                     return;
                 }
 
-                // Filter data by date range and selected items
-                var filteredData = allTrendData.filter(function(d) {
+                // Filter graph data by date range and selected items
+                var filteredData = allGraphData.filter(function(d) {
                     var dateMatch = d.eventDate >= fromDate && d.eventDate <= toDate;
                     var itemMatch = selectedItems.includes(d.categoryId.toString());
                     return dateMatch && itemMatch;

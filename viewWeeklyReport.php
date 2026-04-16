@@ -92,36 +92,40 @@
         return $b->getId() - $a->getId();
     });
 
-    // Build event pairs (warehouse + matching pantry)
+    // Build event triplets (warehouse + pantry + pallet)
     $eventPairs = array();
     foreach($allEventObjects as $event) {
         if($event->getLocation() == 'Warehouse') {
-            $pantryEvent = get_matching_inventoryEvent($event);
+            $matches = get_matching_inventoryEvent($event);
+            $pantryEvent = $matches['Pantry'] ?? null;
+            $palletEvent = $matches['Pallet'] ?? null;
             $eventPairs[] = array(
                 'warehouse' => $event,
                 'pantry' => $pantryEvent,
+                'pallet' => $palletEvent,
                 'date' => $event->getDate(),
                 'warehouseId' => $event->getId(),
-                'pantryId' => $pantryEvent ? $pantryEvent->getId() : null
+                'pantryId' => $pantryEvent ? $pantryEvent->getId() : null,
+                'palletId' => $palletEvent ? $palletEvent->getId() : null
             );
         }
     }
 
-    // Also add pantry events with no matching warehouse
-    foreach($allEventObjects as $event) {
-        if($event->getLocation() == 'Pantry') {
-            $warehouseEvent = get_matching_inventoryEvent($event);
-            if($warehouseEvent === null) {
-                $eventPairs[] = array(
-                    'warehouse' => null,
-                    'pantry' => $event,
-                    'date' => $event->getDate(),
-                    'warehouseId' => null,
-                    'pantryId' => $event->getId()
-                );
-            }
-        }
-    }
+    // OLD CODE - orphan pantry logic (no longer needed with triplets)
+    // foreach($allEventObjects as $event) {
+    //     if($event->getLocation() == 'Pantry') {
+    //         $warehouseEvent = get_matching_inventoryEvent($event);
+    //         if($warehouseEvent === null) {
+    //             $eventPairs[] = array(
+    //                 'warehouse' => null,
+    //                 'pantry' => $event,
+    //                 'date' => $event->getDate(),
+    //                 'warehouseId' => null,
+    //                 'pantryId' => $event->getId()
+    //             );
+    //         }
+    //     }
+    // }
 
     // Re-sort pairs by date (newest first)
     usort($eventPairs, function($a, $b) {
@@ -168,7 +172,7 @@
         }
     }
 
-    // Get current counts for selected pair
+    // Get current counts for selected triplet
     $currentCounts = array();
     if($selectedPairIndex !== null) {
         $selectedPair = $eventPairs[$selectedPairIndex];
@@ -181,6 +185,10 @@
         /* Get pantry counts */
         if($selectedPair['pantry']) {
             $current_item_counts = array_merge($current_item_counts, get_itemCounts_by_inventoryEvent($selectedPair['pantryId']));
+        }
+        /* Get pallet counts */
+        if(isset($selectedPair['pallet']) && $selectedPair['pallet']) {
+            $current_item_counts = array_merge($current_item_counts, get_itemCounts_by_inventoryEvent($selectedPair['palletId']));
         }
 
         /* Sum up totals by category */
@@ -200,7 +208,7 @@
         }
     }
 
-    // Get previous counts (the pair before selected in sorted list)
+    // Get previous counts (the triplet before selected in sorted list)
     $previousCounts = array();
     if($selectedPairIndex !== null && isset($eventPairs[$selectedPairIndex + 1])) {
         $previousPair = $eventPairs[$selectedPairIndex + 1];
@@ -213,6 +221,10 @@
         /* Get pantry counts */
         if($previousPair['pantry']) {
             $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($previousPair['pantryId']));
+        }
+        /* Get pallet counts */
+        if(isset($previousPair['pallet']) && $previousPair['pallet']) {
+            $prev_item_counts = array_merge($prev_item_counts, get_itemCounts_by_inventoryEvent($previousPair['palletId']));
         }
 
         /* Sum up totals by category */
@@ -262,12 +274,19 @@
         $weeksLeft = "N/A";
         $monthsLeft = "N/A";
 
-        if (isset($consumptionRates[$itemName]) && $consumptionRates[$itemName] > 0 && $totalItems > 0) {
+        if ($totalItems == 0) {
+            // No items = 0 days/weeks/months left
+            $daysLeft = 0;
+            $weeksLeft = 0;
+            $monthsLeft = 0;
+        } else if (isset($consumptionRates[$itemName]) && $consumptionRates[$itemName] > 0) {
+            // Has items and consumption rate - calculate
             $rate = $consumptionRates[$itemName];
             $daysLeft = round($totalItems / $rate);
             $weeksLeft = round($daysLeft / 4);
             $monthsLeft = round($weeksLeft / 4);
         }
+        // else: items > 0 but no consumption rate - stays N/A
 
         // Show all items including those with 0 quantity
         $weeklyItems[] = array(
@@ -722,9 +741,9 @@
                                         $daysVal = is_numeric($item['days_left']) ? (int)$item['days_left'] : null;
 
                                         if ($daysVal !== null) {
-                                            if ($daysVal >= 120) {
+                                            if ($daysVal >= 30) {
                                                 $rowClass = 'row-green';
-                                            } elseif ($daysVal >= 50) {
+                                            } elseif ($daysVal >= 14) {
                                                 $rowClass = 'row-yellow';
                                             } else {
                                                 $rowClass = 'row-red';

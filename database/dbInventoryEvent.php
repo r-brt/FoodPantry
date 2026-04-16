@@ -147,119 +147,181 @@ function get_all_inventoryEvents() {
  }
 
 /*
- * return the Inventory Event that pairs with given event
- * the matching Inventory Event must have a different location (Warehouse vs Pantry)
- * and the date must be within the MAX_DAY_RANGE from the given event.
+ * return all Inventory Events that pair with given event (Warehouse, Pantry, Pallet)
+ * returns array keyed by location: ['Pantry' => event, 'Pallet' => event]
+ * uses closest ID logic for multiple entries per date
  */
 
- function get_matching_inventoryEvent($first_event){
-    /* number of days in the future and the past it will look to find a match */
-    $MAX_DAY_RANGE = 1;
-
-    if($first_event->getLocation() == "Pantry"){
-        $matching_loc = "Warehouse";
-    }
-    else{
-        $matching_loc = "Pantry";
-    }
-
+function get_matching_inventoryEvent($first_event){
     $event_date = $first_event->getDate();
+    $first_location = $first_event->getLocation();
+    $first_id = $first_event->getId();
 
-    /* check the given event date first (event date + 0 days), then check in the future and the past
-     * 1 day at a time, until a matching event is found or the MAX_DAY_RANGE is reached */
-    for ($i=0; $i <=$MAX_DAY_RANGE; $i++){ 
-        /* add $i days to the event date and get all inventory events on that date */
-        $future_matching_date = date_create($event_date);
-        date_add($future_matching_date, date_interval_create_from_date_string($i.' days')); 
-        $future_matching_events = get_all_inventoryEvents_by_date(date_format($future_matching_date, 'Y-m-d'));
+    $all_events = get_all_inventoryEvents_by_date($event_date);
 
-        $matching_events = array();
-        foreach($future_matching_events as $event){
-            if($event->getLocation() == $matching_loc)
-                $matching_events[] = $event;
+    $results = array();
+    foreach($all_events as $event){
+        $location = $event->getLocation();
+        if($location != $first_location){
+            if(!isset($results[$location]) ||
+               abs($event->getId() - $first_id) < abs($results[$location]->getId() - $first_id)){
+                $results[$location] = $event;
+            }
         }
-
-        /* do not check past day if i = 0 (event date +/- 0 is the same) */
-        if($i != 0){
-            /* subtract $i days to the event date and get all inventory events on that date */
-            $past_matching_date = date_create($event_date);
-            date_sub($past_matching_date, date_interval_create_from_date_string($i.' days')); 
-            $past_matching_events = get_all_inventoryEvents_by_date(date_format($past_matching_date, 'Y-m-d'));
-            foreach($past_matching_events as $event){
-                if($event->getLocation() == $matching_loc)
-                    $matching_events[] = $event;
-            }
-        }        
-
-        /* if only 1 matching event found, return that inventory event. */
-        if(count($matching_events) == 1)
-            return $matching_events[0];
-        else if(count($matching_events) > 1){
-            /* if multiple inventory events match the given event
-             * find the one with the closest ID to the first event.
-             * This works because warehouse and pantry are created sequentially
-             * (warehouse first, then pantry with the next ID)
-             */
-            $first_event_id = $first_event->getId();
-            $closest_event = $matching_events[0];
-            $closest_diff = abs($matching_events[0]->getId() - $first_event_id);
-
-            foreach($matching_events as $event){
-                $diff = abs($event->getId() - $first_event_id);
-                if($diff < $closest_diff){
-                    $closest_diff = $diff;
-                    $closest_event = $event;
-                }
-            }
-            return $closest_event;
-        }    
     }
 
-    /* if no matches found, return null */
-    return null;
+    return $results;
 }
 
+// OLD CODE - get_matching_inventoryEvent (returned single event, not array)
+// /*
+//  * return the Inventory Event that pairs with given event
+//  * the matching Inventory Event must have a different location (Warehouse vs Pantry)
+//  * and the date must be within the MAX_DAY_RANGE from the given event.
+//  */
+//
+// function get_matching_inventoryEvent($first_event){
+//     /* number of days in the future and the past it will look to find a match */
+//     $MAX_DAY_RANGE = 1;
+//
+//     if($first_event->getLocation() == "Pantry"){
+//         $matching_loc = "Warehouse";
+//     }
+//     else{
+//         $matching_loc = "Pantry";
+//     }
+//
+//     $event_date = $first_event->getDate();
+//
+//     /* check the given event date first (event date + 0 days), then check in the future and the past
+//      * 1 day at a time, until a matching event is found or the MAX_DAY_RANGE is reached */
+//     for ($i=0; $i <=$MAX_DAY_RANGE; $i++){
+//         /* add $i days to the event date and get all inventory events on that date */
+//         $future_matching_date = date_create($event_date);
+//         date_add($future_matching_date, date_interval_create_from_date_string($i.' days'));
+//         $future_matching_events = get_all_inventoryEvents_by_date(date_format($future_matching_date, 'Y-m-d'));
+//
+//         $matching_events = array();
+//         foreach($future_matching_events as $event){
+//             if($event->getLocation() == $matching_loc)
+//                 $matching_events[] = $event;
+//         }
+//
+//         /* do not check past day if i = 0 (event date +/- 0 is the same) */
+//         if($i != 0){
+//             /* subtract $i days to the event date and get all inventory events on that date */
+//             $past_matching_date = date_create($event_date);
+//             date_sub($past_matching_date, date_interval_create_from_date_string($i.' days'));
+//             $past_matching_events = get_all_inventoryEvents_by_date(date_format($past_matching_date, 'Y-m-d'));
+//             foreach($past_matching_events as $event){
+//                 if($event->getLocation() == $matching_loc)
+//                     $matching_events[] = $event;
+//             }
+//         }
+//
+//         /* if only 1 matching event found, return that inventory event. */
+//         if(count($matching_events) == 1)
+//             return $matching_events[0];
+//         else if(count($matching_events) > 1){
+//             /* if multiple inventory events match the given event
+//              * find the one with the closest ID to the first event.
+//              * This works because warehouse and pantry are created sequentially
+//              * (warehouse first, then pantry with the next ID)
+//              */
+//             $first_event_id = $first_event->getId();
+//             $closest_event = $matching_events[0];
+//             $closest_diff = abs($matching_events[0]->getId() - $first_event_id);
+//
+//             foreach($matching_events as $event){
+//                 $diff = abs($event->getId() - $first_event_id);
+//                 if($diff < $closest_diff){
+//                     $closest_diff = $diff;
+//                     $closest_event = $event;
+//                 }
+//             }
+//             return $closest_event;
+//         }
+//     }
+//
+//     /* if no matches found, return null */
+//     return null;
+// }
+
 /*
- * return the pair (warehouse and pantry) of Inventory Events from before the given event
- * the matching Inventory Events must but be within the MAX_DAYS_LOOK_BACK
+ * return the triplet (warehouse, pantry, pallet) of Inventory Events from before the given event
+ * the matching Inventory Events must be within the MAX_DAYS_LOOK_BACK
+ * returns array: [0 => warehouse, 1 => pantry, 2 => pallet] or null if not found
  */
 
 function get_previous_inventoryEvent_pair($current_event){
-    /* max days it will look into the past to find the previous inventory event */
     $MAX_DAYS_LOOK_BACK = 100;
 
-    $current_pair[] = $current_event;
-    $current_event_2 = get_matching_inventoryEvent($current_event);
-
-    /* if the a second event in the pair exists, add it to the array.
-     * else add the first event again so there are still 2 events in the array */
-    if($current_event_2)
-        $current_pair[] = $current_event_2;
-    else
-        $current_pair[] = $current_event;
+    $current_matches = get_matching_inventoryEvent($current_event);
+    $current_ids = array($current_event->getId());
+    foreach($current_matches as $match){
+        if($match) $current_ids[] = $match->getId();
+    }
 
     $current_date = $current_event->getDate();
-    $prev_pair = array();
 
-    /* loop backwards, 1 day at a time, looking for an inventory event */
     for($i = 0; $i < $MAX_DAYS_LOOK_BACK; $i++){
         $past_date = date_create($current_date);
-        date_sub($past_date, date_interval_create_from_date_string($i.' days')); 
+        date_sub($past_date, date_interval_create_from_date_string($i.' days'));
         $past_events = get_all_inventoryEvents_by_date(date_format($past_date, 'Y-m-d'));
 
-        /* if an event is found, and if it is not one of the original pair,
-         * add this event to the previous pair array
-         * and find the pair of the  event if it exists. */
         if(count($past_events) >= 1){
             foreach($past_events as $event){
-                if($event->getId() != $current_pair[0]->getId() && $event->getId() != $current_pair[1]->getId()){
-                    $prev_pair[] = $event;
-                    $prev_pair[] = get_matching_inventoryEvent($event);
-                    return $prev_pair;
+                if(!in_array($event->getId(), $current_ids)){
+                    $matches = get_matching_inventoryEvent($event);
+                    $prev_triplet = array();
+                    $prev_triplet[0] = $event;
+                    $prev_triplet[1] = $matches['Pantry'] ?? $matches['Warehouse'] ?? null;
+                    $prev_triplet[2] = $matches['Pallet'] ?? null;
+                    return $prev_triplet;
                 }
             }
         }
     }
-    /* if no events have been found in the max range, return null */
     return null;
 }
+
+// OLD CODE - get_previous_inventoryEvent_pair (returned pair, not triplet)
+// function get_previous_inventoryEvent_pair($current_event){
+//     /* max days it will look into the past to find the previous inventory event */
+//     $MAX_DAYS_LOOK_BACK = 100;
+//
+//     $current_pair[] = $current_event;
+//     $current_event_2 = get_matching_inventoryEvent($current_event);
+//
+//     /* if the a second event in the pair exists, add it to the array.
+//      * else add the first event again so there are still 2 events in the array */
+//     if($current_event_2)
+//         $current_pair[] = $current_event_2;
+//     else
+//         $current_pair[] = $current_event;
+//
+//     $current_date = $current_event->getDate();
+//     $prev_pair = array();
+//
+//     /* loop backwards, 1 day at a time, looking for an inventory event */
+//     for($i = 0; $i < $MAX_DAYS_LOOK_BACK; $i++){
+//         $past_date = date_create($current_date);
+//         date_sub($past_date, date_interval_create_from_date_string($i.' days'));
+//         $past_events = get_all_inventoryEvents_by_date(date_format($past_date, 'Y-m-d'));
+//
+//         /* if an event is found, and if it is not one of the original pair,
+//          * add this event to the previous pair array
+//          * and find the pair of the  event if it exists. */
+//         if(count($past_events) >= 1){
+//             foreach($past_events as $event){
+//                 if($event->getId() != $current_pair[0]->getId() && $event->getId() != $current_pair[1]->getId()){
+//                     $prev_pair[] = $event;
+//                     $prev_pair[] = get_matching_inventoryEvent($event);
+//                     return $prev_pair;
+//                 }
+//             }
+//         }
+//     }
+//     /* if no events have been found in the max range, return null */
+//     return null;
+// }

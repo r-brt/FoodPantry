@@ -27,22 +27,26 @@
     $pantryId = $_GET['pantryId'] ?? null;
 
     if($warehouseId) {
-        /* Warehouse-anchored: get warehouse, find matching pantry */
+        /* Warehouse-anchored: get warehouse, find matching pantry and pallet */
         $warehouseEvent = retrieve_inventoryEvent($warehouseId);
         if(!$warehouseEvent || $warehouseEvent->getLocation() != 'Warehouse') {
             echo "Warehouse event not found";
             die();
         }
-        $pantryEvent = get_matching_inventoryEvent($warehouseEvent);
+        $matches = get_matching_inventoryEvent($warehouseEvent);
+        $pantryEvent = $matches['Pantry'] ?? null;
+        $palletEvent = $matches['Pallet'] ?? null;
         $eventDate = $warehouseEvent->getDate();
     } else if($pantryId) {
-        /* Pantry-anchored: get pantry, find matching warehouse */
+        /* Pantry-anchored: get pantry, find matching warehouse and pallet */
         $pantryEvent = retrieve_inventoryEvent($pantryId);
         if(!$pantryEvent || $pantryEvent->getLocation() != 'Pantry') {
             echo "Pantry event not found";
             die();
         }
-        $warehouseEvent = get_matching_inventoryEvent($pantryEvent);
+        $matches = get_matching_inventoryEvent($pantryEvent);
+        $warehouseEvent = $matches['Warehouse'] ?? null;
+        $palletEvent = $matches['Pallet'] ?? null;
         $eventDate = $pantryEvent->getDate();
     } else {
         echo "Invalid event ID";
@@ -66,6 +70,16 @@
         foreach($pantryItemCounts as $count) {
             $categoryId = $count->getItemCategory();
             $pantryCountsMap[$categoryId] = $count;
+        }
+    }
+
+    /* Get item counts for pallet (if exists) */
+    $palletCountsMap = array();
+    if($palletEvent) {
+        $palletItemCounts = get_itemCounts_by_inventoryEvent($palletEvent->getId());
+        foreach($palletItemCounts as $count) {
+            $categoryId = $count->getItemCategory();
+            $palletCountsMap[$categoryId] = $count;
         }
     }
 
@@ -163,6 +177,41 @@
                 }
             }
 
+            /* Update quantities for pallet (if exists) */
+            if($palletEvent) {
+                foreach($allCategories as $category) {
+                    if($category->getStatus() != 'Active') continue;
+
+                    $categoryId = $category->getId();
+                    $fieldName = 'pallet_qty_' . $categoryId;
+
+                    if(isset($_POST[$fieldName]) && isset($palletCountsMap[$categoryId])) {
+                        try{
+                            $newQty = +$_POST[$fieldName];
+                        }
+                        catch(TypeError $e){
+                            $newQty = " ";
+                        }
+
+                        if(!is_int($newQty)){
+                            $errors[] = 'Pallet - ' . $category->getName() . ' quantity must be in whole numbers';
+                            continue;
+                        }
+                        else if($newQty < 0){
+                            $errors[] = 'Pallet - ' . $category->getName() . ' quantity cannot be negative';
+                            continue;
+                        }
+
+                        $itemCountId = $palletCountsMap[$categoryId]->getId();
+                        $oldQty = $palletCountsMap[$categoryId]->getQuantity();
+
+                        if($oldQty != $newQty) {
+                            update_quantity($itemCountId, $newQty);
+                        }
+                    }
+                }
+            }
+
             if(empty($errors)) {
                 $success = true;
                 /* Refresh counts by re-fetching from database */
@@ -180,6 +229,14 @@
                     foreach($pantryItemCounts as $count) {
                         $categoryId = $count->getItemCategory();
                         $pantryCountsMap[$categoryId] = $count;
+                    }
+                }
+                if($palletEvent) {
+                    $palletItemCounts = get_itemCounts_by_inventoryEvent($palletEvent->getId());
+                    $palletCountsMap = array();
+                    foreach($palletItemCounts as $count) {
+                        $categoryId = $count->getItemCategory();
+                        $palletCountsMap[$categoryId] = $count;
                     }
                 }
             }
@@ -345,6 +402,7 @@
                         <th>Items Per Box</th>
                         <th>Warehouse</th>
                         <th>Pantry</th>
+                        <th>Pallet</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -364,6 +422,11 @@
                         // Pantry quantity
                         $pantryQty = isset($pantryCountsMap[$categoryId])
                             ? $pantryCountsMap[$categoryId]->getQuantity()
+                            : null;
+
+                        // Pallet quantity
+                        $palletQty = isset($palletCountsMap[$categoryId])
+                            ? $palletCountsMap[$categoryId]->getQuantity()
                             : null;
                         ?>
                         <tr>
@@ -390,6 +453,19 @@
                                     <input type="number"
                                            name="pantry_qty_<?= $categoryId ?>"
                                            value="<?= $pantryQty ?>"
+                                           min="0"
+                                           class="updateInv-qty">
+                                <?php else: ?>
+                                    <span style="color: var(--inactive-font-color);">-</span>
+                                <?php endif; ?>
+                            </td>
+
+                            <!-- Pallet Input -->
+                            <td>
+                                <?php if($palletEvent && $palletQty !== null): ?>
+                                    <input type="number"
+                                           name="pallet_qty_<?= $categoryId ?>"
+                                           value="<?= $palletQty ?>"
                                            min="0"
                                            class="updateInv-qty">
                                 <?php else: ?>
