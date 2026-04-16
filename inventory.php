@@ -27,36 +27,40 @@ usort($allEventObjects, function($a, $b) {
     return $b->getId() - $a->getId();
 });
 
-// Build event pairs (warehouse + matching pantry)
+// Build event triplets (warehouse + pantry + pallet)
 $eventPairs = array();
 foreach($allEventObjects as $event) {
     if($event->getLocation() == 'Warehouse') {
-        $pantryEvent = get_matching_inventoryEvent($event);
+        $matches = get_matching_inventoryEvent($event);
+        $pantryEvent = $matches['Pantry'] ?? null;
+        $palletEvent = $matches['Pallet'] ?? null;
         $eventPairs[] = array(
             'warehouse' => $event,
             'pantry' => $pantryEvent,
+            'pallet' => $palletEvent,
             'date' => $event->getDate(),
             'warehouseId' => $event->getId(),
-            'pantryId' => $pantryEvent ? $pantryEvent->getId() : null
+            'pantryId' => $pantryEvent ? $pantryEvent->getId() : null,
+            'palletId' => $palletEvent ? $palletEvent->getId() : null
         );
     }
 }
 
-// Also add pantry events with no matching warehouse
-foreach($allEventObjects as $event) {
-    if($event->getLocation() == 'Pantry') {
-        $warehouseEvent = get_matching_inventoryEvent($event);
-        if($warehouseEvent === null) {
-            $eventPairs[] = array(
-                'warehouse' => null,
-                'pantry' => $event,
-                'date' => $event->getDate(),
-                'warehouseId' => null,
-                'pantryId' => $event->getId()
-            );
-        }
-    }
-}
+// OLD CODE - orphan pantry logic (no longer needed with triplets)
+// foreach($allEventObjects as $event) {
+//     if($event->getLocation() == 'Pantry') {
+//         $warehouseEvent = get_matching_inventoryEvent($event);
+//         if($warehouseEvent === null) {
+//             $eventPairs[] = array(
+//                 'warehouse' => null,
+//                 'pantry' => $event,
+//                 'date' => $event->getDate(),
+//                 'warehouseId' => null,
+//                 'pantryId' => $event->getId()
+//             );
+//         }
+//     }
+// }
 
 // Re-sort pairs by date (newest first)
 usort($eventPairs, function($a, $b) {
@@ -88,23 +92,27 @@ if ($selectedPairIndex !== null) {
     $selectedPair = $eventPairs[$selectedPairIndex];
     $sameDateEvents = [];
     
-    // Collect warehouse and pantry events from the pair
+    // Collect warehouse, pantry, and pallet events from the triplet
     if ($selectedPair['warehouse']) {
         $sameDateEvents[] = $selectedPair['warehouse'];
     }
     if ($selectedPair['pantry']) {
         $sameDateEvents[] = $selectedPair['pantry'];
     }
-    
+    if (isset($selectedPair['pallet']) && $selectedPair['pallet']) {
+        $sameDateEvents[] = $selectedPair['pallet'];
+    }
+
     // Get all active item categories
     $activeCategories = get_all_active_ItemCategory();
-    
+
     // Build items array with location-specific counts
     foreach ($activeCategories as $category) {
         $categoryId = $category->getId();
         $warehouseBoxes = 0;
         $pantryBoxes = 0;
-        
+        $palletBoxes = 0;
+
         // Check all events on the same date for this category
         foreach ($sameDateEvents as $event) {
             $eventCounts = get_itemCounts_by_inventoryEvent($event->getId());
@@ -114,25 +122,26 @@ if ($selectedPairIndex !== null) {
                         $warehouseBoxes += $count->getQuantity();
                     } elseif ($event->getLocation() === 'Pantry') {
                         $pantryBoxes += $count->getQuantity();
+                    } elseif ($event->getLocation() === 'Pallet') {
+                        $palletBoxes += $count->getQuantity();
                     }
                 }
             }
         }
-        
-        $totalBoxes = $warehouseBoxes + $pantryBoxes;
-        
-        // Only include items with quantity > 0
-        
-            $items[] = [
-                'id' => $categoryId,
-                'item_name' => $category->getName(),
-                'itemsPerBox' => $category->getItemsPerBox(),
-                'bananaBox' => $category->getBananaBox(),
-                'warehouse_boxes' => $warehouseBoxes,
-                'pantry_boxes' => $pantryBoxes,
-                'total_boxes' => $totalBoxes
-            ];
-        
+
+        $totalBoxes = $warehouseBoxes + $pantryBoxes + $palletBoxes;
+
+        $items[] = [
+            'id' => $categoryId,
+            'item_name' => $category->getName(),
+            'itemsPerBox' => $category->getItemsPerBox(),
+            'bananaBox' => $category->getBananaBox(),
+            'warehouse_boxes' => $warehouseBoxes,
+            'pantry_boxes' => $pantryBoxes,
+            'pallet_boxes' => $palletBoxes,
+            'total_boxes' => $totalBoxes
+        ];
+
     }
     
     // Sort items by name
@@ -367,6 +376,7 @@ if ($selectedPairIndex !== null) {
                                 <th>Item Name</th>
                                 <th>Warehouse</th>
                                 <th>Pantry</th>
+                                <th>Pallet</th>
                                 <th>Total Boxes</th>
                                 <th>Banana Box</th>
                                 <th>Items Per Box</th>
@@ -381,6 +391,7 @@ if ($selectedPairIndex !== null) {
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= $item['warehouse_boxes'] > 0 ? htmlspecialchars($item['warehouse_boxes']) : '-' ?></td>
                                         <td><?= $item['pantry_boxes'] > 0 ? htmlspecialchars($item['pantry_boxes']) : '-' ?></td>
+                                        <td><?= $item['pallet_boxes'] > 0 ? htmlspecialchars($item['pallet_boxes']) : '-' ?></td>
                                         <td><?= htmlspecialchars($item['total_boxes']) ?></td>
                                         <td><?= $item['bananaBox'] == 1 ? '✓' : '' ?></td>
                                         <td><?= htmlspecialchars($item['itemsPerBox']) ?></td>
@@ -389,7 +400,7 @@ if ($selectedPairIndex !== null) {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="8" class="empty-state">No items found.</td>
+                                    <td colspan="9" class="empty-state">No items found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>

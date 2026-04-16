@@ -126,20 +126,28 @@
             }
         }
 
-        /* add pallet totals to Warehouse only */
+        /* build pallet items array (from pallet_totals if checkbox checked, zeros if not) */
+        $palletItems = array();
         if($include_pallets){
             foreach($pallet_totals as $categoryId => $quantity){
-                if(isset($warehouseItems[$categoryId])){
-                    $warehouseItems[$categoryId] += $quantity;
-                }
-                else{
-                    $warehouseItems[$categoryId] = $quantity;
-                }
+                $palletItems[$categoryId] = $quantity;
             }
         }
 
+        // OLD CODE - add pallet totals to Warehouse only
+        // if($include_pallets){
+        //     foreach($pallet_totals as $categoryId => $quantity){
+        //         if(isset($warehouseItems[$categoryId])){
+        //             $warehouseItems[$categoryId] += $quantity;
+        //         }
+        //         else{
+        //             $warehouseItems[$categoryId] = $quantity;
+        //         }
+        //     }
+        // }
+
         /* if at least 1 item was entered, create inventory events and add items to database */
-        if(empty($errors) && (count($warehouseItems) > 0 || count($pantryItems) > 0)){
+        if(empty($errors) && (count($warehouseItems) > 0 || count($pantryItems) > 0 || count($palletItems) > 0)){
 
             /* auto-fill missing items with 0 for complete analytics data */
             $allCategories = get_all_ItemCategory();
@@ -151,9 +159,12 @@
                 if(!isset($pantryItems[$categoryId])){
                     $pantryItems[$categoryId] = 0;
                 }
+                if(!isset($palletItems[$categoryId])){
+                    $palletItems[$categoryId] = 0;
+                }
             }
 
-            /* create BOTH warehouse and pantry events */
+            /* create warehouse, pantry, and pallet events */
             $personId = retrieve_person($userID)->get_personId();
 
             /* create warehouse inventory event */
@@ -166,6 +177,12 @@
             $pantryEventId = add_inventoryEvent($personId, 'Pantry', $date);
             foreach($pantryItems as $categoryId => $quantity){
                 add_itemCount($pantryEventId, $categoryId, $quantity);
+            }
+
+            /* create pallet inventory event */
+            $palletEventId = add_inventoryEvent($personId, 'Pallet', $date);
+            foreach($palletItems as $categoryId => $quantity){
+                add_itemCount($palletEventId, $categoryId, $quantity);
             }
 
             $submit_success = true;
@@ -460,7 +477,7 @@
             <?php
                 /* Display success message after submitting inventory */
                 if($submit_success == true){
-                    echo("<h4 style=\"color:black;\"><i>Inventory Submitted: ".date("m/d/Y", strtotime($date))." (Warehouse & Pantry)</i></h4>");
+                    echo("<h4 style=\"color:black;\"><i>Inventory Submitted: ".date("m/d/Y", strtotime($date))." (Warehouse & Pantry & Pallet)</i></h4>");
                 }
                 /* Display errors from submitting inventory */
                 if (!empty($errors)): ?>
