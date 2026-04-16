@@ -20,6 +20,15 @@
     require_once('database/dbItemCounts.php');
     require_once('database/dbPalletEvent.php');
 
+    // Check if inventory exists for a date
+    if (isset($_GET['action']) && $_GET['action'] === 'checkDate') {
+        $date = $_GET['date'] ?? '';
+        $events = get_all_inventoryEvents_by_date($date);
+        header('Content-Type: application/json');
+        echo json_encode(['exists' => !empty($events)]);
+        exit;
+    }
+
     /* get the total pallet inventory for each category to show in the pallet column */
     $pallet_totals = array();
     $pallets = get_all_palletEvents();
@@ -164,28 +173,100 @@
                 }
             }
 
-            /* create warehouse, pantry, and pallet events */
+            /* create or update warehouse, pantry, and pallet events */
             $personId = retrieve_person($userID)->get_personId();
+            $overwrite = isset($_POST['overwrite']) && $_POST['overwrite'] === '1';
+            $existingEvents = get_all_inventoryEvents_by_date($date);
 
-            /* create warehouse inventory event */
-            $warehouseEventId = add_inventoryEvent($personId, 'Warehouse', $date);
-            foreach($warehouseItems as $categoryId => $quantity){
-                add_itemCount($warehouseEventId, $categoryId, $quantity);
+            if ($overwrite && !empty($existingEvents)) {
+                /* OVERWRITE MODE - Update existing triplet */
+                $warehouseEvent = null;
+                $pantryEvent = null;
+                $palletEvent = null;
+
+                foreach ($existingEvents as $event) {
+                    if ($event->getLocation() == 'Warehouse') {
+                        $warehouseEvent = $event;
+                        $matches = get_matching_inventoryEvent($event);
+                        $pantryEvent = $matches['Pantry'] ?? null;
+                        $palletEvent = $matches['Pallet'] ?? null;
+                        break;
+                    }
+                }
+
+                /* Update Warehouse itemcounts */
+                if ($warehouseEvent) {
+                    $existingCounts = get_itemCounts_by_inventoryEvent($warehouseEvent->getId());
+                    $existingMap = [];
+                    foreach ($existingCounts as $count) {
+                        $existingMap[$count->getItemCategory()] = $count;
+                    }
+                    foreach ($warehouseItems as $categoryId => $quantity) {
+                        if (isset($existingMap[$categoryId])) {
+                            update_quantity($existingMap[$categoryId]->getId(), $quantity);
+                        } else {
+                            add_itemCount($warehouseEvent->getId(), $categoryId, $quantity);
+                        }
+                    }
+                }
+
+                /* Update Pantry itemcounts */
+                if ($pantryEvent) {
+                    $existingCounts = get_itemCounts_by_inventoryEvent($pantryEvent->getId());
+                    $existingMap = [];
+                    foreach ($existingCounts as $count) {
+                        $existingMap[$count->getItemCategory()] = $count;
+                    }
+                    foreach ($pantryItems as $categoryId => $quantity) {
+                        if (isset($existingMap[$categoryId])) {
+                            update_quantity($existingMap[$categoryId]->getId(), $quantity);
+                        } else {
+                            add_itemCount($pantryEvent->getId(), $categoryId, $quantity);
+                        }
+                    }
+                }
+
+                /* Update Pallet itemcounts */
+                if ($palletEvent) {
+                    $existingCounts = get_itemCounts_by_inventoryEvent($palletEvent->getId());
+                    $existingMap = [];
+                    foreach ($existingCounts as $count) {
+                        $existingMap[$count->getItemCategory()] = $count;
+                    }
+                    foreach ($palletItems as $categoryId => $quantity) {
+                        if (isset($existingMap[$categoryId])) {
+                            update_quantity($existingMap[$categoryId]->getId(), $quantity);
+                        } else {
+                            add_itemCount($palletEvent->getId(), $categoryId, $quantity);
+                        }
+                    }
+                }
+
+                $submit_success = true;
+
+            } else {
+                /* NEW MODE - Create new triplet */
+
+                /* create warehouse inventory event */
+                $warehouseEventId = add_inventoryEvent($personId, 'Warehouse', $date);
+                foreach($warehouseItems as $categoryId => $quantity){
+                    add_itemCount($warehouseEventId, $categoryId, $quantity);
+                }
+
+                /* create pantry inventory event */
+                $pantryEventId = add_inventoryEvent($personId, 'Pantry', $date);
+                foreach($pantryItems as $categoryId => $quantity){
+                    add_itemCount($pantryEventId, $categoryId, $quantity);
+                }
+
+                /* create pallet inventory event */
+                $palletEventId = add_inventoryEvent($personId, 'Pallet', $date);
+                foreach($palletItems as $categoryId => $quantity){
+                    add_itemCount($palletEventId, $categoryId, $quantity);
+                }
+
+                $submit_success = true;
             }
-
-            /* create pantry inventory event */
-            $pantryEventId = add_inventoryEvent($personId, 'Pantry', $date);
-            foreach($pantryItems as $categoryId => $quantity){
-                add_itemCount($pantryEventId, $categoryId, $quantity);
-            }
-
-            /* create pallet inventory event */
-            $palletEventId = add_inventoryEvent($personId, 'Pallet', $date);
-            foreach($palletItems as $categoryId => $quantity){
-                add_itemCount($palletEventId, $categoryId, $quantity);
-            }
-
-            $submit_success = true;
         }
         else{
             /* if errors have already been detected array was emptied. Do not show error for missing data */
@@ -557,6 +638,7 @@
                             </table>
                         </div>
                     </div>
+                    <input type="hidden" id="overwrite" name="overwrite" value="0">
                     <input type="submit" value="Submit Inventory" />
                 </form>
                 <script>
@@ -576,7 +658,15 @@
                 </script>
                 <script>
                     /* if form Date is in the past or the future, confirm before submitting form */
+                    /* also check if inventory already exists for the date */
                     function validateFormDate() {
+                        var overwriteField = document.getElementById('overwrite');
+
+                        // If already confirmed overwrite, skip inventory check
+                        if (overwriteField.value === '1') {
+                            return true;
+                        }
+
                         const [formYear,formMonth,formDay] = document.forms["invForm"]["date"].value.split("-");
                         /* check for invalid input */
                         if(formYear == null || formMonth == null || formDay == null){
@@ -587,6 +677,25 @@
                         else if(isNaN(new Date(document.forms["invForm"]["date"].value))){
                             alert("Invalid Date");
                             return false;
+                        }
+
+                        var dateValue = document.forms["invForm"]["date"].value;
+
+                        // Check if inventory exists for this date
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('GET', 'viewUpdateInventory.php?action=checkDate&date=' + dateValue, false);
+                        xhr.send();
+
+                        if (xhr.status === 200) {
+                            var response = JSON.parse(xhr.responseText);
+                            if (response.exists) {
+                                if (confirm("Inventory already exists for " + formMonth + "/" + formDay + "/" + formYear +
+                                            "\n\nDo you want to overwrite it?")) {
+                                    overwriteField.value = '1';
+                                } else {
+                                    return false;
+                                }
+                            }
                         }
 
                         let currDate = new Date();
@@ -613,7 +722,7 @@
                         else if(compareDates > 0){
                             return confirm("FUTURE DATE: "+formMonth+"/"+formDay+"/"+formYear+
                                             "\nAre you sure you want to submit?");
-                        }                      
+                        }
                     }
                 </script>
             </div>
