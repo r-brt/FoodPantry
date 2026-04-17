@@ -179,94 +179,39 @@
             $existingEvents = get_all_inventoryEvents_by_date($date);
 
             if ($overwrite && !empty($existingEvents)) {
-                /* OVERWRITE MODE - Update existing triplet */
-                $warehouseEvent = null;
-                $pantryEvent = null;
-                $palletEvent = null;
-
+                /* Overwrite - Delete existing events first */
                 foreach ($existingEvents as $event) {
                     if ($event->getLocation() == 'Warehouse') {
-                        $warehouseEvent = $event;
                         $matches = get_matching_inventoryEvent($event);
-                        $pantryEvent = $matches['Pantry'] ?? null;
-                        $palletEvent = $matches['Pallet'] ?? null;
+                        remove_inventoryEvent($event->getId());
+                        if (isset($matches['Pantry'])) {
+                            remove_inventoryEvent($matches['Pantry']->getId());
+                        }
+                        if (isset($matches['Pallet'])) {
+                            remove_inventoryEvent($matches['Pallet']->getId());
+                        }
                         break;
                     }
                 }
-
-                /* Update Warehouse itemcounts */
-                if ($warehouseEvent) {
-                    $existingCounts = get_itemCounts_by_inventoryEvent($warehouseEvent->getId());
-                    $existingMap = [];
-                    foreach ($existingCounts as $count) {
-                        $existingMap[$count->getItemCategory()] = $count;
-                    }
-                    foreach ($warehouseItems as $categoryId => $quantity) {
-                        if (isset($existingMap[$categoryId])) {
-                            update_quantity($existingMap[$categoryId]->getId(), $quantity);
-                        } else {
-                            add_itemCount($warehouseEvent->getId(), $categoryId, $quantity);
-                        }
-                    }
-                }
-
-                /* Update Pantry itemcounts */
-                if ($pantryEvent) {
-                    $existingCounts = get_itemCounts_by_inventoryEvent($pantryEvent->getId());
-                    $existingMap = [];
-                    foreach ($existingCounts as $count) {
-                        $existingMap[$count->getItemCategory()] = $count;
-                    }
-                    foreach ($pantryItems as $categoryId => $quantity) {
-                        if (isset($existingMap[$categoryId])) {
-                            update_quantity($existingMap[$categoryId]->getId(), $quantity);
-                        } else {
-                            add_itemCount($pantryEvent->getId(), $categoryId, $quantity);
-                        }
-                    }
-                }
-
-                /* Update Pallet itemcounts */
-                if ($palletEvent) {
-                    $existingCounts = get_itemCounts_by_inventoryEvent($palletEvent->getId());
-                    $existingMap = [];
-                    foreach ($existingCounts as $count) {
-                        $existingMap[$count->getItemCategory()] = $count;
-                    }
-                    foreach ($palletItems as $categoryId => $quantity) {
-                        if (isset($existingMap[$categoryId])) {
-                            update_quantity($existingMap[$categoryId]->getId(), $quantity);
-                        } else {
-                            add_itemCount($palletEvent->getId(), $categoryId, $quantity);
-                        }
-                    }
-                }
-
-                $submit_success = true;
-
-            } else {
-                /* NEW MODE - Create new triplet */
-
-                /* create warehouse inventory event */
-                $warehouseEventId = add_inventoryEvent($personId, 'Warehouse', $date);
-                foreach($warehouseItems as $categoryId => $quantity){
-                    add_itemCount($warehouseEventId, $categoryId, $quantity);
-                }
-
-                /* create pantry inventory event */
-                $pantryEventId = add_inventoryEvent($personId, 'Pantry', $date);
-                foreach($pantryItems as $categoryId => $quantity){
-                    add_itemCount($pantryEventId, $categoryId, $quantity);
-                }
-
-                /* create pallet inventory event */
-                $palletEventId = add_inventoryEvent($personId, 'Pallet', $date);
-                foreach($palletItems as $categoryId => $quantity){
-                    add_itemCount($palletEventId, $categoryId, $quantity);
-                }
-
-                $submit_success = true;
             }
+
+            /* Create inventory events */
+            $warehouseEventId = add_inventoryEvent($personId, 'Warehouse', $date);
+            foreach($warehouseItems as $categoryId => $quantity){
+                add_itemCount($warehouseEventId, $categoryId, $quantity);
+            }
+
+            $pantryEventId = add_inventoryEvent($personId, 'Pantry', $date);
+            foreach($pantryItems as $categoryId => $quantity){
+                add_itemCount($pantryEventId, $categoryId, $quantity);
+            }
+
+            $palletEventId = add_inventoryEvent($personId, 'Pallet', $date);
+            foreach($palletItems as $categoryId => $quantity){
+                add_itemCount($palletEventId, $categoryId, $quantity);
+            }
+
+            $submit_success = true;
         }
         else{
             /* if errors have already been detected array was emptied. Do not show error for missing data */
