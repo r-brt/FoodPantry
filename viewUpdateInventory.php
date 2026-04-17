@@ -159,7 +159,7 @@
         if(empty($errors) && (count($warehouseItems) > 0 || count($pantryItems) > 0 || count($palletItems) > 0)){
 
             /* auto-fill missing items with 0 for complete analytics data */
-            $allCategories = get_all_ItemCategory();
+            $allCategories = get_all_active_ItemCategory();
             foreach($allCategories as $category){
                 $categoryId = $category->getId();
                 if(!isset($warehouseItems[$categoryId])){
