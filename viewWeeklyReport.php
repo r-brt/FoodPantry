@@ -34,50 +34,34 @@
     require_once('database/dbItemCounts.php');
     require_once('database/dbShoppingEvent.php');
     require_once('database/dbShoppingCount.php');
-    require_once('database/dbConsumption.php'); 
+    require_once('database/dbConsumption.php');
 
-    // Consumption rates (items per day) - This is the available list for the moment.
-  //  $consumptionRates = [
-  //      'Pancake' => 10.97,
-  //      'Oatmeal' => 10.97,
-  //      'Mixed Veg' => 22.17,
-  //      'Chicken' => 13.49,
-  //      'Cereal' => 13.49,
-  //      'Fruit' => 22.17,
-  //      'Snacks' => 21.93,
-  //      'Pasta' => 17.83,
-  //      'Tomato - Canned' => 26.75,
-  //      'Spaghetti Sauce' => 13.49,
-  //      'Corn' => 35.19,
-  //      'Beans - Canned' => 38.19,
-  //      'Beans - Dry' => 22.41,
-  //      'Tuna' => 26.75,
-  //      'Ramen' => 53.25,
-  //      'M&C' => 53.25,
-  //      'Green Beans' => 35.19,
-  //      'Canned Meals' => 13.73,
-  //      'Spaghetti' => 17.59,
-  //      'Soup' => 35.19,
-  //      'Peanut Butter' => 13.25,
-  //      'Jelly' => 13.25,
-  //      'Oil' => 13.25
-  //  ];
-
-    $consumptionRates = [];
+    // Build category map (id => name) used for both consumption rate lookup and weekly items
     $allCategories = get_all_ItemCategory();
-    foreach ($allCategories as $category) {
-        $categoryId = $category->getId();
-        $consumptions = get_consumptions_by_itemCategory($categoryId);
-        if(!empty($consumptions)) {
-            usort($consumptions, function($a, $b) {
-                $dateDiff = strtotime($b->getDate()) - strtotime($a->getDate());
-                if ($dateDiff != 0) return $dateDiff;
-                return $b->getId() - $a->getId();
-            });
-            $consumptionRates[$category->getName()] = $consumptions[0]->getItemsConsumed();
-        }
-        
+    $categoryMap = array();
+    foreach ($allCategories as $cat) {
+        $categoryMap[$cat->getId()] = $cat->getName();
     }
+
+    // Load saved consumption rates from dbcomsumption.
+    // Each save from viewConsumptionRates.php writes one row per family size per item,
+    // all sharing the same date. Sum all rows from the most recent date per category.
+    $consumptionRates = [];
+    $con = connect();
+    $result = mysqli_query($con,
+        'SELECT itemCategoryId, SUM(itemsConsumed) AS totalRate, date
+         FROM dbcomsumption
+         WHERE date = (SELECT MAX(date) FROM dbcomsumption)
+         GROUP BY itemCategoryId');
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $catId = (int)$row['itemCategoryId'];
+            if (isset($categoryMap[$catId])) {
+                $consumptionRates[$categoryMap[$catId]] = (float)$row['totalRate'];
+            }
+        }
+    }
+    mysqli_close($con);
 
 
 
@@ -242,15 +226,6 @@
         foreach($prev_totals as $categoryId => $quantity) {
             $previousCounts[$categoryId] = new ItemCount(0, 0, $categoryId, $quantity);
         }
-    }
-
-    // Get all item categories
-    $allCategories = get_all_ItemCategory();
-
-    // Build category ID -> name map for basket lookup
-    $categoryMap = array();
-    foreach ($allCategories as $cat) {
-        $categoryMap[$cat->getId()] = $cat->getName();
     }
 
     // Build weekly items array

@@ -2,6 +2,66 @@
     session_cache_expire(30);
     session_start();
 
+    // Handle AJAX: add a new item category to the current shopping event basket
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'addItem') {
+        require_once('database/dbShoppingCount.php');
+        $shoppingEventId = isset($_POST['shoppingEventId']) ? (int)$_POST['shoppingEventId'] : 0;
+        $itemCategoryId  = isset($_POST['itemCategoryId'])  ? (int)$_POST['itemCategoryId']  : 0;
+        header('Content-Type: application/json');
+        if ($shoppingEventId > 0 && $itemCategoryId > 0) {
+            $id = add_shoppingCount($shoppingEventId, $itemCategoryId, 0);
+            echo json_encode(['success' => $id > 0, 'id' => $id]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid input']);
+        }
+        exit;
+    }
+
+    // Handle AJAX: remove an item from the basket entirely
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'removeItem') {
+        require_once('database/dbinfo.php');
+        require_once('database/dbShoppingCount.php');
+        $countId = isset($_POST['countId']) ? (int)$_POST['countId'] : 0;
+        header('Content-Type: application/json');
+        if ($countId > 0) {
+            // Also ungroup if needed
+            $con = connect();
+            $r   = mysqli_fetch_assoc(mysqli_query($con, 'SELECT groupId FROM dbshoppingcounts WHERE id = ' . $countId));
+            $gid = $r ? (int)$r['groupId'] : 0;
+            mysqli_close($con);
+            if ($gid > 0) {
+                remove_from_group($countId);
+                $con2 = connect();
+                $cnt  = mysqli_fetch_assoc(mysqli_query($con2, 'SELECT COUNT(*) as c FROM dbshoppingcounts WHERE groupId = ' . $gid));
+                if ((int)$cnt['c'] <= 1) {
+                    mysqli_query($con2, 'UPDATE dbshoppingcounts SET groupId = NULL WHERE groupId = ' . $gid);
+                    mysqli_query($con2, 'DELETE FROM dbshoppingcountgroup WHERE id = ' . $gid);
+                }
+                mysqli_close($con2);
+            }
+            $ok = delete_shoppingCount($countId);
+            echo json_encode(['success' => $ok]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid input']);
+        }
+        exit;
+    }
+
+    // Handle AJAX: toggle excludeFromConsumption flag
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggleExclude') {
+        require_once('database/dbShoppingCount.php');
+        $id      = isset($_POST['id'])      ? (int)$_POST['id']      : 0;
+        $exclude = isset($_POST['exclude']) ? (int)$_POST['exclude'] : 0;
+        header('Content-Type: application/json');
+        if ($id > 0) {
+            $result = update_shoppingCount_exclude($id, $exclude);
+            echo json_encode(['success' => $result]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid input']);
+        }
+        exit;
+    }
+
     // Handle AJAX basket quantity + notes update
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'updateQty') {
         require_once('database/dbShoppingCount.php');
@@ -191,10 +251,12 @@
                     $catId = (int)$row['itemCategoryId'];
                     $item  = [
                         'id'        => (int)$row['id'],
+                        'catId'     => $catId,
                         'item_name' => isset($categoryMap[$catId]) ? $categoryMap[$catId] : 'Unknown (ID: ' . $catId . ')',
                         'quantity'  => (int)$row['quantity'],
                         'groupId'   => $row['groupId'] !== null ? (int)$row['groupId'] : null,
                         'notes'     => $row['notes'] ?? '',
+                        'exclude'   => !empty($row['excludeFromConsumption']) ? 1 : 0,
                     ];
                     if ($item['groupId'] !== null && isset($basketGroups[$item['groupId']])) {
                         $basketGroups[$item['groupId']]['items'][] = $item;
@@ -207,6 +269,23 @@
             mysqli_close($con2);
         }
     }
+
+    // Build list of active categories not already in the selected basket
+    $existingCategoryIds = [];
+    foreach ($basketUngrouped as $item) {
+        $existingCategoryIds[] = $item['catId'];
+    }
+    foreach ($basketGroups as $group) {
+        foreach ($group['items'] as $item) {
+            $existingCategoryIds[] = $item['catId'];
+        }
+    }
+    $availableCategories = array_filter($allCategories, function($cat) use ($existingCategoryIds) {
+        return $cat->getStatus() === 'Active' && !in_array($cat->getId(), $existingCategoryIds);
+    });
+    usort($availableCategories, function($a, $b) {
+        return strcmp($a->getName(), $b->getName());
+    });
 
 ?>
 <!DOCTYPE html>
@@ -378,6 +457,34 @@
             min-width: 0;
         }
 
+        /* ---- Remove item button ---- */
+        .remove-item-btn {
+            background: transparent;
+            color: var(--inactive-font-color);
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 0 0.15rem;
+        }
+        .remove-item-btn:hover { color: rgb(239, 68, 68); }
+        /* ---- Add item row ---- */
+        .add-item-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .add-item-select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: white;
+            color: var(--page-font-color);
+            cursor: pointer;
+            min-width: 220px;
+        }
         /* ---- Item-group styles ---- */
         .group-header-row td {
             background-color: var(--main-color);
@@ -504,6 +611,8 @@
                                     <th>Item Name</th>
                                     <th>Quantity</th>
                                     <th>Notes</th>
+                                    <th style="width: 80px;" title="Include this item in consumption rate calculations">Calc Rate</th>
+                                    <th style="width: 30px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="basketTbody">
@@ -518,14 +627,14 @@
                                     <tr class="group-header-row" data-group-id="<?= $group['id'] ?>" draggable="true">
                                         <td class="drag-handle" title="Drag to reorder group">&#8597;</td>
                                         <td></td>
-                                        <td colspan="3" class="group-header-cell">
+                                        <td colspan="5" class="group-header-cell">
                                             <span class="group-name-display" title="Click to rename"><?= htmlspecialchars($group['name']) ?></span>
                                             <input class="group-name-input" value="<?= htmlspecialchars($group['name']) ?>" style="display:none" aria-label="Group name">
                                             <button class="ungroup-all-btn" data-group-id="<?= $group['id'] ?>">Ungroup All</button>
                                         </td>
                                     </tr>
                                     <?php foreach ($group['items'] as $item): ?>
-                                    <tr class="group-item-row" draggable="true" data-count-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>">
+                                    <tr class="group-item-row" draggable="true" data-count-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>">
                                         <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                         <td class="row-number"><?= $rowNum++ ?></td>
                                         <td data-item-name="<?= htmlspecialchars($item['item_name']) ?>"><span class="group-indent">&#8627;</span><?= htmlspecialchars($item['item_name']) ?></td>
@@ -534,27 +643,44 @@
                                             <input type="text" class="basket-notes-input" placeholder="Optional..." value="<?= htmlspecialchars($item['notes']) ?>" draggable="false">
                                             <button class="remove-from-group-btn" data-item-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>" title="Remove from group">&#215;</button>
                                         </div></td>
+                                        <td style="text-align:center;"><input type="checkbox" class="exclude-checkbox" data-count-id="<?= $item['id'] ?>" <?= $item['exclude'] ? '' : 'checked' ?> title="Include in consumption rate calculation" draggable="false"></td>
+                                        <td><button class="remove-item-btn" data-count-id="<?= $item['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>" title="Remove item from list">&#215;</button></td>
                                     </tr>
                                     <?php endforeach; ?>
                                 <?php endforeach; ?>
 
                                     <?php // ---- Render ungrouped items ----
                                     foreach ($basketUngrouped as $item): ?>
-                                    <tr draggable="true" data-count-id="<?= $item['id'] ?>">
+                                    <tr draggable="true" data-count-id="<?= $item['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>">
                                         <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                         <td class="row-number"><?= $rowNum++ ?></td>
                                         <td data-item-name="<?= htmlspecialchars($item['item_name']) ?>"><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="0" draggable="false"></td>
                                         <td><input type="text" class="basket-notes-input" placeholder="Optional..." value="<?= htmlspecialchars($item['notes']) ?>" draggable="false"></td>
+                                        <td style="text-align:center;"><input type="checkbox" class="exclude-checkbox" data-count-id="<?= $item['id'] ?>" <?= $item['exclude'] ? '' : 'checked' ?> title="Include in consumption rate calculation" draggable="false"></td>
+                                        <td><button class="remove-item-btn" data-count-id="<?= $item['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>" title="Remove item from list">&#215;</button></td>
                                     </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr>
-                                        <td colspan="5" class="empty-state">No items found for this family size.</td>
+                                    <tr id="emptyRow">
+                                        <td colspan="7" class="empty-state">No items found for this family size.</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Add item to basket -->
+                    <div class="add-item-row" id="addItemRow">
+                        <select id="addItemSelect" class="add-item-select">
+                            <option value="">-- Select item to add --</option>
+                            <?php foreach ($availableCategories as $cat): ?>
+                                <option value="<?= $cat->getId() ?>" data-name="<?= htmlspecialchars($cat->getName()) ?>">
+                                    <?= htmlspecialchars($cat->getName()) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button class="generate-btn" id="addItemBtn">Add Item</button>
                     </div>
                 <?php endif; ?>
             </div>
@@ -745,7 +871,7 @@
                     htr.innerHTML =
                         '<td class="drag-handle" title="Drag to reorder group">&#8597;</td>' +
                         '<td></td>' +
-                        '<td colspan="3" class="group-header-cell">' +
+                        '<td colspan="5" class="group-header-cell">' +
                             '<span class="group-name-display" title="Click to rename">New Group</span>' +
                             '<input class="group-name-input" value="New Group" style="display:none" aria-label="Group name">' +
                             '<button class="ungroup-all-btn" data-group-id="' + groupId + '">Ungroup All</button>' +
@@ -914,7 +1040,109 @@
                 // Wire up any groups that PHP already rendered on page load
                 basketTbody.querySelectorAll('.group-header-row').forEach(bindGroupHeaderEvents);
                 basketTbody.querySelectorAll('.remove-from-group-btn').forEach(bindRemoveFromGroupBtn);
+                basketTbody.querySelectorAll('.remove-item-btn').forEach(bindRemoveItemBtn);
             }
+
+            // ---- Remove item from basket entirely ----
+            function bindRemoveItemBtn(btn) {
+                btn.addEventListener('click', function() {
+                    var countId = btn.dataset.countId;
+                    var catId   = btn.dataset.catId;
+                    var catName = btn.dataset.catName;
+                    if (!confirm('Remove "' + catName + '" from the shopping list?')) return;
+                    $.post('viewShoppingList.php', { action: 'removeItem', countId: countId }, function(data) {
+                        if (!data.success) return;
+                        var row = basketTbody.querySelector('tr[data-count-id="' + countId + '"]');
+                        if (row) row.remove();
+                        renumberRows();
+                        // Add the option back to the add-item dropdown (sorted alphabetically)
+                        var select = document.getElementById('addItemSelect');
+                        if (select && catId && catName) {
+                            var opt = document.createElement('option');
+                            opt.value            = catId;
+                            opt.dataset.name     = catName;
+                            opt.textContent      = catName;
+                            // Insert in alphabetical position
+                            var inserted = false;
+                            for (var i = 1; i < select.options.length; i++) {
+                                if (select.options[i].textContent.localeCompare(catName) > 0) {
+                                    select.insertBefore(opt, select.options[i]);
+                                    inserted = true;
+                                    break;
+                                }
+                            }
+                            if (!inserted) select.appendChild(opt);
+                        }
+                        // Show empty-state row if basket is now empty
+                        if (basketTbody.querySelectorAll('tr[data-count-id]').length === 0) {
+                            var emptyRow = document.createElement('tr');
+                            emptyRow.id = 'emptyRow';
+                            emptyRow.innerHTML = '<td colspan="7" class="empty-state">No items found for this family size.</td>';
+                            basketTbody.appendChild(emptyRow);
+                        }
+                    }, 'json');
+                });
+            }
+
+            // ---- Exclude from consumption rate checkbox ----
+            function bindExcludeCheckbox(cb) {
+                cb.addEventListener('change', function() {
+                    var countId = cb.dataset.countId;
+                    // checked = included (exclude=0), unchecked = excluded (exclude=1)
+                    var exclude = cb.checked ? 0 : 1;
+                    $.post('viewShoppingList.php', { action: 'toggleExclude', id: countId, exclude: exclude });
+                });
+            }
+
+            if (basketTbody) {
+                basketTbody.querySelectorAll('.exclude-checkbox').forEach(bindExcludeCheckbox);
+            }
+
+            // ---- Add item to basket ----
+            document.getElementById('addItemBtn').addEventListener('click', function() {
+                var select  = document.getElementById('addItemSelect');
+                var catId   = select.value;
+                var catName = catId ? select.options[select.selectedIndex].dataset.name : '';
+                if (!catId || !selectedShoppingEventId) return;
+
+                $.post('viewShoppingList.php', {
+                    action: 'addItem',
+                    shoppingEventId: selectedShoppingEventId,
+                    itemCategoryId: catId
+                }, function(data) {
+                    if (!data.success) return;
+
+                    // Remove from dropdown
+                    select.remove(select.selectedIndex);
+                    select.value = '';
+
+                    // Remove empty-state row if present
+                    var emptyRow = document.getElementById('emptyRow');
+                    if (emptyRow) emptyRow.remove();
+
+                    // Append new row
+                    var newRow = document.createElement('tr');
+                    newRow.draggable          = true;
+                    newRow.dataset.countId    = data.id;
+                    newRow.dataset.catId      = catId;
+                    newRow.dataset.catName    = catName;
+                    newRow.innerHTML =
+                        '<td class="drag-handle" title="Drag to reorder">&#8597;</td>' +
+                        '<td class="row-number"></td>' +
+                        '<td data-item-name="' + escHtml(catName) + '">' + escHtml(catName) + '</td>' +
+                        '<td><input type="number" class="basket-qty-input" value="0" min="0" draggable="false"></td>' +
+                        '<td><input type="text" class="basket-notes-input" placeholder="Optional..." value="" draggable="false"></td>' +
+                        '<td style="text-align:center;"><input type="checkbox" class="exclude-checkbox" data-count-id="' + data.id + '" checked title="Include in consumption rate calculation" draggable="false"></td>' +
+                        '<td><button class="remove-item-btn" data-count-id="' + data.id + '" data-cat-id="' + escHtml(catId) + '" data-cat-name="' + escHtml(catName) + '" title="Remove item from list">&#215;</button></td>';
+                    basketTbody.appendChild(newRow);
+
+                    // Wire up the new remove button and exclude checkbox
+                    bindRemoveItemBtn(newRow.querySelector('.remove-item-btn'));
+                    bindExcludeCheckbox(newRow.querySelector('.exclude-checkbox'));
+
+                    renumberRows();
+                }, 'json');
+            });
 
             // ---- Save basket quantities + notes ----
             $('#saveQuantitiesBtn').on('click', function() {
@@ -992,7 +1220,7 @@
                         } else {
                             // --- Item row ---
                             var cells = tr.querySelectorAll('td');
-                            if (cells.length < 5) return;
+                            if (cells.length < 7) return;
 
                             var nameCell   = cells[2];
                             var itemName   = (nameCell.dataset.itemName || nameCell.textContent).trim();

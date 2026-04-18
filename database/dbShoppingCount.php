@@ -151,6 +151,16 @@ function update_shoppingCount_notes($id, $notes) {
     return (bool)$result;
 }
 
+/**
+ * Set excludeFromConsumption flag for a shopping count row.
+ */
+function update_shoppingCount_exclude($id, $exclude) {
+    $con = connect();
+    $result = mysqli_query($con, 'UPDATE dbshoppingcounts SET excludeFromConsumption = ' . ($exclude ? 1 : 0) . ' WHERE id = ' . (int)$id);
+    mysqli_close($con);
+    return (bool)$result;
+}
+
 // ---- Item-group helpers -------------------------------------------------------
 
 /**

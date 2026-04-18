@@ -161,7 +161,8 @@
                 $cntRes4   = mysqli_query($con4,
                     'SELECT sc.*, scg.groupName FROM dbshoppingcounts sc
                      LEFT JOIN dbshoppingcountgroup scg ON sc.groupId = scg.id
-                     WHERE sc.shoppingEventId = ' . (int)$seId . ' ORDER BY sc.id ASC');
+                     WHERE sc.shoppingEventId = ' . (int)$seId . '
+                     ORDER BY sc.id ASC');
                 $countsForEvent = [];
                 $groupSizeMap   = []; // groupId => item count
                 if ($cntRes4) {
@@ -176,6 +177,9 @@
                 mysqli_close($con4);
 
                 foreach ($countsForEvent as $sc) {
+                    // Skip items marked as excluded from consumption rate calculation
+                    if (!empty($sc['excludeFromConsumption'])) continue;
+
                     $catId     = (int)$sc['itemCategoryId'];
                     $qty       = (int)$sc['quantity'];
                     $gId       = $sc['groupId'] !== null ? (int)$sc['groupId'] : null;
