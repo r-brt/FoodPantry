@@ -641,11 +641,14 @@
             .title {
                 border-radius: 0;
                 background-color: #ffffff;
+                width: 100%;
             }
             .report-table th,
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+                position: static;
+
             }
             .report-container {
                 padding: 0.5rem;

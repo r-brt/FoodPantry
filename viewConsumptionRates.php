@@ -212,19 +212,20 @@
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
         }
         .title {
-            position: fixed;
             text-align: center;
             height: 3.5rem;
-            width: 40%;
-            z-index: 1000;
+            width:auto;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            background-color: white;
-            padding-top: 0;
-            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
         }
         .report-container {
             max-width: 1100px;
@@ -233,9 +234,16 @@
         }
         .report-section {
             background-color: white;
+            /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+        }
+        .report-section h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--secondary-accent-color);
         }
         .report-section h2 {
             font-size: 1.5rem;
@@ -258,6 +266,8 @@
             background-color: var(--main-color);
             color: var(--button-font-color);
             font-weight: 500;
+            position: sticky;
+            top: 100px; /* height of page header */
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -327,7 +337,21 @@
         .feedback-error   { color: rgb(239, 68, 68); }
         .row-number { text-align: center; color: var(--inactive-font-color); font-weight: 500; }
         @media only screen and (max-width: 768px) {
-            .report-table th, .report-table td { padding: 0.5rem; font-size: 0.8rem; }
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
+            .report-table th,
+            .report-table td {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+                position: static;
+
+            }
             .report-container { padding: 0.5rem; }
             div.table-wrapper { overflow-x: auto; }
             .data-entry-row  { flex-direction: column; align-items: stretch; }
