@@ -435,6 +435,7 @@
             color: var(--page-font-color);
             font-size: inherit;
         }
+        
         .basket-notes-input:hover,
         .basket-notes-input:focus {
             border-color: var(--accent-color);
