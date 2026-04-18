@@ -2,6 +2,7 @@
     session_cache_expire(30);
     session_start();
 
+    
     // Handle AJAX client count save
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'saveClient') {
         require_once('database/dbinfo.php');
@@ -83,7 +84,7 @@
         $userID = $_SESSION['_id'];
     }
 
-    if ($accessLevel < 2) {
+    if ($accessLevel < 1) {
         header('Location: index.php');
         die();
     }
