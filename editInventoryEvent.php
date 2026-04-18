@@ -250,19 +250,30 @@
     <?php require_once('universal.inc') ?>
     <title>Edit Inventory | Whiskey Valor Foundation</title>
     <style>
+        pageheader {
+            margin-top: 3rem;
+            display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
+        }
+        .title {
+            text-align: center;
+            height: 3.5rem;
+            width:auto;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--secondary-accent-color);
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
+        }
         .edit-container {
             max-width: 800px;
             margin: 2rem auto;
             padding: 1.5rem;
             background-color: white;
             border-radius: 15px;
-        }
-        .title {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: var(--secondary-accent-color);
-            margin-bottom: 1rem;
-            text-align: center;
         }
         .event-info {
             background-color: rgba(0,0,0,0.05);
@@ -286,6 +297,8 @@
             padding: 0.75rem;
             text-align: left;
             font-weight: 500;
+            position: sticky;
+            top: 100px; /* height of page header */
         }
         .modify-table td {
             padding: 0.75rem;
@@ -352,10 +365,22 @@
             background-color: rgba(0,0,0,0.3);
         }
         @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
             .modify-table th,
             .modify-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+                position: static;
+            }
+            div.table-wrapper {
+                overflow-x: auto;
             }
             .edit-container {
                 padding: 1rem;
@@ -366,12 +391,14 @@
         }
     </style>
 </head>
+<pageheader>
+    <h1 class="title">Edit Inventory</h1>
+</pageheader>
 <body>
     <?php require_once('header.php') ?>
     <main class="edit-container">
         <a href="inventory.php" class="back-btn">← Back</a>
-
-        <h1 class="title">Edit Inventory</h1>
+        
 
         <!-- Event Info (Read-Only) -->
         <div class="event-info">

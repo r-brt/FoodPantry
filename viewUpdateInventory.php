@@ -256,18 +256,20 @@
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
         }
         .title {
-            position: fixed;
             text-align: center;
-            height: 3.6rem;
-            width: 100%;
-            z-index: 9;
+            height: 3.5rem;
+            width:auto;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            background-color: white;
-            padding-top: .5rem;
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
         }
         .report-container {
             max-width: 1100px;
@@ -309,7 +311,7 @@
             color: var(--button-font-color);
             font-weight: 500;
             position: sticky;
-            top: 8.7rem;
+            top: 100px; /* height of page header */
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -458,6 +460,14 @@
             text-align: center;
         }
         @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
             .report-table th,
             .report-table td {
                 padding: 0.5rem;
