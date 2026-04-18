@@ -28,15 +28,14 @@ SET time_zone = "+00:00";
 --
 
 DROP TABLE IF EXISTS `dbshoppingcounts`;
--- NOTE: After importing this file also run dbShoppingCountGroup.sql
--- which adds the groupId and notes columns.
 CREATE TABLE `dbshoppingcounts` (
   `id` int(11) NOT NULL,
   `shoppingEventId` int(11) NOT NULL,
   `itemCategoryId` int(11) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT 0,
   `groupId` int(11) DEFAULT NULL,
-  `notes` varchar(500) DEFAULT NULL
+  `notes` varchar(500) DEFAULT NULL,
+  `excludeFromConsumption` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 
 --
