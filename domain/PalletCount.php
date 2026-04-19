@@ -10,12 +10,14 @@ class PalletCount {
     private $palletEventId; // Foreign Key
     private $itemCategoryId; // Foreign Key
     private $quantity;
+    private $expiration;
 
-    function __construct($id, $palletEventId, $itemCategoryId, $quantity) {
+    function __construct($id, $palletEventId, $itemCategoryId, $quantity, $expiration) {
         $this->id = $id;
         $this->palletEventId = $palletEventId;
         $this->itemCategoryId = $itemCategoryId;
         $this->quantity = $quantity;
+        $this->expiration = $expiration;
     }
 
     function getId() {
@@ -32,6 +34,10 @@ class PalletCount {
 
     function getQuantity() {
         return $this->quantity;
+    }
+
+    function getExpiration() {
+        return $this->expiration;
     }
 
     public function __toString(){
