@@ -10,12 +10,14 @@ class PalletEvent {
     private $name;
     private $personId;
     private $date;
+    private $notes;
 
-    function __construct($id, $name, $personId, $date) {
+    function __construct($id, $name, $personId, $date, $notes = null) {
         $this->id = $id;
         $this->name = $name;
         $this->personId = $personId;
         $this->date = $date;
+        $this->notes = $notes;
     }
 
     function getId() {
@@ -32,6 +34,10 @@ class PalletEvent {
 
     function getDate() {
         return $this->date;
+    }
+
+    function getNotes() {
+        return $this->notes;
     }
 
 }

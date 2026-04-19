@@ -96,13 +96,37 @@ function update_palletEvent_name($id, $name) {
     }   
 }
 
+function update_palletEvent_notes($id, $notes) {
+    $con=connect();
+    $query = 'SELECT * FROM dbpalletevent WHERE id = "' . $id . '"';
+    $result = mysqli_query($con,$query);
+    if ($result == null || mysqli_num_rows($result) == 0) {
+        mysqli_close($con);
+        return false;
+    }
+
+    $update_query = "UPDATE `dbpalletevent` SET 
+       `notes` = '" . mysqli_real_escape_string($con, $notes) . "' 
+        where `id` = '" . $id . "' ";
+
+    // Perform the update
+    if (mysqli_query($con, $update_query)) {
+        mysqli_close($con);
+        return true;
+    } else {
+        mysqli_close($con);
+        return false;
+    }   
+}
+
 
 function make_an_palletEvent($result_row) {
     $theEvent = new PalletEvent(
                     $result_row['id'],
                     $result_row['name'],
                     $result_row['personId'],
-                    $result_row['date']
+                    $result_row['date'],
+                    $result_row['notes'] ?? null
                 );
     return $theEvent;
 }
