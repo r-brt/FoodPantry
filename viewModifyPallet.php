@@ -44,6 +44,8 @@
 
     $pallet_name = $thePallet->getName();
     $pallet_new_name = $pallet_name;
+    $pallet_notes = $thePallet->getNotes() ?? '';
+    $pallet_new_notes = $pallet_notes;
 
     $categories_by_row = array();
     $quantities_by_row = array();
@@ -82,6 +84,10 @@
                 else{
                     $pallet_new_name = $value;
                 }
+                continue;
+            }
+            if($key == "notes"){
+                $pallet_new_notes = $value;
                 continue;
             }
             $key_parts = explode("_", $key);
@@ -178,6 +184,7 @@
             }
             if(pallet_name_unique($pallet_new_name) || $pallet_new_name == $pallet_name){
                 update_palletEvent_name($palletEventId, $pallet_new_name);
+                update_palletEvent_notes($palletEventId, $pallet_new_notes);
                 delete_palletCount_by_palletEvent($palletEventId);
                 foreach($quantities_by_cat as $categoryId => $quantity){
                     $expiration = $expirations_by_cat[$categoryId];
@@ -559,6 +566,12 @@
                                             value="<?= $pallet_new_name == "PALLET_PLACEHOLDER_NAME" ? 'Pallet' : $pallet_new_name ?>"
                                             name="name" 
                                             id="name">
+                        </div>
+                    </div>
+                    <div class="updateInv-nameRow" style="margin-top: 1rem;">
+                        <div class="updateInv-name" style="flex-direction: column; align-items: flex-start;">
+                            <label class="updateInv-nameLabel" for="notes" style="text-align: left; width: 100%; margin-bottom: 0.5rem;">Notes:</label>
+                            <textarea class="updateInv-nameInput" name="notes" id="notes" style="width: 100%; height: 120px; resize: vertical; font-family: inherit;" placeholder="Enter notes for this pallet..."><?= htmlspecialchars($pallet_new_notes) ?></textarea>
                         </div>
                     </div>
                         <div class="table-wrapper">

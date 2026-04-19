@@ -212,6 +212,10 @@
             }
 
             $submit_success = true;
+            
+            // Redirect to inventory page to view the newly created inventory
+            header('Location: inventory.php?week=' . $warehouseEventId);
+            exit;
         }
         else{
             /* if errors have already been detected array was emptied. Do not show error for missing data */

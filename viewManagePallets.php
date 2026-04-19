@@ -355,6 +355,10 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div style="margin-top: 1rem; padding: 1rem; background-color: rgba(0,0,0,0.1); border-radius: 0.5rem;">
+                            <h3 style="margin-top: 0; color: var(--page-font-color);">Notes:</h3>
+                            <p style="margin: 0; color: var(--page-font-color); white-space: pre-wrap;">' . ((!empty($pallet->getNotes())) ? htmlspecialchars($pallet->getNotes()) : '<em style="color: var(--inactive-font-color);">No notes</em>') . '</p>
+                        </div>
                     </div>';
                     }?>
 

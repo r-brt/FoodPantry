@@ -27,21 +27,30 @@ SET time_zone = "+00:00";
 -- Table structure for table `dbpalletevent`
 --
 
-CREATE TABLE `dbpalletevent` (
+CREATE TABLE IF NOT EXISTS `dbpalletevent` (
   `id` int(11) NOT NULL,
   `name` varchar(50) NOT NULL,
   `personId` varchar(11) NOT NULL,
-  `date` date NOT NULL
+  `date` date NOT NULL,
+  `notes` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Add notes column if it doesn't exist
+--
+
+ALTER TABLE `dbpalletevent` ADD COLUMN `notes` text DEFAULT NULL;
 
 --
 -- Dumping data for table `dbpalletevent`
 --
 
-INSERT INTO `dbpalletevent` (`id`, `name`, `personId`, `date`) VALUES
-(1, 'Pallet', '2', '0000-00-00'),
-(6, 'Pallet 2', '2', '2026-04-02'),
-(8, 'Pal  2 Square', '2', '2026-04-02');
+-- Data insertion commented out to avoid duplicate key errors
+-- Uncomment the lines below if you need to reimport the data
+-- INSERT INTO `dbpalletevent` (`id`, `name`, `personId`, `date`) VALUES
+-- (1, 'Pallet', '2', '0000-00-00'),
+-- (6, 'Pallet 2', '2', '2026-04-02'),
+-- (8, 'Pal  2 Square', '2', '2026-04-02');
 
 --
 -- Indexes for dumped tables
