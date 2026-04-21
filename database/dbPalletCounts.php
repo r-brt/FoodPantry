@@ -190,3 +190,19 @@ function make_a_palletCount($result_row) {
                     );
     return $itemCount;
 }
+
+/*
+ * Check if a category is used in any pallet (has quantity > 0)
+ * Returns true if category exists on any pallet, false otherwise
+ */
+function is_category_in_pallets($categoryId){
+    $con=connect();
+    $query = "SELECT COUNT(*) as count FROM dbpalletcounts WHERE itemCategoryId = ? AND quantity > 0";
+    $stmt = $con->prepare($query);
+    $stmt->bind_param("i", $categoryId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    mysqli_close($con);
+    return $row['count'] > 0;
+}

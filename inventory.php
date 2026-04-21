@@ -103,12 +103,27 @@ if ($selectedPairIndex !== null) {
         $sameDateEvents[] = $selectedPair['pallet'];
     }
 
-    // Get all active item categories
-    $activeCategories = get_all_active_ItemCategory();
+    // Get all item categories (including inactive for historical data)
+    $allCategories = get_all_ItemCategory();
+
+    // Build set of categories with data in this inventory
+    $categoriesWithData = [];
+    foreach ($sameDateEvents as $event) {
+        $eventCounts = get_itemCounts_by_inventoryEvent($event->getId());
+        foreach ($eventCounts as $count) {
+            $categoriesWithData[$count->getItemCategory()] = true;
+        }
+    }
 
     // Build items array with location-specific counts
-    foreach ($activeCategories as $category) {
+    foreach ($allCategories as $category) {
         $categoryId = $category->getId();
+
+        // Show if active OR has data in this inventory
+        if ($category->getStatus() != 'Active' && !isset($categoriesWithData[$categoryId])) {
+            continue;
+        }
+
         $warehouseBoxes = 0;
         $pantryBoxes = 0;
         $palletBoxes = 0;

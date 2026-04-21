@@ -27,6 +27,14 @@
     
     require_once('include/input-validation.php');
     require_once('database/dbItemCategory.php');
+    require_once('database/dbPalletCounts.php');
+
+    // AJAX endpoint to check if category is on a pallet
+    if (isset($_GET['action']) && $_GET['action'] === 'checkPallet' && isset($_GET['id'])) {
+        header('Content-Type: application/json');
+        echo json_encode(['onPallet' => is_category_in_pallets($_GET['id'])]);
+        exit;
+    }
 
     // Does the category exist?
     $theCategory = retrieve_ItemCategory($_GET['id']);
@@ -48,9 +56,13 @@
             die();
         }
         else if(isset($_POST["deactivate_button"])){
+            if (is_category_in_pallets($theCategory->getId())) {
+                $errors[] = "Cannot deactivate - this item is currently on a pallet.";
+            } else {
                 deactivate_itemCategory($theCategory->getId());
                 header('Location: viewItemCategories.php');
                 die();
+            }
         }
         else if(isset($_POST["activate_button"])){
             activate_itemCategory($theCategory->getId());
@@ -58,9 +70,13 @@
             die();
         }
         else if(isset($_POST["delete_button"])){
-            delete_itemCategory($theCategory->getId());
-            header('Location: viewItemCategories.php');
-            die();          
+            if (is_category_in_pallets($theCategory->getId())) {
+                $errors[] = "Cannot delete - this item is currently on a pallet.";
+            } else {
+                delete_itemCategory($theCategory->getId());
+                header('Location: viewItemCategories.php');
+                die();
+            }
         }
         else if(isset($_POST["save_button"])){
             /* check that Name is set */
@@ -375,6 +391,33 @@
             }
         }
     </style>
+    <script>
+    function confirmDelete(categoryId, categoryName) {
+        // Clear any existing error messages
+        var errorList = document.getElementById('errorList');
+        if (errorList) {
+            errorList.style.display = 'none';
+        }
+
+        fetch('viewModifyItemCategory.php?action=checkPallet&id=' + categoryId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.onPallet) {
+                    alert('Cannot delete - this item is currently on a pallet.');
+                } else {
+                    if (confirm('Are you sure you want to\nDELETE Category: ' + categoryName + '?')) {
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'delete_button';
+                        input.value = '1';
+                        document.forms['invForm'].appendChild(input);
+                        document.forms['invForm'].submit();
+                    }
+                }
+            });
+        return false;
+    }
+    </script>
 </head>
 <pageheader>
     <h1  class="title">Modify Item Category</h1>
@@ -390,7 +433,7 @@
                 }
                 /* Display errors from submitting inventory */
                 if (!empty($errors)): ?>
-                <ul>
+                <ul id="errorList">
                     <?php foreach($errors AS $error): ?>
                         <li><?php echo("<h4 style=\"color:red;\"><i>Error: ".$error."</i></h4>"); ?></li>
                     <?php endforeach; ?>
@@ -471,9 +514,9 @@
                             }
                         ?>
                         <hr>
-                        <button name="delete_button" name="delete_button" class="modify-delete-btn" 
-                            onclick="return confirm('Are you sure you want to\nDELETE Category: <?php echo $theCategory->getName();?>?')"
-                            formnovalidate>Delete Category
+                        <button type="button" class="modify-delete-btn"
+                            onclick="confirmDelete(<?php echo $theCategory->getId(); ?>, '<?php echo addslashes($theCategory->getName()); ?>')">
+                            Delete Category
                         </button>
                     </div>
                 </form>

@@ -79,6 +79,15 @@
     /* Get all item categories */
     $allCategories = get_all_ItemCategory();
 
+    /* Build set of categories with data in this inventory (for showing inactive categories with historical data) */
+    $categoriesWithData = [];
+    foreach ($warehouseCountsMap as $categoryId => $count) {
+        $categoriesWithData[$categoryId] = true;
+    }
+    foreach ($pantryCountsMap as $categoryId => $count) {
+        $categoriesWithData[$categoryId] = true;
+    }
+
     $errors = array();
 
     /* If confirmed, delete the triplet (warehouse, pantry, pallet events) */
@@ -269,7 +278,7 @@
                     $hasItems = false;
                     $rowNum = 0;
                     foreach($allCategories as $category): ?>
-                        <?php if($category->getStatus() != 'Active') continue; ?>
+                        <?php if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue; ?>
                         <?php
                         $categoryId = $category->getId();
                         $hasWarehouse = isset($warehouseCountsMap[$categoryId]);
