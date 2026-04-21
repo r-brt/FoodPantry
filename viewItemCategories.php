@@ -18,23 +18,6 @@
     require_once('database/dbItemCounts.php');
     $con = connect();
 
-    //New Categorys
-        if (isset($_POST['add_category'])) {
-            $cat_name = trim($_POST['cat_name']);
-            $bananaBox = isset($_POST['bananaBox']) ? 1 : 0;
-            $itemsPerBox = intval($_POST['itemsPerBox']);
-            $status = "Active";
-
-            if (retrieve_ItemCategory_by_name($cat_name)) {
-                $errors[] = "Category already exists";
-            } else {
-                add_itemCategory($cat_name, $bananaBox, $itemsPerBox, $status);
-
-                header("Location: viewItemCategories.php");
-                exit();
-            }
-        }
-
 ?>
     
 <!DOCTYPE html>
@@ -192,6 +175,33 @@
         .modify-btn:hover {
             opacity: 0.85;
         }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .section-header h2 {
+            margin-bottom: 0;
+        }
+        .add-category-lnk {
+            white-space: nowrap;
+        }
+        .add-category-lnk button {
+            padding: 0.5rem 1rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            text-align: center;
+        }
+        .add-category-lnk button:hover {
+            opacity: 0.85;
+        }
         @media only screen and (max-width: 768px) {
             pageheader {
                 top: 100px;
@@ -235,10 +245,13 @@
             <?php 
                 require_once('database/dbItemCategory.php');
                 /* display table of Item Categories with a given status (Active/Inactive/Deleted) */
-                $display_accounts_by_status = function($status, $accessLevel){
+                $display_accounts_by_status = function($status, $accessLevel, $extraButton = ''){
                     echo '
                     <div class="report-section">
-                        <h2>'.$status.' Item Categories</h2>
+                        <div class="section-header">
+                            <h2>'.$status.' Item Categories</h2>
+                            '.$extraButton.'
+                        </div>
                         <div class="table-wrapper">
                             <table class="report-table">
                                 <thead>
@@ -286,39 +299,17 @@
                             }; ?>
 
                             <!-- Display Table of accounts for each Status -->
-                            <?php 
-                            $display_accounts_by_status("Active", $accessLevel);
+                            <?php
+                            $addCategoryButton = '<a href="viewAddItemCategory.php" class="add-category-lnk"><button type="button">Add Category</button></a>';
+                            $display_accounts_by_status("Active", $accessLevel, $addCategoryButton);
                             $display_accounts_by_status("Inactive", $accessLevel);
                             /* Superadmin can see deleted accounts */
                             if($accessLevel >= 3){
                                 $display_accounts_by_status("Deleted", $accessLevel);
                             }
                             ?>
-                            <div class ="report-section">
-                <h2>Add New Item Category</h2>
-                <form method="POST" action= "viewItemCategories.php">
-                    <div style="display:flex; flex-direction:column; gap:1rem; max-width:400px;">
-                        <div>
-                            <label>Category Name:</label><br>
-                            <input type="text" name="cat_name" required>
-                        </div>
-                        <div>
-                            <label>Items Per Box:</label><br>
-                            <input type="number" name="itemsPerBox" min="0" value="0" required>
-                        </div>
-                        <div>
-                            <label>
-                                <input type="checkbox" name="bananaBox">
-                                Banana Box
-                            </label>
-                        </div>
-                        <div>
-                            <input type="submit" name="add_category" value="Add Category" class="generate-btn">
-                        </div>
-                </form>
         </div>
-        
-                
+
     </main>
 
 </body>
