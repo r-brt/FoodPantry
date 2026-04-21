@@ -448,8 +448,8 @@ if ($selectedPairIndex !== null) {
             </div>
             <?php if($accessLevel >= 2): ?>
                 <div style="margin-bottom: 1.5rem;">
-                    <a style="text-decoration: none; display: flex; justify-content: center;">
-                        <button href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" class="modify-button">
+                    <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" style="text-decoration: none; display: flex; justify-content: center;">
+                        <button class="modify-button">
                             Modify
                         </button>
                     </a>
