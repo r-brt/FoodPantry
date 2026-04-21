@@ -343,14 +343,15 @@ if ($selectedPairIndex !== null) {
             font-weight: 500;
         }
         .modify-button {
-            padding: 0.75rem 1.5rem; 
-            background-color: var(--accent-color); 
-            color: white; border: none; 
-            border-radius: 0.5rem; 
-            cursor: pointer; 
-            font-size: 1rem; 
+            padding: 0.5rem 1rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
             font-weight: 500;
-            width: 12%;
+            max-width: 500px;
         }
     </style>
 </head>
@@ -432,8 +433,8 @@ if ($selectedPairIndex !== null) {
             </div>
             <?php if($accessLevel >= 2): ?>
                 <div style="margin-bottom: 1.5rem;">
-                    <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" style="text-decoration: none; display: flex; justify-content: center;">
-                        <button class="modify-button" style="background-color: --accent-color;">
+                    <a style="text-decoration: none; display: flex; justify-content: center;">
+                        <button href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" class="modify-button">
                             Modify
                         </button>
                     </a>
