@@ -508,7 +508,7 @@
             background-color: rgba(0,0,0,0.2);
             color: var(--page-font-color);
             cursor: pointer;
-            min-width: 180px;
+            min-width: 235px;
         }
         .toolbar-select:hover {
             background-color: rgba(0,0,0,0.3);
