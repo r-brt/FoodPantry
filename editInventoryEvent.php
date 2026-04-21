@@ -86,6 +86,18 @@
     /* Get all item categories */
     $allCategories = get_all_ItemCategory();
 
+    /* Build set of categories with data in this inventory (for showing inactive categories with historical data) */
+    $categoriesWithData = [];
+    foreach ($warehouseCountsMap as $categoryId => $count) {
+        $categoriesWithData[$categoryId] = true;
+    }
+    foreach ($pantryCountsMap as $categoryId => $count) {
+        $categoriesWithData[$categoryId] = true;
+    }
+    foreach ($palletCountsMap as $categoryId => $count) {
+        $categoriesWithData[$categoryId] = true;
+    }
+
     /* Handle form submission */
     $errors = [];
     $success = false;
@@ -96,12 +108,15 @@
             die();
         }
         else if(isset($_POST['delete_button'])) {
-            /* Delete both warehouse and pantry events */
+            /* Delete warehouse, pantry, and pallet events */
             if($warehouseEvent) {
                 remove_inventoryEvent($warehouseEvent->getId());
             }
             if($pantryEvent) {
                 remove_inventoryEvent($pantryEvent->getId());
+            }
+            if($palletEvent) {
+                remove_inventoryEvent($palletEvent->getId());
             }
             header('Location: inventory.php');
             die();
@@ -110,7 +125,7 @@
             /* Update quantities for warehouse (if exists) */
             if($warehouseEvent) {
                 foreach($allCategories as $category) {
-                    if($category->getStatus() != 'Active') continue;
+                    if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue;
 
                     $categoryId = $category->getId();
                     $fieldName = 'warehouse_qty_' . $categoryId;
@@ -145,7 +160,7 @@
             /* Update quantities for pantry (if exists) */
             if($pantryEvent) {
                 foreach($allCategories as $category) {
-                    if($category->getStatus() != 'Active') continue;
+                    if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue;
 
                     $categoryId = $category->getId();
                     $fieldName = 'pantry_qty_' . $categoryId;
@@ -180,7 +195,7 @@
             /* Update quantities for pallet (if exists) */
             if($palletEvent) {
                 foreach($allCategories as $category) {
-                    if($category->getStatus() != 'Active') continue;
+                    if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue;
 
                     $categoryId = $category->getId();
                     $fieldName = 'pallet_qty_' . $categoryId;
@@ -213,31 +228,11 @@
             }
 
             if(empty($errors)) {
-                $success = true;
-                /* Refresh counts by re-fetching from database */
-                if($warehouseEvent) {
-                    $warehouseItemCounts = get_itemCounts_by_inventoryEvent($warehouseEvent->getId());
-                    $warehouseCountsMap = array();
-                    foreach($warehouseItemCounts as $count) {
-                        $categoryId = $count->getItemCategory();
-                        $warehouseCountsMap[$categoryId] = $count;
-                    }
-                }
-                if($pantryEvent) {
-                    $pantryItemCounts = get_itemCounts_by_inventoryEvent($pantryEvent->getId());
-                    $pantryCountsMap = array();
-                    foreach($pantryItemCounts as $count) {
-                        $categoryId = $count->getItemCategory();
-                        $pantryCountsMap[$categoryId] = $count;
-                    }
-                }
-                if($palletEvent) {
-                    $palletItemCounts = get_itemCounts_by_inventoryEvent($palletEvent->getId());
-                    $palletCountsMap = array();
-                    foreach($palletItemCounts as $count) {
-                        $categoryId = $count->getItemCategory();
-                        $palletCountsMap[$categoryId] = $count;
-                    }
+                /* Redirect to inventory page to view the updated inventory */
+                $redirectId = $warehouseEvent ? $warehouseEvent->getId() : ($pantryEvent ? $pantryEvent->getId() : null);
+                if ($redirectId) {
+                    header('Location: inventory.php?week=' . $redirectId);
+                    exit;
                 }
             }
         }
@@ -436,7 +431,7 @@
                     <?php
                     $rowNum = 0;
                     foreach($allCategories as $category): ?>
-                        <?php if($category->getStatus() != 'Active') continue; ?>
+                        <?php if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue; ?>
                         <?php $rowNum++; ?>
                         <?php
                         $categoryId = $category->getId();

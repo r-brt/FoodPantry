@@ -30,9 +30,10 @@
     }
 
     /* get the total pallet inventory for each category to show in the pallet column */
+    /* Only include active categories - inactive/deleted items on pallets should not transfer to new inventories */
     $pallet_totals = array();
     $pallets = get_all_palletEvents();
-    $categories = get_all_ItemCategory();
+    $categories = get_all_active_ItemCategory();
     foreach($categories as $category){
         $pallet_totals[$category->getId()] = 0;
     }
@@ -40,7 +41,10 @@
         $palletCounts = get_palletCounts_by_palletEvent($pallet->getId());
         foreach($palletCounts as $count){
             $categoryId = $count->getItemCategory();
-            $pallet_totals[$categoryId] += $count->getQuantity();
+            $category = retrieve_ItemCategory($categoryId);
+            if ($category && $category->getStatus() == 'Active') {
+                $pallet_totals[$categoryId] += $count->getQuantity();
+            }
         }
     }
 

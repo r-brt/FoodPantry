@@ -231,9 +231,14 @@
     // Build weekly items array
     $weeklyItems = array();
     foreach ($allCategories as $category) {
-        if ($category->getStatus() != 'Active') continue;
-
         $categoryId = $category->getId();
+
+        // Show if active OR has data in current/previous inventory
+        $hasCurrentData = isset($currentCounts[$categoryId]);
+        $hasPreviousData = isset($previousCounts[$categoryId]);
+        if ($category->getStatus() != 'Active' && !$hasCurrentData && !$hasPreviousData) {
+            continue;
+        }
         $itemName = $category->getName();
         $itemsPerBox = $category->getItemsPerBox();
 

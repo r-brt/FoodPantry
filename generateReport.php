@@ -79,17 +79,39 @@ usort($eventPairs, function($a, $b) {
     return $bId - $aId;
 });
 
-// Fetch food categories
+// Fetch food categories for display (Active OR Inactive with data - Deleted is hidden from UI)
 $categoryResult = $conn->query("
-    SELECT id, name
-    FROM dbitemcategory
-    WHERE status = 'Active'
-    ORDER BY name ASC
+    SELECT DISTINCT dic.id, dic.name, dic.status
+    FROM dbitemcategory dic
+    WHERE dic.status = 'Active'
+       OR (dic.status = 'Inactive' AND dic.id IN (
+           SELECT DISTINCT itemCategoryId
+           FROM dbitemcounts
+       ))
+    ORDER BY dic.name ASC
 ");
 $categories = [];
 if ($categoryResult) {
     while ($row = $categoryResult->fetch_assoc()) {
         $categories[] = $row;
+    }
+}
+
+// Fetch ALL category IDs with data (including Deleted) for "All" selections in trends/graphs
+// Preserves historical data access while keeping deleted items hidden from UI
+$allDataCategoryIds = [];
+$allDataResult = $conn->query("
+    SELECT DISTINCT dic.id
+    FROM dbitemcategory dic
+    WHERE dic.status = 'Active'
+       OR dic.id IN (
+           SELECT DISTINCT itemCategoryId
+           FROM dbitemcounts
+       )
+");
+if ($allDataResult) {
+    while ($row = $allDataResult->fetch_assoc()) {
+        $allDataCategoryIds[] = $row['id'];
     }
 }
 
@@ -597,6 +619,9 @@ $availableMonths = array_keys($monthlyData);
                                 <?php foreach ($categories as $category): ?>
                                     <li> <input name="name[]" class="checklist-column" type="checkbox" value="<?= htmlspecialchars($category['id']) ?>" <?= ($category['id'] == $selectedCategory) ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($category['name']) ?>
+                                        <?php if ($category['status'] != 'Active'): ?>
+                                            <span style="color: gray; font-size: 0.85em;">(inactive)</span>
+                                        <?php endif; ?>
                                 </input> </li>
                                 <?php endforeach; ?>
                             </select>
@@ -633,6 +658,9 @@ $availableMonths = array_keys($monthlyData);
                         <?php foreach ($categories as $category): ?>
                             <li><input type="checkbox" class="trend-category-checkbox trend-category-single" value="<?= htmlspecialchars($category['id']) ?>">
                                 <?= htmlspecialchars($category['name']) ?>
+                                <?php if ($category['status'] != 'Active'): ?>
+                                    <span style="color: gray; font-size: 0.85em;">(inactive)</span>
+                                <?php endif; ?>
                             </input></li>
                         <?php endforeach; ?>
                     </ul>
@@ -723,6 +751,9 @@ $availableMonths = array_keys($monthlyData);
                         <?php foreach ($categories as $category): ?>
                             <li><input type="checkbox" class="graph-item-checkbox graph-item-single" value="<?= htmlspecialchars($category['id']) ?>">
                                 <?= htmlspecialchars($category['name']) ?>
+                                <?php if ($category['status'] != 'Active'): ?>
+                                    <span style="color: gray; font-size: 0.85em;">(inactive)</span>
+                                <?php endif; ?>
                             </input></li>
                         <?php endforeach; ?>
                     </ul>
@@ -845,6 +876,7 @@ $availableMonths = array_keys($monthlyData);
             var allTrendData = <?= json_encode($allTrendData) ?>;
             var allGraphData = <?= json_encode($allGraphData) ?>;
             var categoriesList = <?= json_encode($categories) ?>;
+            var allDataCategoryIds = <?= json_encode($allDataCategoryIds) ?>;
             var trendsCurrentPage = 1;
             var trendsPageSize = 50;
 
@@ -872,11 +904,16 @@ $availableMonths = array_keys($monthlyData);
                 // Show Trends button handler
                 document.getElementById('showTrendsBtn').addEventListener('click', function() {
                     var selectedCategories = [];
-                    trendsCategoryCheckboxes.forEach(function(cb) {
-                        if (cb.checked) {
-                            selectedCategories.push(cb.value);
-                        }
-                    });
+                    // If "All" is checked, use all category IDs with data (includes deleted items' historical data)
+                    if (trendsSelectAll.checked) {
+                        selectedCategories = allDataCategoryIds.map(function(id) { return id.toString(); });
+                    } else {
+                        trendsCategoryCheckboxes.forEach(function(cb) {
+                            if (cb.checked) {
+                                selectedCategories.push(cb.value);
+                            }
+                        });
+                    }
 
                     if (selectedCategories.length === 0) {
                         alert('Please select at least one category.');
@@ -1238,7 +1275,8 @@ $availableMonths = array_keys($monthlyData);
                 var selectedItems = [];
 
                 if (selectAll) {
-                    selectedItems = categoriesList.map(function(c) { return c.id.toString(); });
+                    // Use all category IDs with data (includes deleted items' historical data)
+                    selectedItems = allDataCategoryIds.map(function(id) { return id.toString(); });
                 } else {
                     graphItemCheckboxes.forEach(function(cb) {
                         if (cb.checked) {
