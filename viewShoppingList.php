@@ -175,6 +175,22 @@
         exit;
     }
 
+    // Handle AJAX: create a new named shopping list
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'createShoppingList') {
+        require_once('database/dbinfo.php');
+        require_once('database/dbShoppingEvent.php');
+        $personId = isset($_SESSION['_id']) ? (int)$_SESSION['_id'] : 0;
+        $listName = isset($_POST['listName']) ? trim($_POST['listName']) : '';
+        header('Content-Type: application/json');
+        if (!empty($listName)) {
+            $id = add_shoppingEvent($personId, $listName, date('Y-m-d'));
+            echo json_encode(['success' => $id > 0, 'id' => $id, 'listName' => $listName]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'List name is required']);
+        }
+        exit;
+    }
+
     $loggedIn = false;
     $accessLevel = 0;
     $userID = null;
@@ -549,6 +565,47 @@
             outline-offset: -2px;
             background-color: rgba(0,0,0,0.08);
         }
+        /* ---- New-list modal ---- */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            min-width: 320px; max-width: 480px;
+            width: 90%;
+        }
+        .modal-box h3 {
+            color: var(--secondary-accent-color);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            font-size: 0.95rem;
+            color: var(--page-font-color);
+            box-sizing: border-box;
+        }
+        .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+        .cancel-btn {
+            padding: 0.5rem 1.5rem;
+            background: transparent;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--page-font-color);
+        }
+        .cancel-btn:hover { background: rgba(0,0,0,0.05); }
         @media only screen and (max-width: 768px) {
             pageheader {
                 top: 100px;
@@ -596,6 +653,7 @@
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <button class="generate-btn" id="newListBtn">+ New List</button>
                 </div>
 
                 <?php if ($selectedFamilySize !== null): ?>
@@ -688,6 +746,22 @@
 
         </div>
     </main>
+
+    <!-- New Shopping List Modal -->
+    <div id="newListModal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3>Create New Shopping List</h3>
+            <div style="display:flex; flex-direction:column; gap:0.6rem;">
+                <label for="newListName" style="color:var(--page-font-color); font-weight:500;">List Name:</label>
+                <input type="text" id="newListName" class="modal-input" placeholder="e.g. Holiday Basket" maxlength="30">
+                <span id="newListError" style="color:rgb(239,68,68); font-size:0.9rem; display:none;"></span>
+            </div>
+            <div class="modal-actions">
+                <button class="generate-btn" id="confirmNewListBtn">Create</button>
+                <button class="cancel-btn" id="cancelNewListBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         $(function() {
@@ -1098,6 +1172,47 @@
             if (basketTbody) {
                 basketTbody.querySelectorAll('.exclude-checkbox').forEach(bindExcludeCheckbox);
             }
+
+            // ---- New Shopping List modal ----
+            $('#newListBtn').on('click', function() {
+                $('#newListName').val('');
+                $('#newListError').hide().text('');
+                $('#newListModal').show();
+                setTimeout(function() { $('#newListName').focus(); }, 50);
+            });
+
+            $('#cancelNewListBtn').on('click', function() { $('#newListModal').hide(); });
+
+            $('#newListModal').on('click', function(e) {
+                if (e.target === this) $(this).hide();
+            });
+
+            $('#newListName').on('keydown', function(e) {
+                if (e.key === 'Enter')  $('#confirmNewListBtn').trigger('click');
+                if (e.key === 'Escape') $('#newListModal').hide();
+            });
+
+            $('#confirmNewListBtn').on('click', function() {
+                var btn  = $(this);
+                var name = $('#newListName').val().trim();
+                if (!name) {
+                    $('#newListError').text('Please enter a list name.').show();
+                    return;
+                }
+                btn.prop('disabled', true).text('Creating...');
+                $('#newListError').hide();
+                $.post('viewShoppingList.php', { action: 'createShoppingList', listName: name }, function(data) {
+                    if (data.success) {
+                        window.location.href = 'viewShoppingList.php?familySize=' + encodeURIComponent(name);
+                    } else {
+                        $('#newListError').text(data.error || 'Failed to create list.').show();
+                        btn.prop('disabled', false).text('Create');
+                    }
+                }, 'json').fail(function() {
+                    $('#newListError').text('Server error. Please try again.').show();
+                    btn.prop('disabled', false).text('Create');
+                });
+            });
 
             // ---- Add item to basket ----
             document.getElementById('addItemBtn').addEventListener('click', function() {

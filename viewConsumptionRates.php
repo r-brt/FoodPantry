@@ -130,15 +130,21 @@
         ? new Distribution($distRow['id'], $distRow['distributionDays'], $distRow['personId'], $distRow['date'])
         : null;
 
-    // Most recent date's client records
+    // Most recent client record per shopping event group (shoppingEventId)
+    // Using MAX(id) per group ensures only the latest entry for each group is counted,
+    // so updating a group on a new day replaces the old value rather than adding to it.
     $latestClients    = array();
     $latestClientDate = null;
-    $clientResult = mysqli_query($con, 'SELECT * FROM dbclient ORDER BY date DESC, id DESC');
+    $clientResult = mysqli_query($con,
+        'SELECT c.* FROM dbclient c
+         WHERE c.id IN (SELECT MAX(id) FROM dbclient GROUP BY shoppingEventId)
+         ORDER BY c.date DESC, c.id DESC');
     if ($clientResult) {
         while ($row = mysqli_fetch_assoc($clientResult)) {
-            if ($latestClientDate === null) $latestClientDate = $row['date'];
-            if ($row['date'] !== $latestClientDate) break;
             $latestClients[] = new Client($row['id'], $row['shoppingEventId'], $row['personId'], $row['numClients'], $row['date']);
+        }
+        if (!empty($latestClients)) {
+            $latestClientDate = substr($latestClients[0]->getDate(), 0, 7);
         }
     }
     mysqli_close($con);
@@ -150,7 +156,7 @@
     if (!empty($latestClients) && $latestDistribution !== null && $latestDistribution->getDistributionDays() > 0) {
         $totalClients = 0;
         foreach ($latestClients as $c) { $totalClients += $c->getNumClients(); }
-        $clientsPerDay = round($totalClients / $latestDistribution->getDistributionDays(), 0);
+        $clientsPerDay = round($totalClients / $latestDistribution->getDistributionDays(), 2);
 
         if ($clientsPerDay > 0) {
             foreach ($latestClients as $c) {
@@ -207,6 +213,34 @@
             }
         }
     }
+
+// Auto-save consumption rates to database (skip duplicates by shoppingEventId + itemCategoryId + date)
+// Use a single normalized date (latest client date in the batch) so all records from the same
+// calculation share one date — prevents the weekly report's MAX(date) query from missing items
+// that came from shopping events entered on different days within the same month.
+$consumptionAutoSave = ['saved' => 0, 'skipped' => 0];
+if (!empty($consumptionRateRows)) {
+    require_once('database/dbConsumption.php');
+    $batchDate = max(array_map(function($c) { return $c->getDate(); }, $latestClients));
+    $saveCon = connect();
+    foreach ($consumptionRateRows as $rec) {
+        $seId     = (int)$rec['shoppingEventId'];
+        $catId    = (int)$rec['itemCategoryId'];
+        $rate     = (float)$rec['consumptionRate'];
+        $dateEsc  = mysqli_real_escape_string($saveCon, $batchDate);
+        $check = mysqli_query($saveCon,
+            'SELECT id FROM dbcomsumption WHERE shoppingEventId = ' . $seId .
+            ' AND itemCategoryId = ' . $catId .
+            ' AND date = "' . $dateEsc . '" LIMIT 1');
+        if ($check && mysqli_num_rows($check) > 0) {
+            $consumptionAutoSave['skipped']++;
+        } else {
+            add_consumption($seId, $catId, $rate, $userID ?? 0, $batchDate);
+            $consumptionAutoSave['saved']++;
+        }
+    }
+    mysqli_close($saveCon);
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -258,7 +292,8 @@
         }
         .report-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
         }
         .report-table th,
         .report-table td {
@@ -273,6 +308,7 @@
             font-weight: 500;
             position: sticky;
             top: 100px; /* height of page header */
+            border-right: 1px solid var(--main-color);
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -453,7 +489,7 @@
                             No shopping list baskets found for the client records. Make sure shopping events exist for those dates.
                         </p>
                     <?php else: ?>
-                        <?php $uniqueConsumptionFamilySizes = array_values(array_unique(array_column($consumptionRateRows, 'familySize'))); ?>
+                        <?php $uniqueConsumptionFamilySizes = array_values(array_unique(array_column($consumptionRateRows, 'familySize'))); sort($uniqueConsumptionFamilySizes); ?>
                         <div class="week-selector" style="margin-bottom: 1rem;">
                             <label for="consumptionFamilyFilter" style="color: var(--page-font-color); font-weight: 500;">Family Size:</label>
                             <select id="consumptionFamilyFilter" class="select" style="padding: 0.5rem 0.75rem; border: 1px solid var(--shadow-and-border-color); border-radius: 0.25rem; background-color: rgba(0,0,0,0.2); color: var(--page-font-color); cursor: pointer; min-width: 180px;">
@@ -463,7 +499,20 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="table-wrapper">
+                        <div class="table-wrapper" id="consumptionTotalsWrapper" style="display:none; margin-bottom:1rem;">
+                            <table class="report-table" id="consumptionTotalsTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Item Name</th>
+                                        <th>Group</th>
+                                        <th>Total Items/Day (All Family Sizes)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="consumptionTotalsTbody"></tbody>
+                            </table>
+                        </div>
+                        <div class="table-wrapper" id="consumptionRateWrapper">
                             <table class="report-table" id="consumptionRateTable">
                                 <thead>
                                     <tr>
@@ -495,9 +544,13 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div style="display:flex; gap:0.75rem; margin-top:1.25rem; flex-wrap:wrap; align-items:center;">
-                            <button class="generate-btn" id="saveConsumptionBtn">Save Consumption Rates to Database</button>
-                            <span id="consumptionFeedback" class="feedback-msg"></span>
+                        <div style="margin-top:1.25rem; font-size:0.9rem; color: var(--inactive-font-color);">
+                            <?php if ($consumptionAutoSave['saved'] > 0): ?>
+                                <span style="color: rgb(34, 197, 94);">&#10003; <?= $consumptionAutoSave['saved'] ?> rate(s) saved automatically.</span>
+                            <?php endif; ?>
+                            <?php if ($consumptionAutoSave['skipped'] > 0): ?>
+                                <span><?= $consumptionAutoSave['skipped'] ?> already on record (skipped).</span>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 <?php endif; ?>
@@ -573,57 +626,69 @@
             });
 
             // ---- Consumption Rate family size filter ----
-            $('#consumptionFamilyFilter').on('change', function() {
-                var selected     = $(this).val();
-                var visibleIndex = 1;
-                $('#consumptionRateTable tbody tr').each(function() {
-                    var rowFamily = $(this).data('family-size');
-                    if (!selected || rowFamily === selected) {
-                        $(this).show();
-                        $(this).find('.row-number').text(visibleIndex++);
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
-
-            // ---- Save Consumption Rates ----
-            var consumptionRecords = <?= json_encode(array_map(function($r) {
+            var consumptionRateData = <?= json_encode(array_map(function($r) {
                 return [
-                    'shoppingEventId' => $r['shoppingEventId'],
-                    'itemCategoryId'  => $r['itemCategoryId'],
+                    'itemName'        => $r['itemName'],
+                    'groupName'       => $r['groupName'],
+                    'groupSize'       => $r['groupSize'],
                     'consumptionRate' => $r['consumptionRate'],
-                    'date'            => $r['date']
+                    'familySize'      => $r['familySize'],
                 ];
             }, $consumptionRateRows)) ?>;
 
-            $('#saveConsumptionBtn').on('click', function() {
-                var btn       = $(this);
-                var $feedback = $('#consumptionFeedback');
-                if (!consumptionRecords || consumptionRecords.length === 0) {
-                    $feedback.removeClass('feedback-success').addClass('feedback-error').text('No rates to save.');
-                    return;
-                }
-                btn.prop('disabled', true).text('Saving...');
-                $feedback.removeClass('feedback-success feedback-error').text('');
-
-                $.post('viewConsumptionRates.php', {
-                    action: 'saveConsumption', records: JSON.stringify(consumptionRecords)
-                }, function(data) {
-                    if (data.success) {
-                        $feedback.removeClass('feedback-error').addClass('feedback-success')
-                            .text('Saved ' + data.saved + ' record(s) successfully!');
-                    } else {
-                        $feedback.removeClass('feedback-success').addClass('feedback-error')
-                            .text(data.error || 'Save failed.');
+            function buildTotalsTable() {
+                var totals = {};
+                var order  = [];
+                $.each(consumptionRateData, function(_, row) {
+                    var key = row.itemName + '||' + (row.groupName || '');
+                    if (!totals[key]) {
+                        totals[key] = { itemName: row.itemName, groupName: row.groupName, groupSize: row.groupSize, total: 0 };
+                        order.push(key);
                     }
-                    btn.prop('disabled', false).text('Save Consumption Rates to Database');
-                    setTimeout(function() { $feedback.text(''); }, 5000);
-                }, 'json').fail(function() {
-                    $feedback.removeClass('feedback-success').addClass('feedback-error').text('Server error. Please try again.');
-                    btn.prop('disabled', false).text('Save Consumption Rates to Database');
+                    totals[key].total = Math.round((totals[key].total + row.consumptionRate) * 100) / 100;
                 });
+                var $tbody = $('#consumptionTotalsTbody').empty();
+                $.each(order, function(i, key) {
+                    var t   = totals[key];
+                    var grp = t.groupName ? t.groupName + ' (' + t.groupSize + ' items)' : '&mdash;';
+                    $tbody.append(
+                        '<tr><td class="row-number">' + (i + 1) + '</td>' +
+                        '<td>' + $('<span>').text(t.itemName).html() + '</td>' +
+                        '<td style="font-size:0.85rem; color:var(--page-font-color);">' + grp + '</td>' +
+                        '<td><strong>' + t.total + '</strong></td></tr>'
+                    );
+                });
+            }
+
+            // Show totals by default when "All Family Sizes" is the initial selection
+            if ($('#consumptionFamilyFilter').length && $('#consumptionFamilyFilter').val() === '') {
+                buildTotalsTable();
+                $('#consumptionRateWrapper').hide();
+                $('#consumptionTotalsWrapper').show();
+            }
+
+            $('#consumptionFamilyFilter').on('change', function() {
+                var selected = $(this).val();
+                if (!selected) {
+                    buildTotalsTable();
+                    $('#consumptionRateWrapper').hide();
+                    $('#consumptionTotalsWrapper').show();
+                } else {
+                    $('#consumptionTotalsWrapper').hide();
+                    $('#consumptionRateWrapper').show();
+                    var visibleIndex = 1;
+                    $('#consumptionRateTable tbody tr').each(function() {
+                        var rowFamily = $(this).data('family-size');
+                        if (rowFamily === selected) {
+                            $(this).show();
+                            $(this).find('.row-number').text(visibleIndex++);
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+                }
             });
+
         });
     </script>
 </body>
