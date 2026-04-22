@@ -266,9 +266,12 @@
         } else if (isset($consumptionRates[$itemName]) && $consumptionRates[$itemName] > 0) {
             // Has items and consumption rate - calculate
             $rate = $consumptionRates[$itemName];
-            $daysLeft = round($totalItems / $rate);
-            $weeksLeft = round($daysLeft / 4);
-            $monthsLeft = round($weeksLeft / 4);
+            $rawDays = $totalItems / $rate;
+            $rawWeeks = $rawDays / 4;
+            $rawMonths = $rawWeeks / 4;
+            $daysLeft = round($rawDays);
+            $weeksLeft = round($rawWeeks);
+            $monthsLeft = round($rawMonths);
         }
         // else: items > 0 but no consumption rate - stays N/A
 
