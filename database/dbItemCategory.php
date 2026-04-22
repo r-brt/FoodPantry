@@ -109,6 +109,41 @@ function retrieve_ItemCategory_by_name($name) {
     return $theCategory;
 }
 
+function retrieve_ItemCategoryStatus($name) {
+    $con = connect();
+    $query = "SELECT * FROM dbitemcategory WHERE name = '" . $name . "'";
+    $result = mysqli_query($con, $query);
+    if (mysqli_num_rows($result) !== 1) {
+        mysqli_close($con);
+        return false;
+    }
+    $result_row = mysqli_fetch_assoc($result);
+    var_dump($result_row['status']);
+    if($result_row['status'] == 'Deleted') {
+        return 'Deleted';
+    } 
+    if($result_row['status'] == 'Active') {
+        return 'Active';
+    }
+    if($result_row['status'] == 'Inactive') {
+        return 'Inactive';
+    }
+}
+
+
+function retrieve_ItemID($name) {
+    $con = connect();
+    $query = "SELECT * FROM dbitemcategory WHERE name = '" . $name . "'";
+    $result = mysqli_query($con, $query);
+    if (mysqli_num_rows($result) !== 1) {
+        mysqli_close($con);
+        return false;
+    }
+    $result_row = mysqli_fetch_assoc($result);
+    return $result_row['id'];
+}
+
+
 function get_all_ItemCategory() {
     $con = connect();
     $query = "SELECT * FROM dbitemcategory";
