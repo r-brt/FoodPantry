@@ -226,6 +226,8 @@ if ($selectedPairIndex !== null) {
             text-align: left;
             border-bottom: 1px solid var(--shadow-and-border-color);
             color: var(--page-font-color);
+            text-align: left;
+            vertical-align: middle;
         }
         .report-table th {
             background-color: var(--main-color);
@@ -241,6 +243,9 @@ if ($selectedPairIndex !== null) {
             text-align: center;
             padding: 3rem 1rem;
             color: var(--inactive-font-color);
+        }
+        .mobile-text {
+            display: none;
         }
         @media only screen and (max-width: 768px) {
             pageheader {
@@ -262,19 +267,39 @@ if ($selectedPairIndex !== null) {
                 padding: 0.5rem;
             }
             div.table-wrapper {
-                overflow-x: auto;
+                overflow-x: visible;
             }
-            .table-toolbar {
+            .updateInv-optionRow {
+                display: flex;
+                align-items: right;
                 flex-direction: column;
-                align-items: stretch;
+                justify-content: left;
+                gap: 1rem;
             }
-            .toolbar-left,
-            .toolbar-right {
-                width: 100%;
+            .updateInv-option {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                width: auto;
+                gap: 1rem;
             }
-            .toolbar-select,
-            .toolbar-search {
-                width: 100%;
+            .updateInv-qty {
+                max-width: 7rem;
+                margin-right: 2rem !important;
+                
+            }
+            .desktop-text {
+                display: none;
+            }
+            .mobile-text {
+                display: inline;
+            }
+            .report-table th {
+                font-size: 0.85rem;
+                padding: 4px;
+            }
+            .report-table td {
+                padding: 4px;
             }
         }
         .week-selector {
@@ -410,18 +435,41 @@ if ($selectedPairIndex !== null) {
                 <div class="table-wrapper">
                     <table class="report-table" id="inventoryTable">
                         <thead>
-                            <tr>
-                                <th style="width: 50px;">#</th>
-                                <th>Item Name</th>
-                                <th>Warehouse</th>
-                                <th>Pantry</th>
-                                <th>Pallet</th>
-                                <th>Total Boxes</th>
-                                <th>Banana Box</th>
-                                <th>Items Per Box</th>
-                                <th>Total Items</th>
-                            </tr>
-                        </thead>
+                                <tr>
+                                    <th> # </th>
+                                    <th>Item Name</th>
+                                    <th>
+                                        <span class="desktop-text">Warehouse</span>
+                                        <span class="mobile-text">WH</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Pantry</span>
+                                        <span class="mobile-text">PT</span>
+                                    </th>
+                                    <th>
+                                        <div class="pallet-column" style="display: block;">
+                                            <span class="desktop-text">Pallet Boxes</span>
+                                            <span class="mobile-text">Pallets</span>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Total Boxes</span>
+                                        <span class="mobile-text">Total Boxes</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Banana Box</span>
+                                        <span class="mobile-text">Ban. Box</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Items Per Box</span>
+                                        <span class="mobile-text">Items/Box</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Total Items</span>
+                                        <span class="mobile-text">Total Items</span>
+                                    </th>
+                                </tr>
+                            </thead>
                         <tbody>
                             <?php if (count($items) > 0): ?>
                                 <?php foreach ($items as $item): ?>
