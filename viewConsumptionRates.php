@@ -218,7 +218,7 @@
 // Use a single normalized date (latest client date in the batch) so all records from the same
 // calculation share one date — prevents the weekly report's MAX(date) query from missing items
 // that came from shopping events entered on different days within the same month.
-$consumptionAutoSave = ['saved' => 0, 'skipped' => 0];
+$consumptionAutoSave = ['saved' => 0, 'updated' => 0];
 if (!empty($consumptionRateRows)) {
     require_once('database/dbConsumption.php');
     $batchDate = max(array_map(function($c) { return $c->getDate(); }, $latestClients));
@@ -233,7 +233,9 @@ if (!empty($consumptionRateRows)) {
             ' AND itemCategoryId = ' . $catId .
             ' AND date = "' . $dateEsc . '" LIMIT 1');
         if ($check && mysqli_num_rows($check) > 0) {
-            $consumptionAutoSave['skipped']++;
+            $existing = mysqli_fetch_assoc($check);
+            update_consumption_itemsConsumed((int)$existing['id'], $rate);
+            $consumptionAutoSave['updated']++;
         } else {
             add_consumption($seId, $catId, $rate, $userID ?? 0, $batchDate);
             $consumptionAutoSave['saved']++;
@@ -548,8 +550,8 @@ if (!empty($consumptionRateRows)) {
                             <?php if ($consumptionAutoSave['saved'] > 0): ?>
                                 <span style="color: rgb(34, 197, 94);">&#10003; <?= $consumptionAutoSave['saved'] ?> rate(s) saved automatically.</span>
                             <?php endif; ?>
-                            <?php if ($consumptionAutoSave['skipped'] > 0): ?>
-                                <span><?= $consumptionAutoSave['skipped'] ?> already on record (skipped).</span>
+                            <?php if ($consumptionAutoSave['updated'] > 0): ?>
+                                <span style="color: rgb(34, 197, 94);">&#10003; <?= $consumptionAutoSave['updated'] ?> rate(s) updated.</span>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
