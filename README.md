@@ -1,11 +1,15 @@
-# Student Names
-Aiden Thompson
-Robert Burton
+### Student Names
+Meredith Alty,
+Aiden Thompson,
+Robert Burton,
+Allison Consuegra,
+Eron Hardin,
+Ayoub Oulmi
 
-# Fredericksburg SPCA Volunteer Management Web Application 
+# Catholic Charities Diocese of Arlington Food Pantry Management Web Application 
 
 ## Purpose
-This project is the result of a semester's worth of collaboration among UMW students. The goal of the project was to create a web application that better suits the needs of Fredericksburg SPCA, specifically as a system to manage their volunteers. The system allows volunteers to check-in and out of shifts on site, view their hours volunteered and sign up for events. For the Fred SPCA staff the system allows them to keep track of volunteer hours, create events, share announcements, and managed volunteer accounts.
+This project is the result of a semester's worth of collaboration among UMW students. The goal of the project was to create a web application that better suits the needs of CCDA Food Pantry, specifically as a system to manage their inventory. The system allows admins and inventory counters to view, update and modify inventory logs. For the CCDA staff the system allows them to keep track of changes of item category counts over time.
 
 ## Authors
 The ODHS Medicine Tracker is based on an old open source project named "Homebase". [Homebase](https://a.link.will.go.here/) was originally developed for the Ronald McDonald Houses in Maine and Rhode Island by Oliver Radwan, Maxwell Palmer, Nolan McNair, Taylor Talmage, and Allen Tucker.
@@ -20,50 +24,58 @@ The ODHS Medicine Tracker code was modified in the Fall of 2024, changing the co
 
 In Spring 2025, the Step VA Volunteer Management code was adapted to develop the Fredericksburg SCPA Volunteer Management Web Application. Numerous existing database tables were retained with modifications or renamed, while new tables were introduced as needed. Certain files and functionalities from the original system were integrated, while additional features were designed specifically for the Fredericksburg SCPA Volunteer Management system. The team responsible for these updates and enhancements included Yalda Alemy, Luke Blair, Madison Van Buren, Sean Foley, Luke Gibson, Aiden Meyer, and Israel Ortiz.
 
+During the spring of 2026, the Whiskey Valor Event Management System served as the foundation for the new Catholic Charities Diocese of Arlington (CCDA) Food Pantry Inventory Management Web Application. The transition involved repurposing and renaming several original database tables while introducing new ones to meet specific inventory management requirements. While the development team integrated various core files and functions from the initial system, they also built custom features tailored specifically to the needs of the CCDA food pantry. The team who contributed to this consisted of Meredith Alty, Aiden Thompson, Robert Burton, Allison Consuegra, Eron Hardin, and Ayoub Oulmi.
+
 ## User Types
-There are two types of users (also referred to as 'roles') within FredSPCA.
+There are two types of users (also referred to as 'roles') within the food pantry.
 * Admins
-* Volunteers
+* Inventory Counters
 
-Admins can create and edit events, view and approve sign-ups, and view sign-ups and volunteer hours.
+Admins can create, edit and view all inventory logs and users (active, inactive and deleted). They can also manage the consumption rates, food categories, and view generated/calculated analytical data on the changes of inventory over time. Admins can create a shopping list for multiple family sizes.
 
-Volunteers can create and edit their profile, sign up for events, check-in and check-out of events, and view their hours. Volunteer accounts can be archived by the Admin if the account is no longer in use.
+Inventory Counters can create, edit and view inventory logs. They can also view generated/calculated analytical data on the changes of inventory over time. Inventory Counters can create a shopping list for multiple family sizes.
 
 There is also a root admin account with username 'vmsroot'. The default password for this account is 'vmsroot'. This account has hardcoded Admin privileges. It is crucial that this account be given a strong password and that the password be easily remembered, as it cannot easily be reset. This account should be used for system administration purposes only.
 
 ## Features
-Below is an in-depth list of features that were implemented within the system
-* User registration and log in
-* Dashboard
-* Volunteer Management
-  * Change own password
-  * View volunteer hours (print-friendly)
-  * Change hours
+Below is a list of features that were implemented within the system
+* User registration (via admin account) and log in
+* Admin Dashboard
+* Inventory Management Dashboard
+* User Management
+  * Change own/non-admin user's password
   * Modify profile
   * Reset password
   * User Search
-* Events and Event Management
-  * Calendar with event listings
-  * Calendar day view with event listings
-  * Event search
-  * Event details page
-  * Volunteer event sign up
-  * View Upcoming Events
-  * View Volunteer Event Roster
-  * Modify event details
-  * Create new event
-  * Delete event
-  * Complete event
-  * Check-in and check-out for event
+  * Deactivate, Delete, Reactivate Users
+* Manage Item Categories
+  * Add Item Categories
+  * Delete, Deactivate, Reactivate Item Categories
+  * View Item Categories
+  * Modify Item Categories
+* Consumption Rates
+* Shopping List
+  * Create shopping list basket
+  * Export shopping list
+* Inventory Management
+  * Update the inventory log
+  * View all inventory logs
+  * View at-risk items for all inventory logs
+  * Manage Pallets
+    * Add Pallets
+    * Delete, Deactivate, Reactivate Pallets
+    * View Pallets
+    * Modify Pallets
 * Reports (print-friendly)
-  * Volunteer Hour Reports
+  * Inventory log
+  * Trends
+  * Graphs
+  * Monthly summaries
 * Notification system, with notifications generated when
-  * A volunteer has requested sign-up
-  * A user has canceled their sign-up
-  * Approved sign-up
+  * 'Forgot password' email
 
 ## Design Documentation
-Several types of diagrams describing the design of the Step VA, including sequence diagrams and use case diagrams, are available. Please contact Dr. Polack for access.
+Several types of diagrams describing the design of the CCDA Food Pantry Inventory Management Software, including sequence diagrams and use case diagrams, are available. Please contact Dr. Polack for access.
 
 ## "localhost" Installation
 Below are the steps required to run the project on your local machine for development and/or testing purposes.
@@ -72,18 +84,18 @@ Below are the steps required to run the project on your local machine for develo
   * For Mac, the htdocs path is `/Applications/XAMPP/xamppfiles/htdocs`
   * For Ubuntu, the htdocs path is `/opt/lampp/htdocs/`
   * For Windows, the htdocs path is `C:\xampp\htdocs`
-3. Clone the Step VA repo by running the following command: 'https://github.com/aidanmeyer32/FredSPCA.git'
+3. Clone the Food Pantry repo by running the following command: 'https://github.com/r-brt/FoodPantry.git'
 4. Start the XAMPP MySQL server and Apache server
 5. Open the PHPMyAdmin console by navigating to [http://localhost/phpmyadmin/](http://localhost/phpmyadmin/)
-6. Create a new database named `stepvadb`. With the database created, navigate to it by clicking on it in the lefthand pane
-7. Import the `FredSPCA.sql` file located in `FredSPCA/sql` into this new database
+6. Create a new database named `foodpantrydb`. With the database created, navigate to it by clicking on it in the lefthand pane
+7. Import the `foodpantrydb.sql` file located in `FoodPantry/sql` into this new database
 8. Create a new user by navigating to `Privileges -> New -> Add user account`
 9. Enter the following credentials for the new user:
-  * Name: `stepvadb`
-  * Hostname: `Local`
-  * Password: `stepvadb`
+  * Name: `foodpantrydb`
+  * Hostname: `localhost`
+  * Password: `foodpantrydb`
   * Leave everything else untouched
-10. Navigate to [http://localhost/ODHS-Animal/](http://localhost/ODHS-Animal/) 
+10. Navigate to [http://localhost/foodpantry/](http://localhost/foodpantry/) 
 11. Log into the root user account using the username `vmsroot` with password `vmsroot`
 
 Installation is now complete.
@@ -92,7 +104,7 @@ Installation is now complete.
 In the event of being locked out of the root user, the following steps will allow resetting the root user's login credentials:
 1. Using the PHPMyAdmin console, delete the `vmsroot` user row from the `dbPersons` table
 2. Clear the SiteGround dynamic cache [using the steps outlined below](#clearing-the-siteground-cache)
-3. Navigate to gwyneth/insertAdmin.php. You should see a message that says `ROOT USER CREATION SUCCESS`
+3. Navigate to `foodpantry/insertAdmin.php`. You should see a message that says `ROOT USER CREATION SUCCESS`
 4. You may now log in with the username and password `vmsroot`
 
 ## Platform
@@ -102,7 +114,7 @@ Dr. Polack chose SiteGrounds as the platform on which to host the project. Below
 Access to the SiteGround Dashboard requires a SiteGround account with access. Access is managed by Dr. Polack.
 
 ### Localhost to Siteground
-Follow these steps to transfter your localhost version of the Step VA code to Siteground. For a video tutorial on how to complete these steps, contact Dr. Polack.
+Follow these steps to transfter your localhost version of the CCDA Food Pantry code to Siteground. For a video tutorial on how to complete these steps, contact Dr. Polack.
 1. Create an FTP Account on Siteground, giving you the necessary FTP credentials. (Hostname, Username, Password, Port)
 2. Use FTP File Transfer Software (Filezilla, etc.) to transfer the files from your localhost folders to your siteground folders using the FTP credentials from step 1.
 3. Create the following database-related credentials on Siteground under the MySQL tab:
@@ -131,28 +143,15 @@ Follow these steps to transfter your localhost version of the Step VA code to Si
 
 Clearing your cache will help ensure that you're seeing the latest updates to the application. If you continue experiencing issues, consider reaching out for further support.
 
-# TODO just tailwind?
-### External Libraries and APIs
-The only outside library utilized by the Step VA is the jQuery library. The version of jQuery used by the system is stored locally within the repo, within the lib folder. jQuery was used to implement form validation and the hiding/showing of certain page elements. Additionally, the Font Awesome library was used for some of the icon pictures. This library is linked in the headers of some files "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css".
+## External Libraries and APIs
+The only outside library utilized by the CCDA Food Pantry is the jQuery library. The version of jQuery used by the system is stored locally within the repo, within the lib folder. jQuery was used to implement form validation and the hiding/showing of certain page elements. Additionally, the Font Awesome library was used for some of the icon pictures. This library is linked in the headers of some files "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css".
 
-# TODO make sure we didn't already fix any of these, add any new
-### Potential Improvements
+## Potential Improvements
 Below is a list of improvements that could be made to the system in subsequent semesters.
-* Rename the database
-* Adding special buttons across pages (e.g. ‘View and Change Hours’ may have a ‘Return to My Hours’ option rather than only ‘Return to Dashboard’)
-* Added functionality for users who are participants, some participant functionality code exists within the current code, only it is commented out
-* Link calendar to Google calendar, add links to Google forms
-* Edits so screen size may no longer affect alignment of headers and tables
-* Remove the admin's ability to sign up admin account for an event
 * Increase password security
-* Ensure volunteers cannot sign up for events during time frames in which they will be signed up for another event
-* If an admin creates conflicting events, bring it to their attention while allowing the option to continue
-* If an admin exceeds the occupancy limit, bring it to their attention while allowing the option to continue
-* Notifications: add delete functionality to the button, add a ‘view message’ functionality when a message is selected
-* Additonal items related to volunteer training
 
 ## License
 The project remains under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl.txt).
 
 ## Acknowledgements
-Thank you to Dr. Polack and Fredericksburg SPCA for the opportunity to work on this project.
+Thank you to Dr. Polack and Catholic Charities Diocese of Arlington for the opportunity to work on this project.
