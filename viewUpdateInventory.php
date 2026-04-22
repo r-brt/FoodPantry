@@ -313,6 +313,8 @@
             text-align: left;
             border-bottom: 1px solid var(--shadow-and-border-color);
             color: var(--page-font-color);
+            text-align: left;
+            vertical-align: middle;
         }
         .report-table th {
             background-color: var(--main-color);
@@ -399,6 +401,7 @@
             align-items: center;
             justify-content: center;
             gap: 1rem;
+            display: table-row !important;
         }
         .updateInv-label {
             color: var(--page-font-color);
@@ -464,8 +467,16 @@
             cursor: pointer;
             font-size: 0.95rem;
             font-weight: 500;
-            margin-bottom: 0.25rem;
+            margin: 0.25rem;
             text-align: center;
+        }
+        .pallet-column {
+            text-align: left !important;
+            display: inline-block;
+            width: 100%;
+        }
+        .mobile-text {
+            display: none;
         }
         @media only screen and (max-width: 768px) {
             pageheader {
@@ -488,7 +499,7 @@
                 padding: 0.5rem;
             }
             div.table-wrapper {
-                overflow-x: auto;
+                overflow-x: visible;
             }
             .updateInv-optionRow {
                 display: flex;
@@ -506,7 +517,21 @@
             }
             .updateInv-qty {
                 max-width: 7rem;
-                margin-right: 10%;
+                margin-right: 2rem !important;
+                
+            }
+            .desktop-text {
+                display: none;
+            }
+            .mobile-text {
+                display: inline;
+            }
+            .report-table th {
+                font-size: 0.85rem;
+                padding: 4px;
+            }
+            .report-table td {
+                padding: 4px;
             }
         }
     </style>
@@ -553,53 +578,69 @@
 
                         </div>
                         <div class="table-wrapper">
-                            <table class="report-table">
-                                <thead>
-                                    <tr>
-                                        <th>Item Name</th>
-                                        <th>Warehouse</th>
-                                        <th>Pantry</th>
-                                        <th><div class="pallet-column" style="display: block;">Pallet Boxes</div></th>
-                                        <th>Previous Total<br>
-                                            <?php if($previous_event_pair[0])
-                                                    echo(date("m/d/Y", strtotime($previous_event_pair[0]->getDate())))?>
-                                        </th>
-                                        <th>Banana Box</th>
-                                        <th>Items Per Box</th>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>
+                                        <span class="desktop-text">Warehouse</span>
+                                        <span class="mobile-text">WH</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Pantry</span>
+                                        <span class="mobile-text">PT</span>
+                                    </th>
+                                    <th>
+                                        <div class="pallet-column" style="display: block;">
+                                            <span class="desktop-text">Pallet Boxes</span>
+                                            <span class="mobile-text">Pallets</span>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Banana Box</span>
+                                        <span class="mobile-text">Ban. Box</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Items Per Box</span>
+                                        <span class="mobile-text">Items/Box</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $categories = get_all_active_ItemCategory();
+                                foreach($categories AS $category): ?>
+                                    <tr class="updateInv-row">
+                                        <td>
+                                            <label class="updateInv-label" for="warehouse_<?php echo($category->getId())?>">
+                                                <?php echo($category->getName());?>
+                                            </label>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="updateInv-qty" min="0" placeholder="0"
+                                                value="<?php if (!empty($errors)) echo($_POST['warehouse_'.$category->getId()]);?>"
+                                                name="warehouse_<?php echo($category->getId())?>"
+                                                id="warehouse_<?php echo($category->getId())?>">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="updateInv-qty" min="0" placeholder="0"
+                                                value="<?php if (!empty($errors)) echo($_POST['pantry_'.$category->getId()]);?>"
+                                                name="pantry_<?php echo($category->getId())?>"
+                                                id="pantry_<?php echo($category->getId())?>">
+                                        </td>
+                                        <td>
+                                            <div class="pallet-column" style="display: block;">
+                                                <?php if(isset($pallet_totals[$category->getId()]))
+                                                            echo($pallet_totals[$category->getId()])?>
+                                            </div>
+                                        </td>
+                                        <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
+                                        <td style="text-align: center;"><?php echo($category->getItemsPerBox())?></td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                        $categories = get_all_active_ItemCategory();
-                        foreach($categories AS $category): ?>
-                            <tr>
-                                <div class="updateInv-row">
-                                    <td><label class="updateInv-label"
-                                            for="warehouse_<?php echo($category->getId())?>">
-                                            <?php echo($category->getName());?>
-                                    </label></td>
-                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="0"
-                                            value="<?php if (!empty($errors)) echo($_POST['warehouse_'.$category->getId()]);?>"
-                                            name="warehouse_<?php echo($category->getId())?>"
-                                            id="warehouse_<?php echo($category->getId())?>"></td>
-                                    <td><input type="number" class="updateInv-qty" min="0" placeholder="0"
-                                            value="<?php if (!empty($errors)) echo($_POST['pantry_'.$category->getId()]);?>"
-                                            name="pantry_<?php echo($category->getId())?>"
-                                            id="pantry_<?php echo($category->getId())?>"></td>
-                                    <td><div class="pallet-column" style="display: block;">
-                                        <?php if(isset($pallet_totals[$category->getId()]))
-                                                    echo($pallet_totals[$category->getId()])?>
-                                    </div></td>
-                                    <td><?php if(isset($prev_totals[$category->getId()]))
-                                                    echo($prev_totals[$category->getId()])?></td>
-                                    <td style="text-align: center;"><?= $category->getBananaBox() == 1 ? '✓' : '' ?></td>
-                                    <td style="text-align: center;"><?php echo($category->getItemsPerBox())?></td>
-                                </div>
-                            </tr>
-                        <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                     </div>
                     <input type="hidden" id="overwrite" name="overwrite" value="0">
                     <input type="submit" value="Submit Inventory" />
