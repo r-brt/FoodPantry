@@ -49,10 +49,14 @@
     $consumptionRates = [];
     $con = connect();
     $result = mysqli_query($con,
-        'SELECT itemCategoryId, SUM(itemsConsumed) AS totalRate, date
-         FROM dbcomsumption
-         WHERE date = (SELECT MAX(date) FROM dbcomsumption)
-         GROUP BY itemCategoryId');
+        'SELECT c1.itemCategoryId, SUM(c1.itemsConsumed) AS totalRate
+         FROM dbcomsumption c1
+         INNER JOIN (
+             SELECT itemCategoryId, MAX(date) AS maxDate
+             FROM dbcomsumption
+             GROUP BY itemCategoryId
+         ) c2 ON c1.itemCategoryId = c2.itemCategoryId AND c1.date = c2.maxDate
+         GROUP BY c1.itemCategoryId');
     if ($result) {
         while ($row = mysqli_fetch_assoc($result)) {
             $catId = (int)$row['itemCategoryId'];
