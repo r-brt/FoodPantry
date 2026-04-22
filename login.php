@@ -38,7 +38,7 @@
 
             if (!$user) {
                 $badLogin = true;
-            } else if ($user->get_status() === "Inactive") {
+            } else if ($user->get_status() !== "Active") {
                 // If the user is archived, block login
                 $archivedAccount = true;
             } else if (password_verify($password, $user->get_password())) {
