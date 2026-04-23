@@ -278,7 +278,7 @@
                     $hasItems = false;
                     $rowNum = 0;
                     foreach($allCategories as $category): ?>
-                        <?php if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue; ?>
+                        <?php if(!isset($categoriesWithData[$category->getId()])) continue; ?>
                         <?php
                         $categoryId = $category->getId();
                         $hasWarehouse = isset($warehouseCountsMap[$categoryId]);
