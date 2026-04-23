@@ -95,6 +95,9 @@ function get_shoppingCounts_by_itemCategory($itemCategoryId){
  */
 
 function update_shoppingCount_quantity($id, $quantity){
+    if (!is_int($quantity) || $quantity < 1) {
+        return false;
+    }
     $con=connect();
     $query = 'SELECT * FROM dbshoppingcounts WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
@@ -102,7 +105,7 @@ function update_shoppingCount_quantity($id, $quantity){
         mysqli_close($con);
         return false;
     }
-    $query = 'UPDATE dbshoppingcounts SET quantity = "' . $quantity . '" WHERE id = "' . $id . '"';
+    $query = 'UPDATE dbshoppingcounts SET quantity = ' . (int)$quantity . ' WHERE id = ' . (int)$id;
     $result = mysqli_query($con,$query);
 
     mysqli_close($con);
