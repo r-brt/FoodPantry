@@ -192,17 +192,23 @@ function make_a_palletCount($result_row) {
 }
 
 /*
- * Check if a category is used in any pallet (has quantity > 0)
- * Returns true if category exists on any pallet, false otherwise
+ * Get names of pallets that contain a given category (quantity > 0)
+ * Returns array of pallet names. Empty array means category is not on any pallet.
  */
-function is_category_in_pallets($categoryId){
+function get_pallet_names_with_category($categoryId){
     $con=connect();
-    $query = "SELECT COUNT(*) as count FROM dbpalletcounts WHERE itemCategoryId = ? AND quantity > 0";
+    $query = "SELECT DISTINCT pe.name
+              FROM dbpalletcounts pc
+              INNER JOIN dbpalletevent pe ON pc.palletEventId = pe.id
+              WHERE pc.itemCategoryId = ? AND pc.quantity > 0";
     $stmt = $con->prepare($query);
     $stmt->bind_param("i", $categoryId);
     $stmt->execute();
     $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
+    $names = array();
+    while ($row = $result->fetch_assoc()) {
+        $names[] = $row['name'];
+    }
     mysqli_close($con);
-    return $row['count'] > 0;
+    return $names;
 }

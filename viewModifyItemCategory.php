@@ -32,7 +32,8 @@
     // AJAX endpoint to check if category is on a pallet
     if (isset($_GET['action']) && $_GET['action'] === 'checkPallet' && isset($_GET['id'])) {
         header('Content-Type: application/json');
-        echo json_encode(['onPallet' => is_category_in_pallets($_GET['id'])]);
+        $palletNames = get_pallet_names_with_category($_GET['id']);
+        echo json_encode(['onPallet' => !empty($palletNames), 'pallets' => $palletNames]);
         exit;
     }
 
@@ -56,8 +57,9 @@
             die();
         }
         else if(isset($_POST["deactivate_button"])){
-            if (is_category_in_pallets($theCategory->getId())) {
-                $errors[] = "Cannot deactivate - this item is currently on a pallet.";
+            $palletNames = get_pallet_names_with_category($theCategory->getId());
+            if (!empty($palletNames)) {
+                $errors[] = "Cannot deactivate - this item is currently on pallet(s): " . implode(', ', $palletNames) . ".";
             } else {
                 deactivate_itemCategory($theCategory->getId());
                 header('Location: viewItemCategories.php');
@@ -70,8 +72,9 @@
             die();
         }
         else if(isset($_POST["delete_button"])){
-            if (is_category_in_pallets($theCategory->getId())) {
-                $errors[] = "Cannot delete - this item is currently on a pallet.";
+            $palletNames = get_pallet_names_with_category($theCategory->getId());
+            if (!empty($palletNames)) {
+                $errors[] = "Cannot delete - this item is currently on pallet(s): " . implode(', ', $palletNames) . ".";
             } else {
                 delete_itemCategory($theCategory->getId());
                 header('Location: viewItemCategories.php');
@@ -403,7 +406,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.onPallet) {
-                    alert('Cannot delete - this item is currently on a pallet.');
+                    alert('Cannot delete - this item is currently on pallet(s): ' + data.pallets.join(', ') + '.');
                 } else {
                     if (confirm('Are you sure you want to\nDELETE Category: ' + categoryName + '?')) {
                         var input = document.createElement('input');
