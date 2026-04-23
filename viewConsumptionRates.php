@@ -84,7 +84,7 @@
         $userID = $_SESSION['_id'];
     }
 
-    if ($accessLevel < 1) {
+    if ($accessLevel < 2) {
         header('Location: index.php');
         die();
     }

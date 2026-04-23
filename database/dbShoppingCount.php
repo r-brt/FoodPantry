@@ -95,6 +95,9 @@ function get_shoppingCounts_by_itemCategory($itemCategoryId){
  */
 
 function update_shoppingCount_quantity($id, $quantity){
+    if (!is_int($quantity) || $quantity < 1) {
+        return false;
+    }
     $con=connect();
     $query = 'SELECT * FROM dbshoppingcounts WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
@@ -102,7 +105,7 @@ function update_shoppingCount_quantity($id, $quantity){
         mysqli_close($con);
         return false;
     }
-    $query = 'UPDATE dbshoppingcounts SET quantity = "' . $quantity . '" WHERE id = "' . $id . '"';
+    $query = 'UPDATE dbshoppingcounts SET quantity = ' . (int)$quantity . ' WHERE id = ' . (int)$id;
     $result = mysqli_query($con,$query);
 
     mysqli_close($con);
@@ -215,6 +218,28 @@ function delete_shoppingCount_group($groupId) {
     mysqli_query($con, 'UPDATE dbshoppingcounts SET groupId = NULL WHERE groupId = ' . (int)$groupId);
     mysqli_query($con, 'DELETE FROM dbshoppingcountgroup WHERE id = ' . (int)$groupId);
     mysqli_close($con);
+}
+
+/*
+ * Get family size names of shopping lists that contain a given category (quantity > 0)
+ * Returns array of family size names. Empty array means category is not in any shopping list.
+ */
+function get_shoppingList_families_with_category($categoryId){
+    $con=connect();
+    $query = "SELECT DISTINCT se.familySize
+              FROM dbshoppingcounts sc
+              INNER JOIN dbshoppingevent se ON sc.shoppingEventId = se.id
+              WHERE sc.itemCategoryId = ? AND sc.quantity > 0";
+    $stmt = $con->prepare($query);
+    $stmt->bind_param("i", $categoryId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $names = array();
+    while ($row = $result->fetch_assoc()) {
+        $names[] = $row['familySize'];
+    }
+    mysqli_close($con);
+    return $names;
 }
 
 

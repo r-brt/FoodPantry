@@ -262,9 +262,6 @@
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
-            position: sticky;
-            top: 1rem;
-            z-index: 6;
         }
         .title {
             text-align: center;
@@ -490,8 +487,9 @@
                 padding: 0.5rem;
                 font-size: 0.8rem;
             }
-            .report-table th{
-                position: static;
+            .report-table th {
+                position: sticky;
+                top: 100px;
             }
             .report-container {
                 padding: 0.5rem;

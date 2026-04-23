@@ -28,11 +28,18 @@
     require_once('include/input-validation.php');
     require_once('database/dbItemCategory.php');
     require_once('database/dbPalletCounts.php');
+    require_once('database/dbShoppingCount.php');
 
-    // AJAX endpoint to check if category is on a pallet
-    if (isset($_GET['action']) && $_GET['action'] === 'checkPallet' && isset($_GET['id'])) {
+    // AJAX endpoint to check if category is on a pallet or in a shopping list
+    if (isset($_GET['action']) && $_GET['action'] === 'checkInUse' && isset($_GET['id'])) {
         header('Content-Type: application/json');
-        echo json_encode(['onPallet' => is_category_in_pallets($_GET['id'])]);
+        $palletNames = get_pallet_names_with_category($_GET['id']);
+        $familyNames = get_shoppingList_families_with_category($_GET['id']);
+        echo json_encode([
+            'inUse' => !empty($palletNames) || !empty($familyNames),
+            'pallets' => $palletNames,
+            'families' => $familyNames
+        ]);
         exit;
     }
 
@@ -56,8 +63,17 @@
             die();
         }
         else if(isset($_POST["deactivate_button"])){
-            if (is_category_in_pallets($theCategory->getId())) {
-                $errors[] = "Cannot deactivate - this item is currently on a pallet.";
+            $palletNames = get_pallet_names_with_category($theCategory->getId());
+            $familyNames = get_shoppingList_families_with_category($theCategory->getId());
+            if (!empty($palletNames) || !empty($familyNames)) {
+                $msg = "Cannot deactivate - this item is currently in use:";
+                if (!empty($palletNames)) {
+                    $msg .= "<br>Pallet(s): " . implode(', ', $palletNames) . ".";
+                }
+                if (!empty($familyNames)) {
+                    $msg .= "<br>Shopping list(s): " . implode(', ', $familyNames) . ".";
+                }
+                $errors[] = $msg;
             } else {
                 deactivate_itemCategory($theCategory->getId());
                 header('Location: viewItemCategories.php');
@@ -70,8 +86,17 @@
             die();
         }
         else if(isset($_POST["delete_button"])){
-            if (is_category_in_pallets($theCategory->getId())) {
-                $errors[] = "Cannot delete - this item is currently on a pallet.";
+            $palletNames = get_pallet_names_with_category($theCategory->getId());
+            $familyNames = get_shoppingList_families_with_category($theCategory->getId());
+            if (!empty($palletNames) || !empty($familyNames)) {
+                $msg = "Cannot delete - this item is currently in use:";
+                if (!empty($palletNames)) {
+                    $msg .= " Pallet(s): " . implode(', ', $palletNames) . ".";
+                }
+                if (!empty($familyNames)) {
+                    $msg .= " Shopping list(s): " . implode(', ', $familyNames) . ".";
+                }
+                $errors[] = $msg;
             } else {
                 delete_itemCategory($theCategory->getId());
                 header('Location: viewItemCategories.php');
@@ -399,11 +424,18 @@
             errorList.style.display = 'none';
         }
 
-        fetch('viewModifyItemCategory.php?action=checkPallet&id=' + categoryId)
+        fetch('viewModifyItemCategory.php?action=checkInUse&id=' + categoryId)
             .then(response => response.json())
             .then(data => {
-                if (data.onPallet) {
-                    alert('Cannot delete - this item is currently on a pallet.');
+                if (data.inUse) {
+                    var msg = 'Cannot delete - this item is currently in use:';
+                    if (data.pallets.length) {
+                        msg += '\nPallet(s): ' + data.pallets.join(', ') + '.';
+                    }
+                    if (data.families.length) {
+                        msg += '\nShopping list(s): ' + data.families.join(', ') + '.';
+                    }
+                    alert(msg);
                 } else {
                     if (confirm('Are you sure you want to\nDELETE Category: ' + categoryName + '?')) {
                         var input = document.createElement('input');
@@ -513,11 +545,13 @@
                                 ';
                             }
                         ?>
+                        <?php if($theCategory->getStatus() != "Deleted"): ?>
                         <hr>
                         <button type="button" class="modify-delete-btn"
                             onclick="confirmDelete(<?php echo $theCategory->getId(); ?>, '<?php echo addslashes($theCategory->getName()); ?>')">
                             Delete Category
                         </button>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>

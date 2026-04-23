@@ -33,7 +33,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="./css/base.css" rel="stylesheet">
-    <title>Catholic Charities Food Pantry | Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="images/ccda-logo-white.svg">
+    <title>Dashboard | CCDA</title>
     <style>
         * {
             box-sizing: border-box;
@@ -503,6 +504,14 @@
         <div class="large-text-sub" style="color:white;">Manage Item Categories</div>
         <div class="graph-text" style="color:white;">Add, edit, and delete item categories.</div>
     </div>
+    <div class="content-box-test" onclick="window.location.href='viewConsumptionRates.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Consumption Rates Icon">
+        </div>
+
+        <div class="large-text-sub" style="color:white;">Consumption Rates</div>
+        <div class="graph-text" style="color:white;">Record and calculate item consumption rates.</div>
+    </div>
             </div>
 <!--
         <div class="nav-buttons">
@@ -710,7 +719,36 @@
     </div>
     <div class="full-width-bar-sub">
 
+    <!-- Update Inventory -->
+    <div class="content-box-test" onclick="window.location.href='viewUpdateInventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-checklist.svg" alt="Inventory Icon">
+        </div>
+
+        <div class="large-text-sub" style="color:white;">Update Inventory</div>
+        <div class="graph-text" style="color:white;">Add inventory entry.</div>
+    </div>
+
     <!-- View Inventory -->
+    <div class="content-box-test" onclick="window.location.href='inventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Inventory Icon">
+        </div>
+        
+        <div class="large-text-sub" style="color:white;">View Inventory</div>
+        <div class="graph-text" style="color:white;">Track inventory changes.</div>
+    </div>
+
+    <!-- Weekly Inventory Report -->
+    <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-arrow-down.svg" alt="Report Icon">
+        </div>
+        <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
+        <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
+    </div>
+
+    <!-- Inventory Analytics -->
     <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
             <img style="border-radius: 5px;" src="images/document-report.svg" alt="Report Icon">
@@ -720,35 +758,6 @@
         <div class="graph-text"style="color:white;">Explore visual reports and analytics for inventory data.</div>
     </div>
 
-    <!-- View Inventory -->
-    <div class="content-box-test" onclick="window.location.href='inventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Inventory Icon">
-        </div>
-        
-        <div class="large-text-sub" style="color:white;">Inventory Log</div>
-        <div class="graph-text" style="color:white;">Track inventory changes.</div>
-    </div>
-
-    <!-- Edit Inventory -->
-    <div class="content-box-test" onclick="window.location.href='viewUpdateInventory.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-checklist.svg" alt="Inventory Icon">
-        </div>
-
-        <div class="large-text-sub" style="color:white;">Update Inventory Log</div>
-        <div class="graph-text" style="color:white;">Add inventory entry.</div>
-    </div>
-
-    <!--Weekly Inventory Report -->
-    <div class="content-box-test" onclick="window.location.href='viewWeeklyReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-arrow-down.svg" alt="Report Icon">
-        </div>
-        <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
-        <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
-    </div>
-
     <!-- Shopping List -->
     <div class="content-box-test" onclick="window.location.href='viewShoppingList.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
         <div class="icon-overlay">
@@ -756,15 +765,6 @@
         </div>
         <div class="large-text-sub" style="color:white;">Shopping List</div>
         <div class="graph-text" style="color:white;">View and manage recommended baskets by family size.</div>
-    </div>
-
-    <!-- Consumption Rates -->
-    <div class="content-box-test" onclick="window.location.href='viewConsumptionRates.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Consumption Rates Icon">
-        </div>
-        <div class="large-text-sub" style="color:white;">Consumption Rates</div>
-        <div class="graph-text" style="color:white;">View and modify consumption rates.</div>
     </div>
     </div>
 

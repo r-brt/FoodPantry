@@ -256,9 +256,6 @@ if(isset($_GET["removeTestData"])){
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
-            position: sticky;
-            top: 1rem;
-            z-index: 6;
         }
         .title {
             text-align: center;
@@ -325,6 +322,63 @@ if(isset($_GET["removeTestData"])){
         }
         .mobile-text {
             display: none;
+        }
+        @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
+            .report-table th,
+            .report-table td {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+            .report-table th {
+                position: sticky;
+                top: 100px;
+            }
+            .report-container {
+                padding: 0.5rem;
+            }
+            div.table-wrapper {
+                overflow-x: visible;
+            }
+            .updateInv-optionRow {
+                display: flex;
+                align-items: right;
+                flex-direction: column;
+                justify-content: left;
+                gap: 1rem;
+            }
+            .updateInv-option {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                width: auto;
+                gap: 1rem;
+            }
+            .updateInv-qty {
+                max-width: 7rem;
+                margin-right: 2rem !important;
+                
+            }
+            .desktop-text {
+                display: none;
+            }
+            .mobile-text {
+                display: inline;
+            }
+            .report-table th {
+                font-size: 0.85rem;
+                padding: 4px;
+            }
+            .report-table td {
+                padding: 4px;
+            }
         }
         .inventory-selector-toolbar {
             display: flex;
@@ -408,11 +462,6 @@ if(isset($_GET["removeTestData"])){
         }
         .toolbar-btn-clear:hover {
             background-color: rgba(0,0,0,0.3);
-        }
-        .row-number {
-            text-align: center;
-            color: var(--inactive-font-color);
-            font-weight: 500;
         }
         .modify-button {
             padding: 0.5rem 1rem;
@@ -543,7 +592,6 @@ if(isset($_GET["removeTestData"])){
                     <table class="report-table" id="inventoryTable">
                         <thead>
                                 <tr>
-                                    <th> # </th>
                                     <th>Item Name</th>
                                     <th>
                                         <span class="desktop-text">Warehouse</span>
@@ -581,7 +629,6 @@ if(isset($_GET["removeTestData"])){
                             <?php if (count($items) > 0): ?>
                                 <?php foreach ($items as $item): ?>
                                     <tr>
-                                        <td class="row-number"></td>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= $item['warehouse_boxes'] > 0 ? htmlspecialchars($item['warehouse_boxes']) : '-' ?></td>
                                         <td><?= $item['pantry_boxes'] > 0 ? htmlspecialchars($item['pantry_boxes']) : '-' ?></td>
@@ -594,7 +641,7 @@ if(isset($_GET["removeTestData"])){
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="9" class="empty-state">No items found.</td>
+                                    <td colspan="8" class="empty-state">No items found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -615,16 +662,6 @@ if(isset($_GET["removeTestData"])){
 
     <script>
         $(function() {
-            // Update row numbers
-            function updateRowNumbers() {
-                $('#inventoryTable tbody tr:visible').each(function(index) {
-                    $(this).find('.row-number').text(index + 1);
-                });
-            }
-
-            // Initialize row numbers on page load
-            updateRowNumbers();
-
             // Sorting functionality
             $('#sortSelect').change(function() {
                 var sortValue = $(this).val();
@@ -651,9 +688,6 @@ if(isset($_GET["removeTestData"])){
                 $.each($rows, function(index, row) {
                     $tbody.append(row);
                 });
-
-                // Update row numbers after sorting
-                updateRowNumbers();
             });
 
             // Search functionality
@@ -669,16 +703,12 @@ if(isset($_GET["removeTestData"])){
                         $(this).hide();
                     }
                 });
-
-                // Update row numbers after filtering
-                updateRowNumbers();
             });
 
             // Clear search button
             $('#clearSearch').click(function() {
                 $('#searchInput').val('');
                 $('#inventoryTable tbody tr').show();
-                updateRowNumbers();
             });
 
             // Store original order for default sorting
