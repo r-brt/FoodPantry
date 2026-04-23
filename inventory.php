@@ -76,6 +76,52 @@ usort($eventPairs, function($a, $b) {
 // Get the selected week from query params, default to latest
 $selectedWeek = $_GET['week'] ?? (count($eventPairs) > 0 ? ($eventPairs[0]['warehouseId'] ?? $eventPairs[0]['pantryId']) : null);
 
+// Get the unique years from dates
+$uniqueYears = array();
+foreach($eventPairs as $index => $pair) {
+    $year = date('Y', strtotime($pair["date"]));
+    if(!in_array($year, $uniqueYears))
+        $uniqueYears[] = $year;
+}
+
+// Default for filterEventList is 30 Most Recent inventories
+$filterEventList = 30;
+
+// Get the selected year from query params, if it exists
+if(isset($_GET['year'])){
+    if(in_array($_GET['year'], $uniqueYears)){
+        $filterEventList = $_GET['year'];
+        // if year and week are in params, make sure the week is in the selected year.
+        // otherwise, change week to be the most recent inventory in the year selected.
+        if($selectedWeek){
+            $currentEvent = retrieve_inventoryEvent($selectedWeek);
+            if($currentEvent){
+                $currentEventYear = date('Y', strtotime($currentEvent->getDate()));
+                if($currentEventYear != $filterEventList){
+                    //set current week to the most recent inventory with the year selected
+                    foreach($eventPairs as $index => $pair) {
+                        $year = date('Y', strtotime($pair["date"]));
+                        if($year == $filterEventList){
+                            $selectedWeek = $pair["warehouseId"];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+    } 
+    else if($_GET['year'] < 100 && $_GET['year'] > 0)
+        $filterEventList = $_GET['year'];
+} 
+// If year is not set but week is set
+else if(isset($_GET['week'])){
+    $currentEvent = retrieve_inventoryEvent($selectedWeek);
+    if($currentEvent){
+        $filterEventList = date('Y', strtotime($currentEvent->getDate()));
+    }
+}
+
 // Find the selected pair index
 $selectedPairIndex = null;
 foreach($eventPairs as $index => $pair) {
@@ -165,6 +211,39 @@ if ($selectedPairIndex !== null) {
     });
 }
 
+/*
+ * DEBUG CODE ONLY
+ */
+if(isset($_GET["addTestData"])){
+    $numNewData = $_GET["addTestData"];
+    if($numNewData > 0 && $numNewData < 1001){
+        if(isset($pair["date"])){
+            $currDate = date('Y-m-d', strtotime($pair["date"]));
+            while($numNewData > 0){
+                $numNewData--;
+                $currDate = date('Y-m-d', strtotime($currDate. ' + 7 days'));
+                add_inventoryEvent(999999, "Warehouse", $currDate);
+                add_inventoryEvent(999999, "Pantry", $currDate);
+                add_inventoryEvent(999999, "Pallet", $currDate);
+                echo "DONE: ".$numNewData."<br>";
+            }
+            header('Location: inventory.php');
+            exit;
+        }
+    }
+}
+
+if(isset($_GET["removeTestData"])){
+    $allInventoryEvents = get_all_inventoryEvents();
+    foreach($allInventoryEvents as $event){
+        if($event->getPersonId() == 999999){
+            remove_inventoryEvent($event->getId());
+        }
+    }
+    header('Location: inventory.php');
+    exit;
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -247,70 +326,23 @@ if ($selectedPairIndex !== null) {
         .mobile-text {
             display: none;
         }
-        @media only screen and (max-width: 768px) {
-            pageheader {
-                top: 100px;
-            }
-            .title {
-                border-radius: 0;
-                background-color: #ffffff;
-                width: 100%;
-            }
-            .report-table th,
-            .report-table td {
-                padding: 0.5rem;
-                font-size: 0.8rem;
-                position: static;
-
-            }
-            .report-container {
-                padding: 0.5rem;
-            }
-            div.table-wrapper {
-                overflow-x: visible;
-            }
-            .updateInv-optionRow {
-                display: flex;
-                align-items: right;
-                flex-direction: column;
-                justify-content: left;
-                gap: 1rem;
-            }
-            .updateInv-option {
-                display: flex;
-                align-items: center;
-                flex-direction: row;
-                width: auto;
-                gap: 1rem;
-            }
-            .updateInv-qty {
-                max-width: 7rem;
-                margin-right: 2rem !important;
-                
-            }
-            .desktop-text {
-                display: none;
-            }
-            .mobile-text {
-                display: inline;
-            }
-            .report-table th {
-                font-size: 0.85rem;
-                padding: 4px;
-            }
-            .report-table td {
-                padding: 4px;
-            }
+        .inventory-selector-toolbar {
+            display: flex;
+            align-content: center;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            flex-direction: column;
         }
         .week-selector {
-            margin-bottom: 1.5rem;
+            margin-bottom: .5rem;
             display: flex;
             gap: 0.75rem;
             align-items: center;
         }
         .week-selector label {
             color: var(--page-font-color);
-            font-weight: 500;
         }
         .week-selector select {
             padding: 0.5rem 0.75rem;
@@ -393,6 +425,61 @@ if ($selectedPairIndex !== null) {
             font-weight: 500;
             max-width: 500px;
         }
+        @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
+            .report-table th,
+            .report-table td {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+                position: static;
+
+            }
+            .report-container {
+                padding: 0.5rem;
+            }
+            div.table-wrapper {
+                overflow-x: visible;
+            }
+            .updateInv-optionRow {
+                display: flex;
+                align-items: right;
+                flex-direction: column;
+                justify-content: left;
+                gap: 1rem;
+            }
+            .updateInv-option {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                width: auto;
+                gap: 1rem;
+            }
+            .updateInv-qty {
+                max-width: 7rem;
+                margin-right: 2rem !important;
+                
+            }
+            .desktop-text {
+                display: none;
+            }
+            .mobile-text {
+                display: inline;
+            }
+            .report-table th {
+                font-size: 0.85rem;
+                padding: 4px;
+            }
+            .report-table td {
+                padding: 4px;
+            }
+        }
     </style>
 </head>
 <pageheader>
@@ -404,20 +491,40 @@ if ($selectedPairIndex !== null) {
         <div class="report-container">
             <div class="report-section">
                 <h2>Food Items</h2>
-                <div class="week-selector">
-                    <label for="weekSelect">View Inventory:</label>
-                    <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
-                        <?php if (count($eventPairs) > 0): ?>
-                            <?php foreach ($eventPairs as $pair): ?>
-                                <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
-                                <option value="<?= htmlspecialchars($pairId) ?>" <?= ($pairId == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                <div class="inventory-selector-toolbar">
+                    <div class="week-selector">
+                        <label for="weekSelect">View Inventory:</label>
+                        <select id="weekSelect" name="week" onchange="window.location.href='?year='+<?php echo $filterEventList ?>+'&week=' + this.value">
+                            <?php if (count($eventPairs) > 0): ?>
+                                <?php foreach ($eventPairs as $index => $pair): ?>
+                                    <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
+                                    <?php if (date('Y', strtotime($pair['date'])) == $filterEventList || ($filterEventList < 100 && $index < $filterEventList)): ?>
+                                        <option value="<?= htmlspecialchars($pairId) ?>" <?= ($pairId == $selectedWeek) ? 'selected' : '' ?>>
+                                            <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                                        </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="week-selector">
+                        <label for="weekSelect" style="font-weight: 500;">Filter Inventories:</label>
+                        <select id="yearSelect" name="year" class="toolbar-select" onchange="window.location.href='?year=' + this.value +'&week='+<?php echo intval($selectedWeek) ?>">
+                            <option value="30" <?= ($filterEventList == "30") ? 'selected' : '' ?>>
+                                    Most Recent 
+                            </option>
+                            <optgroup label="By Year">
+                            <?php foreach ($uniqueYears as $year): ?>
+                                <option value="<?= $year ?>" <?= ($year == $filterEventList) ? 'selected' : '' ?>>
+                                    <?= $year ?>
                                 </option>
                             <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
+                            </optgroup>
+                        </select>
+                    </div>
                 </div>
-
+                <hr>
+                <br>
                 <div class="table-toolbar">
                     <div class="toolbar-left">
                         <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
@@ -580,6 +687,9 @@ if ($selectedPairIndex !== null) {
             });
         });
     </script>
+
+    <button id="addTestData" name="addTestData" onclick="window.location.href='?addTestData=100'">Add Test Data</button>
+    <button id="removeTestData" name="removeTestData" onclick="window.location.href='?removeTestData=100'">Remove Test Data</button>
 
 </body>
 </html>
