@@ -9,7 +9,7 @@
         $itemCategoryId  = isset($_POST['itemCategoryId'])  ? (int)$_POST['itemCategoryId']  : 0;
         header('Content-Type: application/json');
         if ($shoppingEventId > 0 && $itemCategoryId > 0) {
-            $id = add_shoppingCount($shoppingEventId, $itemCategoryId, 0);
+            $id = add_shoppingCount($shoppingEventId, $itemCategoryId, 1);
             echo json_encode(['success' => $id > 0, 'id' => $id]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid input']);
@@ -66,10 +66,35 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'updateQty') {
         require_once('database/dbShoppingCount.php');
         $id       = isset($_POST['id'])       ? (int)$_POST['id']       : 0;
-        $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
+        $quantity = isset($_POST['quantity']) ? $_POST['quantity']      : '';
         $notes    = isset($_POST['notes'])    ? trim($_POST['notes'])    : null;
         header('Content-Type: application/json');
-        if ($id > 0 && $quantity >= 0) {
+
+        // Validate quantity: must be a whole number >= 1
+        $qtyError = null;
+        if ($quantity === '' || $quantity === null) {
+            $qtyError = 'Quantity is required';
+        } else if (!is_numeric($quantity)) {
+            $qtyError = 'Quantity must be a number';
+        } else if ((float)$quantity != (int)$quantity) {
+            $qtyError = 'Quantity must be a whole number';
+        } else if ((int)$quantity < 0) {
+            $qtyError = 'Quantity cannot be negative';
+        } else if ((int)$quantity == 0) {
+            $qtyError = 'Quantity cannot be 0';
+        }
+
+        if ($qtyError !== null) {
+            // Save notes anyway so user doesn't lose them
+            if ($id > 0 && $notes !== null) {
+                update_shoppingCount_notes($id, $notes);
+            }
+            echo json_encode(['success' => false, 'error' => $qtyError]);
+            exit;
+        }
+        $quantity = (int)$quantity;
+
+        if ($id > 0) {
             $result = update_shoppingCount_quantity($id, $quantity);
             if ($notes !== null) {
                 update_shoppingCount_notes($id, $notes);
@@ -657,6 +682,7 @@
                 </div>
 
                 <?php if ($selectedFamilySize !== null): ?>
+                    <ul id="shoppingErrors" style="display:none; list-style:none; padding:0;"></ul>
                     <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
                         <button class="generate-btn" id="saveQuantitiesBtn">Save Quantities</button>
                         <button class="generate-btn" id="generatePdfBtn">Generate PDF</button>
@@ -697,7 +723,7 @@
                                         <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                         <td class="row-number"><?= $rowNum++ ?></td>
                                         <td data-item-name="<?= htmlspecialchars($item['item_name']) ?>"><span class="group-indent">&#8627;</span><?= htmlspecialchars($item['item_name']) ?></td>
-                                        <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="0" draggable="false"></td>
+                                        <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="1" draggable="false"></td>
                                         <td><div class="basket-notes-cell">
                                             <input type="text" class="basket-notes-input" placeholder="Optional..." value="<?= htmlspecialchars($item['notes']) ?>" draggable="false">
                                             <button class="remove-from-group-btn" data-item-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>" title="Remove from group">&#215;</button>
@@ -714,7 +740,7 @@
                                         <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                         <td class="row-number"><?= $rowNum++ ?></td>
                                         <td data-item-name="<?= htmlspecialchars($item['item_name']) ?>"><?= htmlspecialchars($item['item_name']) ?></td>
-                                        <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="0" draggable="false"></td>
+                                        <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="1" draggable="false"></td>
                                         <td><input type="text" class="basket-notes-input" placeholder="Optional..." value="<?= htmlspecialchars($item['notes']) ?>" draggable="false"></td>
                                         <td style="text-align:center;"><input type="checkbox" class="exclude-checkbox" data-count-id="<?= $item['id'] ?>" <?= $item['exclude'] ? '' : 'checked' ?> title="Include in consumption rate calculation" draggable="false"></td>
                                         <td><button class="remove-item-btn" data-count-id="<?= $item['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>" title="Remove item from list">&#215;</button></td>
@@ -1246,7 +1272,7 @@
                         '<td class="drag-handle" title="Drag to reorder">&#8597;</td>' +
                         '<td class="row-number"></td>' +
                         '<td data-item-name="' + escHtml(catName) + '">' + escHtml(catName) + '</td>' +
-                        '<td><input type="number" class="basket-qty-input" value="0" min="0" draggable="false"></td>' +
+                        '<td><input type="number" class="basket-qty-input" value="1" min="1" draggable="false"></td>' +
                         '<td><input type="text" class="basket-notes-input" placeholder="Optional..." value="" draggable="false"></td>' +
                         '<td style="text-align:center;"><input type="checkbox" class="exclude-checkbox" data-count-id="' + data.id + '" checked title="Include in consumption rate calculation" draggable="false"></td>' +
                         '<td><button class="remove-item-btn" data-count-id="' + data.id + '" data-cat-id="' + escHtml(catId) + '" data-cat-name="' + escHtml(catName) + '" title="Remove item from list">&#215;</button></td>';
@@ -1263,20 +1289,49 @@
             // ---- Save basket quantities + notes ----
             $('#saveQuantitiesBtn').on('click', function() {
                 var btn = $(this);
+
+                // Layer 2: Trigger native HTML5 validation tooltip on first invalid input
+                var allValid = true;
+                $('#basketTbody tr').find('.basket-qty-input').each(function() {
+                    if (!this.checkValidity()) {
+                        this.reportValidity();
+                        allValid = false;
+                        return false;
+                    }
+                });
+                if (!allValid) return;
+
                 var requests = [];
+                var errors = [];
                 $('#basketTbody tr').each(function() {
                     var row      = $(this);
                     var countId  = row.data('count-id');
-                    var quantity = parseInt(row.find('.basket-qty-input').val(), 10);
-                    if (!countId || isNaN(quantity) || quantity < 0) return;
+                    var itemName = row.data('cat-name') || 'Item';
+                    var quantity = row.find('.basket-qty-input').val();
+                    if (!countId) return;
                     var notes = row.find('.basket-notes-input').val() || '';
-                    requests.push($.post('viewShoppingList.php', {
+                    var req = $.post('viewShoppingList.php', {
                         action: 'updateQty', id: countId, quantity: quantity, notes: notes
-                    }));
+                    }).done(function(data) {
+                        if (data && !data.success && data.error) {
+                            errors.push(itemName + ': ' + data.error);
+                        }
+                    });
+                    requests.push(req);
                 });
-                $.when.apply($, requests).done(function() {
-                    btn.text('Saved!');
-                    setTimeout(function() { btn.text('Save Quantities'); }, 2000);
+                $.when.apply($, requests).always(function() {
+                    var errorList = $('#shoppingErrors');
+                    errorList.empty();
+                    if (errors.length > 0) {
+                        errors.forEach(function(err) {
+                            errorList.append('<li><h4 style="color:red;"><i>' + err + '</i></h4></li>');
+                        });
+                        errorList.show();
+                    } else {
+                        errorList.hide();
+                        btn.text('Saved!');
+                        setTimeout(function() { btn.text('Save Quantities'); }, 2000);
+                    }
                 });
             });
 
