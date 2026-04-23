@@ -177,9 +177,6 @@ if ($selectedPairIndex !== null) {
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
-            position: sticky;
-            top: 1rem;
-            z-index: 6;
         }
         .title {
             text-align: center;
@@ -226,6 +223,8 @@ if ($selectedPairIndex !== null) {
             text-align: left;
             border-bottom: 1px solid var(--shadow-and-border-color);
             color: var(--page-font-color);
+            text-align: left;
+            vertical-align: middle;
         }
         .report-table th {
             background-color: var(--main-color);
@@ -242,6 +241,9 @@ if ($selectedPairIndex !== null) {
             padding: 3rem 1rem;
             color: var(--inactive-font-color);
         }
+        .mobile-text {
+            display: none;
+        }
         @media only screen and (max-width: 768px) {
             pageheader {
                 top: 100px;
@@ -255,26 +257,48 @@ if ($selectedPairIndex !== null) {
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
-                position: static;
-
+            }
+            .report-table th {
+                position: sticky;
+                top: 100px;
             }
             .report-container {
                 padding: 0.5rem;
             }
             div.table-wrapper {
-                overflow-x: auto;
+                overflow-x: visible;
             }
-            .table-toolbar {
+            .updateInv-optionRow {
+                display: flex;
+                align-items: right;
                 flex-direction: column;
-                align-items: stretch;
+                justify-content: left;
+                gap: 1rem;
             }
-            .toolbar-left,
-            .toolbar-right {
-                width: 100%;
+            .updateInv-option {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                width: auto;
+                gap: 1rem;
             }
-            .toolbar-select,
-            .toolbar-search {
-                width: 100%;
+            .updateInv-qty {
+                max-width: 7rem;
+                margin-right: 2rem !important;
+                
+            }
+            .desktop-text {
+                display: none;
+            }
+            .mobile-text {
+                display: inline;
+            }
+            .report-table th {
+                font-size: 0.85rem;
+                padding: 4px;
+            }
+            .report-table td {
+                padding: 4px;
             }
         }
         .week-selector {
@@ -352,11 +376,6 @@ if ($selectedPairIndex !== null) {
         .toolbar-btn-clear:hover {
             background-color: rgba(0,0,0,0.3);
         }
-        .row-number {
-            text-align: center;
-            color: var(--inactive-font-color);
-            font-weight: 500;
-        }
         .modify-button {
             padding: 0.5rem 1rem;
             background-color: var(--accent-color);
@@ -410,23 +429,44 @@ if ($selectedPairIndex !== null) {
                 <div class="table-wrapper">
                     <table class="report-table" id="inventoryTable">
                         <thead>
-                            <tr>
-                                <th style="width: 50px;">#</th>
-                                <th>Item Name</th>
-                                <th>Warehouse</th>
-                                <th>Pantry</th>
-                                <th>Pallet</th>
-                                <th>Total Boxes</th>
-                                <th>Banana Box</th>
-                                <th>Items Per Box</th>
-                                <th>Total Items</th>
-                            </tr>
-                        </thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>
+                                        <span class="desktop-text">Warehouse</span>
+                                        <span class="mobile-text">WH</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Pantry</span>
+                                        <span class="mobile-text">PT</span>
+                                    </th>
+                                    <th>
+                                        <div class="pallet-column" style="display: block;">
+                                            <span class="desktop-text">Pallet Boxes</span>
+                                            <span class="mobile-text">Pallets</span>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Total Boxes</span>
+                                        <span class="mobile-text">Total Boxes</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Banana Box</span>
+                                        <span class="mobile-text">Ban. Box</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Items Per Box</span>
+                                        <span class="mobile-text">Items/Box</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Total Items</span>
+                                        <span class="mobile-text">Total Items</span>
+                                    </th>
+                                </tr>
+                            </thead>
                         <tbody>
                             <?php if (count($items) > 0): ?>
                                 <?php foreach ($items as $item): ?>
                                     <tr>
-                                        <td class="row-number"></td>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= $item['warehouse_boxes'] > 0 ? htmlspecialchars($item['warehouse_boxes']) : '-' ?></td>
                                         <td><?= $item['pantry_boxes'] > 0 ? htmlspecialchars($item['pantry_boxes']) : '-' ?></td>
@@ -439,7 +479,7 @@ if ($selectedPairIndex !== null) {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="9" class="empty-state">No items found.</td>
+                                    <td colspan="8" class="empty-state">No items found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -460,16 +500,6 @@ if ($selectedPairIndex !== null) {
 
     <script>
         $(function() {
-            // Update row numbers
-            function updateRowNumbers() {
-                $('#inventoryTable tbody tr:visible').each(function(index) {
-                    $(this).find('.row-number').text(index + 1);
-                });
-            }
-
-            // Initialize row numbers on page load
-            updateRowNumbers();
-
             // Sorting functionality
             $('#sortSelect').change(function() {
                 var sortValue = $(this).val();
@@ -496,9 +526,6 @@ if ($selectedPairIndex !== null) {
                 $.each($rows, function(index, row) {
                     $tbody.append(row);
                 });
-
-                // Update row numbers after sorting
-                updateRowNumbers();
             });
 
             // Search functionality
@@ -514,16 +541,12 @@ if ($selectedPairIndex !== null) {
                         $(this).hide();
                     }
                 });
-
-                // Update row numbers after filtering
-                updateRowNumbers();
             });
 
             // Clear search button
             $('#clearSearch').click(function() {
                 $('#searchInput').val('');
                 $('#inventoryTable tbody tr').show();
-                updateRowNumbers();
             });
 
             // Store original order for default sorting
