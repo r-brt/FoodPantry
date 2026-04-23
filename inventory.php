@@ -165,8 +165,8 @@ if ($selectedPairIndex !== null) {
     foreach ($allCategories as $category) {
         $categoryId = $category->getId();
 
-        // Show if active OR has data in this inventory
-        if ($category->getStatus() != 'Active' && !isset($categoriesWithData[$categoryId])) {
+        // Only show categories that have data in this inventory
+        if (!isset($categoriesWithData[$categoryId])) {
             continue;
         }
 

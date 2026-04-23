@@ -237,10 +237,10 @@
     foreach ($allCategories as $category) {
         $categoryId = $category->getId();
 
-        // Show if active OR has data in current/previous inventory
+        // Only show categories with data in current or previous inventory
         $hasCurrentData = isset($currentCounts[$categoryId]);
         $hasPreviousData = isset($previousCounts[$categoryId]);
-        if ($category->getStatus() != 'Active' && !$hasCurrentData && !$hasPreviousData) {
+        if (!$hasCurrentData && !$hasPreviousData) {
             continue;
         }
         $itemName = $category->getName();

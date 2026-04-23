@@ -125,7 +125,7 @@
             /* Update quantities for warehouse (if exists) */
             if($warehouseEvent) {
                 foreach($allCategories as $category) {
-                    if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue;
+                    if(!isset($categoriesWithData[$category->getId()])) continue;
 
                     $categoryId = $category->getId();
                     $fieldName = 'warehouse_qty_' . $categoryId;
@@ -160,7 +160,7 @@
             /* Update quantities for pantry (if exists) */
             if($pantryEvent) {
                 foreach($allCategories as $category) {
-                    if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue;
+                    if(!isset($categoriesWithData[$category->getId()])) continue;
 
                     $categoryId = $category->getId();
                     $fieldName = 'pantry_qty_' . $categoryId;
@@ -195,7 +195,7 @@
             /* Update quantities for pallet (if exists) */
             if($palletEvent) {
                 foreach($allCategories as $category) {
-                    if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue;
+                    if(!isset($categoriesWithData[$category->getId()])) continue;
 
                     $categoryId = $category->getId();
                     $fieldName = 'pallet_qty_' . $categoryId;
@@ -431,7 +431,7 @@
                     <?php
                     $rowNum = 0;
                     foreach($allCategories as $category): ?>
-                        <?php if($category->getStatus() != 'Active' && !isset($categoriesWithData[$category->getId()])) continue; ?>
+                        <?php if(!isset($categoriesWithData[$category->getId()])) continue; ?>
                         <?php $rowNum++; ?>
                         <?php
                         $categoryId = $category->getId();
