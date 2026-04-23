@@ -146,7 +146,7 @@ function retrieve_ItemID($name) {
 
 function get_all_ItemCategory() {
     $con = connect();
-    $query = "SELECT * FROM dbitemcategory";
+    $query = "SELECT * FROM dbitemcategory ORDER BY name";
     $result = mysqli_query($con, $query);
 
     // If no groups are found, return an empty array
@@ -174,7 +174,7 @@ function get_all_ItemCategory() {
 
 function get_all_active_ItemCategory() {
     $con = connect();
-    $query = "SELECT * FROM dbitemcategory WHERE status = 'Active'";
+    $query = "SELECT * FROM dbitemcategory WHERE status = 'Active'  ORDER BY name";
     $result = mysqli_query($con, $query);
 
     // If no groups are found, return an empty array
