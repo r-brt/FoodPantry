@@ -177,9 +177,6 @@ if ($selectedPairIndex !== null) {
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
-            position: sticky;
-            top: 1rem;
-            z-index: 6;
         }
         .title {
             text-align: center;
@@ -260,8 +257,10 @@ if ($selectedPairIndex !== null) {
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
-                position: static;
-
+            }
+            .report-table th {
+                position: sticky;
+                top: 100px;
             }
             .report-container {
                 padding: 0.5rem;
@@ -377,11 +376,6 @@ if ($selectedPairIndex !== null) {
         .toolbar-btn-clear:hover {
             background-color: rgba(0,0,0,0.3);
         }
-        .row-number {
-            text-align: center;
-            color: var(--inactive-font-color);
-            font-weight: 500;
-        }
         .modify-button {
             padding: 0.5rem 1rem;
             background-color: var(--accent-color);
@@ -436,7 +430,6 @@ if ($selectedPairIndex !== null) {
                     <table class="report-table" id="inventoryTable">
                         <thead>
                                 <tr>
-                                    <th> # </th>
                                     <th>Item Name</th>
                                     <th>
                                         <span class="desktop-text">Warehouse</span>
@@ -474,7 +467,6 @@ if ($selectedPairIndex !== null) {
                             <?php if (count($items) > 0): ?>
                                 <?php foreach ($items as $item): ?>
                                     <tr>
-                                        <td class="row-number"></td>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= $item['warehouse_boxes'] > 0 ? htmlspecialchars($item['warehouse_boxes']) : '-' ?></td>
                                         <td><?= $item['pantry_boxes'] > 0 ? htmlspecialchars($item['pantry_boxes']) : '-' ?></td>
@@ -487,7 +479,7 @@ if ($selectedPairIndex !== null) {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="9" class="empty-state">No items found.</td>
+                                    <td colspan="8" class="empty-state">No items found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -508,16 +500,6 @@ if ($selectedPairIndex !== null) {
 
     <script>
         $(function() {
-            // Update row numbers
-            function updateRowNumbers() {
-                $('#inventoryTable tbody tr:visible').each(function(index) {
-                    $(this).find('.row-number').text(index + 1);
-                });
-            }
-
-            // Initialize row numbers on page load
-            updateRowNumbers();
-
             // Sorting functionality
             $('#sortSelect').change(function() {
                 var sortValue = $(this).val();
@@ -544,9 +526,6 @@ if ($selectedPairIndex !== null) {
                 $.each($rows, function(index, row) {
                     $tbody.append(row);
                 });
-
-                // Update row numbers after sorting
-                updateRowNumbers();
             });
 
             // Search functionality
@@ -562,16 +541,12 @@ if ($selectedPairIndex !== null) {
                         $(this).hide();
                     }
                 });
-
-                // Update row numbers after filtering
-                updateRowNumbers();
             });
 
             // Clear search button
             $('#clearSearch').click(function() {
                 $('#searchInput').val('');
                 $('#inventoryTable tbody tr').show();
-                updateRowNumbers();
             });
 
             // Store original order for default sorting
