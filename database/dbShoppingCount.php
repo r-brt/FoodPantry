@@ -220,4 +220,26 @@ function delete_shoppingCount_group($groupId) {
     mysqli_close($con);
 }
 
+/*
+ * Get family size names of shopping lists that contain a given category (quantity > 0)
+ * Returns array of family size names. Empty array means category is not in any shopping list.
+ */
+function get_shoppingList_families_with_category($categoryId){
+    $con=connect();
+    $query = "SELECT DISTINCT se.familySize
+              FROM dbshoppingcounts sc
+              INNER JOIN dbshoppingevent se ON sc.shoppingEventId = se.id
+              WHERE sc.itemCategoryId = ? AND sc.quantity > 0";
+    $stmt = $con->prepare($query);
+    $stmt->bind_param("i", $categoryId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $names = array();
+    while ($row = $result->fetch_assoc()) {
+        $names[] = $row['familySize'];
+    }
+    mysqli_close($con);
+    return $names;
+}
+
 
