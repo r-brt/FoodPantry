@@ -110,6 +110,47 @@ function get_consumptions_by_person($personId) {
 }
 
 /*
+ * delete all Consumption rows for a given shoppingEventId + itemCategoryId pair
+ */
+
+function delete_consumption_by_event_and_category($shoppingEventId, $itemCategoryId) {
+    $con = connect();
+    mysqli_query($con, 'DELETE FROM dbcomsumption WHERE shoppingEventId = ' . (int)$shoppingEventId .
+        ' AND itemCategoryId = ' . (int)$itemCategoryId);
+    $deleted = mysqli_affected_rows($con);
+    mysqli_close($con);
+    return $deleted;
+}
+
+/*
+ * delete all Consumption rows for an itemCategoryId across ALL shopping events and dates;
+ * used when an item is removed from every basket so the weekly report shows N/A instead of a stale rate
+ */
+
+function delete_consumption_by_category($itemCategoryId) {
+    $con = connect();
+    mysqli_query($con, 'DELETE FROM dbcomsumption WHERE itemCategoryId = ' . (int)$itemCategoryId);
+    $deleted = mysqli_affected_rows($con);
+    mysqli_close($con);
+    return $deleted;
+}
+
+/*
+ * delete all Consumption rows for a set of itemCategoryIds within one shoppingEventId
+ */
+
+function delete_consumption_by_event_items($shoppingEventId, $itemCategoryIds) {
+    if (empty($itemCategoryIds)) return 0;
+    $con = connect();
+    $ids = implode(',', array_map('intval', $itemCategoryIds));
+    mysqli_query($con, 'DELETE FROM dbcomsumption WHERE shoppingEventId = ' . (int)$shoppingEventId .
+        ' AND itemCategoryId IN (' . $ids . ')');
+    $deleted = mysqli_affected_rows($con);
+    mysqli_close($con);
+    return $deleted;
+}
+
+/*
  * update the itemsConsumed for a Consumption in dbcomsumption table: if it does not exist, return false
  */
 

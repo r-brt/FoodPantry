@@ -156,9 +156,11 @@
     if (!empty($latestClients) && $latestDistribution !== null && $latestDistribution->getDistributionDays() > 0) {
         $totalClients = 0;
         foreach ($latestClients as $c) { $totalClients += $c->getNumClients(); }
-        $clientsPerDay = round($totalClients / $latestDistribution->getDistributionDays(), 2);
+        $distDays      = $latestDistribution->getDistributionDays();
+        // Matches spreadsheet: ROUND(total_clients / dist_days, 0)
+        $clientsPerDay = round($totalClients / $distDays);
 
-        if ($clientsPerDay > 0) {
+        if ($totalClients > 0 && $clientsPerDay > 0) {
             foreach ($latestClients as $c) {
                 $seId       = $c->getShoppingEventId();
                 $familySize = isset($shoppingEventFamilyMap[$seId]) ? $shoppingEventFamilyMap[$seId] : 'Unknown';
@@ -171,17 +173,23 @@
                      WHERE sc.shoppingEventId = ' . (int)$seId . '
                      ORDER BY sc.id ASC');
                 $countsForEvent = [];
-                $groupSizeMap   = []; // groupId => item count
+                $groupSizeMap   = []; // groupId => count of non-excluded members
                 if ($cntRes4) {
                     while ($cRow = mysqli_fetch_assoc($cntRes4)) {
                         $countsForEvent[] = $cRow;
-                        if ($cRow['groupId'] !== null) {
+                        // Only non-excluded items count toward the divisor; an excluded item
+                        // in a group of 4 should not shrink the remaining 3 items' rates.
+                        if ($cRow['groupId'] !== null && empty($cRow['excludeFromConsumption'])) {
                             $gId = (int)$cRow['groupId'];
                             $groupSizeMap[$gId] = ($groupSizeMap[$gId] ?? 0) + 1;
                         }
                     }
                 }
                 mysqli_close($con4);
+
+                // group_clients / clients_per_day matches the spreadsheet formula:
+                // clients_per_day per group = group_clients / ROUND(total_clients / dist_days)
+                $groupClientsPerDay = $c->getNumClients() / $clientsPerDay;
 
                 foreach ($countsForEvent as $sc) {
                     // Skip items marked as excluded from consumption rate calculation
@@ -193,21 +201,21 @@
                     $gName     = $sc['groupName'] ?? null;
                     $gSize     = ($gId !== null && isset($groupSizeMap[$gId])) ? $groupSizeMap[$gId] : 1;
 
-                    $baseRate  = ($c->getNumClients() / $clientsPerDay) * $qty;
+                    $baseRate  = $groupClientsPerDay * $qty;
                     $rate      = round($gSize > 1 ? $baseRate / $gSize : $baseRate, 2);
 
                     $consumptionRateRows[] = array(
-                        'shoppingEventId' => $seId,
-                        'itemCategoryId'  => $catId,
-                        'itemName'        => isset($categoryMap[$catId]) ? $categoryMap[$catId] : 'Unknown',
-                        'familySize'      => $familySize,
-                        'clientsInGroup'  => $c->getNumClients(),
-                        'clientsPerDay'   => $clientsPerDay,
-                        'itemsPerCart'    => $qty,
-                        'consumptionRate' => $rate,
-                        'date'            => $c->getDate(),
-                        'groupName'       => $gName,
-                        'groupSize'       => $gSize,
+                        'shoppingEventId'   => $seId,
+                        'itemCategoryId'    => $catId,
+                        'itemName'          => isset($categoryMap[$catId]) ? $categoryMap[$catId] : 'Unknown',
+                        'familySize'        => $familySize,
+                        'clientsInGroup'    => $c->getNumClients(),
+                        'groupClientsPerDay'=> round($groupClientsPerDay, 2),
+                        'itemsPerCart'      => $qty,
+                        'consumptionRate'   => $rate,
+                        'date'              => $c->getDate(),
+                        'groupName'         => $gName,
+                        'groupSize'         => $gSize,
                     );
                 }
             }
@@ -400,6 +408,34 @@ if (!empty($consumptionRateRows)) {
             .data-entry-row  { flex-direction: column; align-items: stretch; }
             .data-entry-label { width: auto; }
         }
+        .list-tip {
+            position: relative;
+            display: inline-block;
+            margin-left: 0.35rem;
+            cursor: default;
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+        .list-tip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 0.3rem 0.6rem;
+            border-radius: 5px;
+            font-size: 0.78rem;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 99;
+        }
+        .list-tip:hover::after {
+            opacity: 1;
+        }
     </style>
 </head>
 <pageheader>
@@ -462,8 +498,8 @@ if (!empty($consumptionRateRows)) {
                 <h2>Consumption Rate</h2>
                 <p style="color: var(--page-font-color); margin-bottom: 0.5rem;">
                     Calculated from the most recent client counts and distribution days on record.<br>
-                    <strong>Clients/Day</strong> = Total Clients &divide; Distribution Days &nbsp;&nbsp;
-                    <strong>Items/Day</strong> = (Group Clients &divide; Clients/Day) &times; Items per Cart
+                    <strong>Group Clients/Day</strong> = Group Clients &divide; Clients/Day &nbsp;&nbsp;
+                    <strong>Items/Day</strong> = Group Clients/Day &times; Items per Cart &divide; Group Size
                 </p>
 
                 <?php if ($latestDistribution === null || empty($latestClients)): ?>
@@ -523,7 +559,7 @@ if (!empty($consumptionRateRows)) {
                                         <th>Item Name</th>
                                         <th>Group</th>
                                         <th>Group Clients</th>
-                                        <th>Clients/Day</th>
+                                        <th>Group Clients/Day</th>
                                         <th>Items per Cart</th>
                                         <th>Items/Day (Consumption Rate)</th>
                                     </tr>
@@ -538,7 +574,7 @@ if (!empty($consumptionRateRows)) {
                                                 <?= $row['groupName'] ? htmlspecialchars($row['groupName']) . ' (' . $row['groupSize'] . ' items)' : '&mdash;' ?>
                                             </td>
                                             <td><?= htmlspecialchars($row['clientsInGroup']) ?></td>
-                                            <td><?= htmlspecialchars($row['clientsPerDay']) ?></td>
+                                            <td><?= htmlspecialchars($row['groupClientsPerDay']) ?></td>
                                             <td><?= htmlspecialchars($row['itemsPerCart']) ?></td>
                                             <td><strong><?= htmlspecialchars($row['consumptionRate']) ?></strong></td>
                                         </tr>
@@ -644,19 +680,24 @@ if (!empty($consumptionRateRows)) {
                 $.each(consumptionRateData, function(_, row) {
                     var key = row.itemName + '||' + (row.groupName || '');
                     if (!totals[key]) {
-                        totals[key] = { itemName: row.itemName, groupName: row.groupName, groupSize: row.groupSize, total: 0 };
+                        totals[key] = { itemName: row.itemName, groupName: row.groupName, groupSize: row.groupSize, total: 0, familySizes: [] };
                         order.push(key);
                     }
                     totals[key].total = Math.round((totals[key].total + row.consumptionRate) * 100) / 100;
+                    if (totals[key].familySizes.indexOf(row.familySize) === -1) {
+                        totals[key].familySizes.push(row.familySize);
+                    }
                 });
                 var $tbody = $('#consumptionTotalsTbody').empty();
                 $.each(order, function(i, key) {
-                    var t   = totals[key];
-                    var grp = t.groupName ? t.groupName + ' (' + t.groupSize + ' items)' : '&mdash;';
+                    var t     = totals[key];
+                    var grp   = t.groupName ? t.groupName + ' (' + t.groupSize + ' items)' : '&mdash;';
+                    var lists = $('<span>').text(t.familySizes.join(', ')).html();
+                    var tip   = '<span class="list-tip" data-tooltip="' + lists + '">&#9432;</span>';
                     $tbody.append(
                         '<tr><td class="row-number">' + (i + 1) + '</td>' +
                         '<td>' + $('<span>').text(t.itemName).html() + '</td>' +
-                        '<td style="font-size:0.85rem; color:var(--page-font-color);">' + grp + '</td>' +
+                        '<td style="font-size:0.85rem; color:var(--page-font-color);">' + grp + tip + '</td>' +
                         '<td><strong>' + t.total + '</strong></td></tr>'
                     );
                 });
