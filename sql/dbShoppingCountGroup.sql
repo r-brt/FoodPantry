@@ -49,6 +49,19 @@ ALTER TABLE `dbshoppingcounts`
 ALTER TABLE `dbshoppingcounts`
   ADD COLUMN IF NOT EXISTS `notes` varchar(500) DEFAULT NULL;
 
+--
+-- Add excludeFromConsumption column to dbshoppingcounts
+-- Controls whether item appears in consumption rate calculations
+--
+ALTER TABLE `dbshoppingcounts`
+  ADD COLUMN IF NOT EXISTS `excludeFromConsumption` tinyint(1) NOT NULL DEFAULT 0;
+
+--
+-- Add unique constraint on (shoppingEventId, itemCategoryId) to prevent duplicate basket entries
+--
+ALTER TABLE `dbshoppingcounts`
+  ADD UNIQUE IF NOT EXISTS `unique_event_category` (`shoppingEventId`, `itemCategoryId`);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
