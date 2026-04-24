@@ -283,10 +283,9 @@ else if(isset($_GET['week'])){
     foreach ($allCategories as $category) {
         $categoryId = $category->getId();
 
-        // Only show categories with data in current or previous inventory
+        // Only show categories with data in current inventory
         $hasCurrentData = isset($currentCounts[$categoryId]);
-        $hasPreviousData = isset($previousCounts[$categoryId]);
-        if (!$hasCurrentData && !$hasPreviousData) {
+        if (!$hasCurrentData) {
             continue;
         }
         $itemName = $category->getName();
@@ -817,7 +816,9 @@ else if(isset($_GET['week'])){
                                 <th style="width: 50px;">#</th>
                                 <th>Item Name</th>
                                 <th>Days Left</th>
+                                <?php /* Previous Boxes column removed ?>
                                 <th>Previous Boxes</th>
+                                <?php */ ?>
                                 <th>Current Boxes</th>
                                 <th>Current Items Per Box</th>
                                 <th>Total Items</th>
@@ -853,7 +854,9 @@ else if(isset($_GET['week'])){
                                         <td class="row-number"></td>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= htmlspecialchars($item['days_left']) ?></td>
+                                        <?php /* Previous Boxes column removed ?>
                                         <td><?= htmlspecialchars($item['previous_boxes']) ?></td>
+                                        <?php */ ?>
                                         <td><?= htmlspecialchars($item['current_boxes']) ?></td>
                                         <td><?= htmlspecialchars($item['current_items_per_box']) ?></td>
                                         <td><?= htmlspecialchars($item['total_items']) ?></td>
