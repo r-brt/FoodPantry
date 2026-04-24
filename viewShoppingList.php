@@ -21,14 +21,27 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'removeItem') {
         require_once('database/dbinfo.php');
         require_once('database/dbShoppingCount.php');
+        require_once('database/dbConsumption.php');
         $countId = isset($_POST['countId']) ? (int)$_POST['countId'] : 0;
         header('Content-Type: application/json');
         if ($countId > 0) {
-            // Also ungroup if needed
-            $con = connect();
-            $r   = mysqli_fetch_assoc(mysqli_query($con, 'SELECT groupId FROM dbshoppingcounts WHERE id = ' . $countId));
-            $gid = $r ? (int)$r['groupId'] : 0;
+            // Snapshot the item and its siblings before making any changes
+            $con          = connect();
+            $r            = mysqli_fetch_assoc(mysqli_query($con,
+                'SELECT shoppingEventId, itemCategoryId, groupId FROM dbshoppingcounts WHERE id = ' . $countId));
+            $seId         = $r ? (int)$r['shoppingEventId'] : 0;
+            $selfCatId    = $r ? (int)$r['itemCategoryId']  : 0;
+            $gid          = $r ? (int)$r['groupId']         : 0;
+            $affectedCats = $selfCatId ? [$selfCatId] : [];
+            if ($gid > 0) {
+                $sibRes = mysqli_query($con,
+                    'SELECT itemCategoryId FROM dbshoppingcounts WHERE groupId = ' . $gid . ' AND id != ' . $countId);
+                while ($sr = mysqli_fetch_assoc($sibRes)) {
+                    $affectedCats[] = (int)$sr['itemCategoryId'];
+                }
+            }
             mysqli_close($con);
+            // Also ungroup if needed
             if ($gid > 0) {
                 remove_from_group($countId);
                 $con2 = connect();
@@ -40,6 +53,28 @@
                 mysqli_close($con2);
             }
             $ok = delete_shoppingCount($countId);
+            if ($ok && $seId) {
+                if ($selfCatId) {
+                    // If this category is now gone from every basket, wipe all historical rates so
+                    // the weekly report shows N/A rather than a stale rate from a previous month.
+                    $con3      = connect();
+                    $stillLeft = mysqli_fetch_assoc(mysqli_query($con3,
+                        'SELECT COUNT(*) as c FROM dbshoppingcounts WHERE itemCategoryId = ' . $selfCatId));
+                    mysqli_close($con3);
+                    if ((int)$stillLeft['c'] === 0) {
+                        delete_consumption_by_category($selfCatId);
+                    } else {
+                        delete_consumption_by_event_and_category($seId, $selfCatId);
+                    }
+                }
+                // Siblings' gSize just shrank; wipe their rates for this event so they recalc correctly
+                $siblingCats = array_values(array_filter($affectedCats, function($c) use ($selfCatId) {
+                    return $c !== $selfCatId;
+                }));
+                if (!empty($siblingCats)) {
+                    delete_consumption_by_event_items($seId, $siblingCats);
+                }
+            }
             echo json_encode(['success' => $ok]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid input']);
@@ -49,12 +84,49 @@
 
     // Handle AJAX: toggle excludeFromConsumption flag
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggleExclude') {
+        require_once('database/dbinfo.php');
         require_once('database/dbShoppingCount.php');
+        require_once('database/dbConsumption.php');
         $id      = isset($_POST['id'])      ? (int)$_POST['id']      : 0;
         $exclude = isset($_POST['exclude']) ? (int)$_POST['exclude'] : 0;
         header('Content-Type: application/json');
         if ($id > 0) {
             $result = update_shoppingCount_exclude($id, $exclude);
+            if ($result) {
+                $con = connect();
+                $row = mysqli_fetch_assoc(mysqli_query($con,
+                    'SELECT shoppingEventId, itemCategoryId, groupId FROM dbshoppingcounts WHERE id = ' . $id));
+                if ($row) {
+                    $seId    = (int)$row['shoppingEventId'];
+                    $catId   = (int)$row['itemCategoryId'];
+                    $gid     = $row['groupId'] !== null ? (int)$row['groupId'] : 0;
+                    if ($exclude === 1) {
+                        // Delete this item's rate. If it was in a group, siblings' gSize just shrank
+                        // so their stored rates are also stale — wipe them all together.
+                        $cats = [$catId];
+                        if ($gid > 0) {
+                            $sibRes = mysqli_query($con,
+                                'SELECT itemCategoryId FROM dbshoppingcounts WHERE groupId = ' . $gid . ' AND id != ' . $id);
+                            while ($sr = mysqli_fetch_assoc($sibRes)) {
+                                $cats[] = (int)$sr['itemCategoryId'];
+                            }
+                        }
+                        delete_consumption_by_event_items($seId, $cats);
+                    } elseif ($gid > 0) {
+                        // Re-including a grouped item: siblings' stored rates used too small a gSize; wipe them.
+                        $sibCats = [];
+                        $sibRes  = mysqli_query($con,
+                            'SELECT itemCategoryId FROM dbshoppingcounts WHERE groupId = ' . $gid . ' AND id != ' . $id);
+                        while ($sr = mysqli_fetch_assoc($sibRes)) {
+                            $sibCats[] = (int)$sr['itemCategoryId'];
+                        }
+                        if (!empty($sibCats)) {
+                            delete_consumption_by_event_items($seId, $sibCats);
+                        }
+                    }
+                }
+                mysqli_close($con);
+            }
             echo json_encode(['success' => $result]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid input']);
@@ -110,6 +182,7 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'createGroup') {
         require_once('database/dbinfo.php');
         require_once('database/dbShoppingCount.php');
+        require_once('database/dbConsumption.php');
         $item1Id         = isset($_POST['item1Id'])         ? (int)$_POST['item1Id']         : 0;
         $item2Id         = isset($_POST['item2Id'])         ? (int)$_POST['item2Id']         : 0;
         $shoppingEventId = isset($_POST['shoppingEventId']) ? (int)$_POST['shoppingEventId'] : 0;
@@ -119,6 +192,17 @@
             $groupId = create_shoppingCount_group($shoppingEventId, $groupName);
             assign_to_group($item1Id, $groupId);
             assign_to_group($item2Id, $groupId);
+            // Both items now have gSize=2; their stored rates (gSize=1) are stale
+            $con  = connect();
+            $cats = [];
+            foreach ([$item1Id, $item2Id] as $iid) {
+                $rr = mysqli_fetch_assoc(mysqli_query($con, 'SELECT itemCategoryId FROM dbshoppingcounts WHERE id = ' . $iid));
+                if ($rr) $cats[] = (int)$rr['itemCategoryId'];
+            }
+            mysqli_close($con);
+            if (!empty($cats)) {
+                delete_consumption_by_event_items($shoppingEventId, $cats);
+            }
             echo json_encode(['success' => true, 'groupId' => $groupId]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid input']);
@@ -128,12 +212,29 @@
 
     // Handle AJAX: add one item to an existing group
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'addToGroup') {
+        require_once('database/dbinfo.php');
         require_once('database/dbShoppingCount.php');
+        require_once('database/dbConsumption.php');
         $itemId  = isset($_POST['itemId'])  ? (int)$_POST['itemId']  : 0;
         $groupId = isset($_POST['groupId']) ? (int)$_POST['groupId'] : 0;
         header('Content-Type: application/json');
         if ($itemId > 0 && $groupId > 0) {
             assign_to_group($itemId, $groupId);
+            // All group members (including the new one) now have a larger gSize; stored rates are stale
+            $con  = connect();
+            $res  = mysqli_query($con,
+                'SELECT shoppingEventId, itemCategoryId FROM dbshoppingcounts WHERE groupId = ' . $groupId);
+            $cats = [];
+            $seId = 0;
+            while ($rr = mysqli_fetch_assoc($res)) {
+                $cats[] = (int)$rr['itemCategoryId'];
+                if (!$seId) $seId = (int)$rr['shoppingEventId'];
+            }
+            // Also include the newly added item (assign_to_group just ran, so it's in the result above)
+            mysqli_close($con);
+            if ($seId && !empty($cats)) {
+                delete_consumption_by_event_items($seId, $cats);
+            }
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid input']);
@@ -159,12 +260,25 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'removeFromGroup') {
         require_once('database/dbinfo.php');
         require_once('database/dbShoppingCount.php');
+        require_once('database/dbConsumption.php');
         $itemId = isset($_POST['itemId']) ? (int)$_POST['itemId'] : 0;
         header('Content-Type: application/json');
         if ($itemId > 0) {
-            $con    = connect();
-            $r      = mysqli_fetch_assoc(mysqli_query($con, 'SELECT groupId FROM dbshoppingcounts WHERE id = ' . $itemId));
-            $oldGid = $r ? (int)$r['groupId'] : 0;
+            // Snapshot affected items (this item + siblings) before changing group structure
+            $con          = connect();
+            $r            = mysqli_fetch_assoc(mysqli_query($con,
+                'SELECT shoppingEventId, itemCategoryId, groupId FROM dbshoppingcounts WHERE id = ' . $itemId));
+            $seId         = $r ? (int)$r['shoppingEventId'] : 0;
+            $selfCatId    = $r ? (int)$r['itemCategoryId']  : 0;
+            $oldGid       = $r ? (int)$r['groupId']         : 0;
+            $affectedCats = $selfCatId ? [$selfCatId] : [];
+            if ($oldGid > 0) {
+                $sibRes = mysqli_query($con,
+                    'SELECT itemCategoryId FROM dbshoppingcounts WHERE groupId = ' . $oldGid . ' AND id != ' . $itemId);
+                while ($sr = mysqli_fetch_assoc($sibRes)) {
+                    $affectedCats[] = (int)$sr['itemCategoryId'];
+                }
+            }
             mysqli_close($con);
 
             remove_from_group($itemId);
@@ -179,6 +293,10 @@
                 }
                 mysqli_close($con2);
             }
+            // Removed item and all former siblings have stale rates (group size changed)
+            if ($seId && !empty($affectedCats)) {
+                delete_consumption_by_event_items($seId, $affectedCats);
+            }
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid input']);
@@ -188,11 +306,28 @@
 
     // Handle AJAX: delete an entire group (ungroups all members)
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deleteGroup') {
+        require_once('database/dbinfo.php');
         require_once('database/dbShoppingCount.php');
+        require_once('database/dbConsumption.php');
         $groupId = isset($_POST['groupId']) ? (int)$_POST['groupId'] : 0;
         header('Content-Type: application/json');
         if ($groupId > 0) {
+            // Collect all member catIds before the group is dissolved
+            $con  = connect();
+            $res  = mysqli_query($con,
+                'SELECT shoppingEventId, itemCategoryId FROM dbshoppingcounts WHERE groupId = ' . $groupId);
+            $cats = [];
+            $seId = 0;
+            while ($rr = mysqli_fetch_assoc($res)) {
+                $cats[] = (int)$rr['itemCategoryId'];
+                if (!$seId) $seId = (int)$rr['shoppingEventId'];
+            }
+            mysqli_close($con);
             delete_shoppingCount_group($groupId);
+            // All former members now have gSize=1; their grouped rates are stale
+            if ($seId && !empty($cats)) {
+                delete_consumption_by_event_items($seId, $cats);
+            }
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Invalid input']);
@@ -212,6 +347,26 @@
             echo json_encode(['success' => $id > 0, 'id' => $id, 'listName' => $listName]);
         } else {
             echo json_encode(['success' => false, 'error' => 'List name is required']);
+        }
+        exit;
+    }
+
+    // Handle AJAX: delete the currently selected shopping list and all its data
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deleteShoppingList') {
+        require_once('database/dbinfo.php');
+        require_once('database/dbShoppingEvent.php');
+        $eventId = isset($_POST['shoppingEventId']) ? (int)$_POST['shoppingEventId'] : 0;
+        header('Content-Type: application/json');
+        if ($eventId > 0) {
+            $con = connect();
+            mysqli_query($con, 'DELETE FROM dbcomsumption      WHERE shoppingEventId = ' . $eventId);
+            mysqli_query($con, 'DELETE FROM dbshoppingcountgroup WHERE shoppingEventId = ' . $eventId);
+            mysqli_query($con, 'DELETE FROM dbshoppingcounts   WHERE shoppingEventId = ' . $eventId);
+            mysqli_close($con);
+            remove_shoppingEvent($eventId);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid input']);
         }
         exit;
     }
@@ -438,6 +593,12 @@
             width: auto;
         }
         .generate-btn:hover { opacity: 0.85; }
+        .delete-list-btn {
+            background-color: rgb(220, 60, 60);
+            color: #fff;
+            margin-left: auto;
+        }
+        .delete-list-btn:hover { opacity: 0.85; }
         .basket-qty-input {
             width: 80px;
             padding: 0.3rem 0.5rem;
@@ -678,7 +839,6 @@
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <button class="generate-btn" id="newListBtn">+ New List</button>
                 </div>
 
                 <?php if ($selectedFamilySize !== null): ?>
@@ -686,6 +846,10 @@
                     <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
                         <button class="generate-btn" id="saveQuantitiesBtn">Save Quantities</button>
                         <button class="generate-btn" id="generatePdfBtn">Generate PDF</button>
+                        <button class="generate-btn" id="newListBtn">+ New List</button>
+                        <button class="generate-btn delete-list-btn" id="deleteListBtn"
+                            data-event-id="<?= (int)$selectedShoppingEventId ?>"
+                            data-list-name="<?= htmlspecialchars($selectedFamilySize ?? '') ?>">Delete List</button>
                     </div>
                     <div class="table-wrapper" style="margin-top: 1rem;" id="basketTableWrapper">
                         <table class="report-table" id="basketTable">
@@ -785,6 +949,23 @@
             <div class="modal-actions">
                 <button class="generate-btn" id="confirmNewListBtn">Create</button>
                 <button class="cancel-btn" id="cancelNewListBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Shopping List Confirmation Modal -->
+    <div id="deleteListModal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <h3 style="color:rgb(220,60,60);">Delete Shopping List</h3>
+            <p style="color:var(--page-font-color); margin-bottom:0.5rem;">
+                Are you sure you want to delete <strong id="deleteListName"></strong>?
+            </p>
+            <p style="color:var(--inactive-font-color); font-size:0.9rem;">
+                This will permanently remove the list, all its items, and any recorded consumption data.
+            </p>
+            <div class="modal-actions">
+                <button class="generate-btn delete-list-btn" id="confirmDeleteListBtn">Delete</button>
+                <button class="cancel-btn" id="cancelDeleteListBtn">Cancel</button>
             </div>
         </div>
     </div>
@@ -1237,6 +1418,42 @@
                 }, 'json').fail(function() {
                     $('#newListError').text('Server error. Please try again.').show();
                     btn.prop('disabled', false).text('Create');
+                });
+            });
+
+            // ---- Delete Shopping List modal ----
+            $('#deleteListBtn').on('click', function() {
+                var eventId  = $(this).data('event-id');
+                var listName = $(this).data('list-name') || 'this list';
+                if (!eventId) return;
+                $('#deleteListName').text('"' + listName + '"');
+                $('#confirmDeleteListBtn').data('event-id', eventId);
+                $('#deleteListModal').show();
+            });
+
+            $('#cancelDeleteListBtn').on('click', function() { $('#deleteListModal').hide(); });
+
+            $('#deleteListModal').on('click', function(e) {
+                if (e.target === this) $(this).hide();
+            });
+
+            $('#confirmDeleteListBtn').on('click', function() {
+                var btn     = $(this);
+                var eventId = btn.data('event-id');
+                if (!eventId) return;
+                btn.prop('disabled', true).text('Deleting...');
+                $.post('viewShoppingList.php', { action: 'deleteShoppingList', shoppingEventId: eventId }, function(data) {
+                    if (data.success) {
+                        window.location.href = 'viewShoppingList.php';
+                    } else {
+                        $('#deleteListModal').hide();
+                        alert(data.error || 'Failed to delete list.');
+                        btn.prop('disabled', false).text('Delete');
+                    }
+                }, 'json').fail(function() {
+                    $('#deleteListModal').hide();
+                    alert('Server error. Please try again.');
+                    btn.prop('disabled', false).text('Delete');
                 });
             });
 
