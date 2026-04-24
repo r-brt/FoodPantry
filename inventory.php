@@ -383,6 +383,33 @@ if(isset($_GET["removeTestData"])){
                 padding: 4px;
             }
         }
+        .week-and-filter-section{
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+        }
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+        .form-section label {
+            display: block;
+            color: var(--page-font-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .form-section select {
+            width: 100%;
+            max-width: 300px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+        }
+        .form-section select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
         .inventory-selector-toolbar {
             display: flex;
             align-content: center;
@@ -543,10 +570,10 @@ if(isset($_GET["removeTestData"])){
         <div class="report-container">
             <div class="report-section">
                 <h2>Food Items</h2>
-                <div class="inventory-selector-toolbar">
-                    <div class="week-selector">
-                        <label for="weekSelect">View Inventory:</label>
-                        <select id="weekSelect" name="week" onchange="window.location.href='?year='+<?php echo $filterEventList ?>+'&week=' + this.value">
+                <div class="week-and-filter-section">
+                    <div class="form-section">
+                        <label for="weekSelect">Select Inventory to View:</label>
+                        <select id="weekSelect" name="week" class="toolbar-select" style="min-width: 1rem; important!;"  onchange="window.location.href='?year='+<?php echo $filterEventList ?>+'&week=' + this.value">
                             <?php if (count($eventPairs) > 0): ?>
                                 <?php foreach ($eventPairs as $index => $pair): ?>
                                     <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
@@ -559,9 +586,9 @@ if(isset($_GET["removeTestData"])){
                             <?php endif; ?>
                         </select>
                     </div>
-                    <div class="week-selector">
-                        <label for="weekSelect" style="font-weight: 500;">Filter Inventories:</label>
-                        <select id="yearSelect" name="year" class="toolbar-select" onchange="window.location.href='?year=' + this.value +'&week='+<?php echo intval($selectedWeek) ?>">
+                    <div class="form-section">
+                        <label for="yearSelect" style="font-weight: 500;">Filter Inventories:</label>
+                        <select id="yearSelect" name="year" class="toolbar-select" style="min-width: 1rem; important!;" onchange="window.location.href='?year=' + this.value +'&week='+<?php echo intval($selectedWeek) ?>">
                             <option value="30" <?= ($filterEventList == "30") ? 'selected' : '' ?>>
                                     Most Recent 
                             </option>
