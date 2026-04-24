@@ -52,6 +52,14 @@ foreach($allEventObjects as $event) {
     }
 }
 
+// Get the unique years from dates
+$uniqueYears = array();
+foreach($eventPairs as $index => $pair) {
+    $year = date('Y', strtotime($pair["date"]));
+    if(!in_array($year, $uniqueYears))
+        $uniqueYears[] = $year;
+}
+
 // OLD CODE - orphan pantry logic (no longer needed with triplets)
 // foreach($allEventObjects as $event) {
 //     if($event->getLocation() == 'Pantry') {
@@ -345,6 +353,11 @@ $availableMonths = array_keys($monthlyData);
         .week-selector select:hover {
             background-color: rgba(0,0,0,0.3);
         }
+        .week-and-filter-section{
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+        }
         .report-type-select {
             padding: 0.6rem 1rem;
             border: 1px solid var(--shadow-and-border-color);
@@ -597,19 +610,34 @@ $availableMonths = array_keys($monthlyData);
                 <h2>Export Inventory to Spreadsheet</h2>
                 
                 <form method="POST" action="processInventoryReport.php">
-                    <div class="form-section">
-                        <label for="weekSelect">Select Week to Export</label>
-                        <select name="week" id="weekSelect" required>
-                            <option value="">-- Select Week --</option>
-                            <?php if (count($eventPairs) > 0): ?>
+                    <div class="week-and-filter-section">
+                        <div class="form-section">
+                            <label for="weekSelect">Select Date to Export</label>
+                            <select name="week" id="weekSelect" required>
                                 <?php foreach ($eventPairs as $pair): ?>
                                     <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
                                     <option value="<?= htmlspecialchars($pairId) ?>">
                                         <?= date('m/d/Y', strtotime($pair['date'])) ?>
                                     </option>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
+                            </select>
+                        </div>
+
+                        <div class="form-section">
+                            <label for="yearSelect" style="font-weight: 500;">Filter Inventories:</label>
+                            <select id="yearSelect" name="year" class="toolbar-select" onchange="filterWeekSelect(this);">
+                                <option value="Most Recent">
+                                    Most Recent 
+                                </option>
+                                <optgroup label="By Year">
+                                <?php foreach ($uniqueYears as $year): ?>
+                                    <option value="<?= $year ?>">
+                                        <?= $year ?>
+                                    </option>
+                                <?php endforeach; ?>
+                                </optgroup>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="form-section">
@@ -1516,6 +1544,53 @@ $availableMonths = array_keys($monthlyData);
                 pdf.save(filename);
             });
         });
+    </script>
+    <script>
+        //Filter the dropdown list of weeks
+        function filterWeekSelect(element){
+            var weekSelect = document.getElementById("weekSelect");
+            const filterSelect = element.value;
+            var firstMatch = true;
+
+            for (let i = 0; i < weekSelect.options.length; i++) {
+                const option = weekSelect.options[i];
+
+                //unselect all options
+                option.selected = false;
+
+                //if filter is Most Recent, only show last 30 Inventories
+                if(filterSelect== "Most Recent"){
+                    if(i < 30){
+                        option.style.display = "block";
+
+                        //select first match
+                        if(firstMatch){
+                            option.selected = true;
+                            firstMatch = false;
+                        }
+                    }
+                    else{
+                        option.style.display = "none";
+                    }
+                }
+                // If filter is a year compare to all items and only show the ones that match
+                else{
+                    const year = new Date(option.text).getFullYear();
+                    if(year == filterSelect){
+                        option.style.display = "block";
+
+                        //select first match
+                        if(firstMatch){
+                            option.selected = true;
+                            firstMatch = false;
+                        }
+                    }
+                    else{
+                        option.style.display = "none";
+                    }
+                }
+            }
+        }
     </script>
 
 </body>

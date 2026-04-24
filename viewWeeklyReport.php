@@ -150,6 +150,52 @@
     // Get the selected week from query params, default to latest
     $selectedWeek = $_GET['week'] ?? (count($eventPairs) > 0 ? ($eventPairs[0]['warehouseId'] ?? $eventPairs[0]['pantryId']) : null);
 
+    // Get the unique years from dates
+$uniqueYears = array();
+foreach($eventPairs as $index => $pair) {
+    $year = date('Y', strtotime($pair["date"]));
+    if(!in_array($year, $uniqueYears))
+        $uniqueYears[] = $year;
+}
+
+// Default for filterEventList is 30 Most Recent inventories
+$filterEventList = 30;
+
+// Get the selected year from query params, if it exists
+if(isset($_GET['year'])){
+    if(in_array($_GET['year'], $uniqueYears)){
+        $filterEventList = $_GET['year'];
+        // if year and week are in params, make sure the week is in the selected year.
+        // otherwise, change week to be the most recent inventory in the year selected.
+        if($selectedWeek){
+            $currentEvent = retrieve_inventoryEvent($selectedWeek);
+            if($currentEvent){
+                $currentEventYear = date('Y', strtotime($currentEvent->getDate()));
+                if($currentEventYear != $filterEventList){
+                    //set current week to the most recent inventory with the year selected
+                    foreach($eventPairs as $index => $pair) {
+                        $year = date('Y', strtotime($pair["date"]));
+                        if($year == $filterEventList){
+                            $selectedWeek = $pair["warehouseId"];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+    } 
+    else if($_GET['year'] < 100 && $_GET['year'] > 0)
+        $filterEventList = $_GET['year'];
+} 
+// If year is not set but week is set
+else if(isset($_GET['week'])){
+    $currentEvent = retrieve_inventoryEvent($selectedWeek);
+    if($currentEvent){
+        $filterEventList = date('Y', strtotime($currentEvent->getDate()));
+    }
+}
+
     // Find the selected pair index
     $selectedPairIndex = null;
     foreach($eventPairs as $index => $pair) {
@@ -408,15 +454,50 @@
             padding: 3rem 1rem;
             color: var(--inactive-font-color);
         }
-        .week-selector {
+        .week-and-filter-section{
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+        }
+        .form-section {
             margin-bottom: 1.5rem;
+        }
+        .form-section label {
+            display: block;
+            color: var(--page-font-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .form-section select {
+            width: 100%;
+            max-width: 300px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+        }
+        .form-section select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .inventory-selector-toolbar {
+            display: flex;
+            align-content: center;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            flex-direction: column;
+        }
+        .week-selector {
+            margin-bottom: .5rem;
             display: flex;
             gap: 0.75rem;
             align-items: center;
         }
         .week-selector label {
             color: var(--page-font-color);
-            font-weight: 500;
         }
         .week-selector select {
             padding: 0.5rem 0.75rem;
@@ -677,19 +758,40 @@
             <div class="report-section">
                 <h2>Weekly Items</h2>
 
-                <div class="week-selector">
-                    <label for="weekSelect">View Week:</label>
-                    <select class="select" id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
-                        <?php if (count($eventPairs) > 0): ?>
-                            <?php foreach ($eventPairs as $pair): ?>
-                                <?php $eventId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
-                                <option value="<?= htmlspecialchars($eventId) ?>" <?= ($eventId == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                <div class="week-and-filter-section">
+                    <div class="form-section">
+                        <label for="weekSelect">Select Inventory to View:</label>
+                        <select id="weekSelect" name="week" class="toolbar-select" style="min-width: 1rem; important!;" onchange="window.location.href='?year='+<?php echo $filterEventList ?>+'&week=' + this.value">
+                            <?php if (count($eventPairs) > 0): ?>
+                                <?php foreach ($eventPairs as $index => $pair): ?>
+                                    <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
+                                    <?php if (date('Y', strtotime($pair['date'])) == $filterEventList || ($filterEventList < 100 && $index < $filterEventList)): ?>
+                                        <option value="<?= htmlspecialchars($pairId) ?>" <?= ($pairId == $selectedWeek) ? 'selected' : '' ?>>
+                                            <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                                        </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-section">
+                        <label for="yearSelect" style="font-weight: 500;">Filter Inventories:</label>
+                        <select id="yearSelect" name="year" class="toolbar-select" style="min-width: 1rem; important!;" onchange="window.location.href='?year=' + this.value +'&week='+<?php echo intval($selectedWeek) ?>">
+                            <option value="30" <?= ($filterEventList == "30") ? 'selected' : '' ?>>
+                                    Most Recent 
+                            </option>
+                            <optgroup label="By Year">
+                            <?php foreach ($uniqueYears as $year): ?>
+                                <option value="<?= $year ?>" <?= ($year == $filterEventList) ? 'selected' : '' ?>>
+                                    <?= $year ?>
                                 </option>
                             <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
+                            </optgroup>
+                        </select>
+                    </div>
                 </div>
+                <hr>
+                <br>
 
                 <!-- Toolbar: Sort and Search -->
                 <div class="table-toolbar">
