@@ -283,6 +283,11 @@ else if(isset($_GET['week'])){
     foreach ($allCategories as $category) {
         $categoryId = $category->getId();
 
+        // Skip deactivated/deleted categories
+        if ($category->getStatus() != 'Active') {
+            continue;
+        }
+
         // Only show categories with data in current inventory
         $hasCurrentData = isset($currentCounts[$categoryId]);
         if (!$hasCurrentData) {
