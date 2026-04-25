@@ -95,7 +95,7 @@ function get_shoppingCounts_by_itemCategory($itemCategoryId){
  */
 
 function update_shoppingCount_quantity($id, $quantity){
-    if (!is_int($quantity) || $quantity < 1) {
+    if (!is_int($quantity) || $quantity < 0) {
         return false;
     }
     $con=connect();
@@ -221,7 +221,7 @@ function delete_shoppingCount_group($groupId) {
 }
 
 /*
- * Get family size names of shopping lists that contain a given category (quantity > 0)
+ * Get family size names of shopping lists that contain a given category.
  * Returns array of family size names. Empty array means category is not in any shopping list.
  */
 function get_shoppingList_families_with_category($categoryId){
@@ -229,7 +229,7 @@ function get_shoppingList_families_with_category($categoryId){
     $query = "SELECT DISTINCT se.familySize
               FROM dbshoppingcounts sc
               INNER JOIN dbshoppingevent se ON sc.shoppingEventId = se.id
-              WHERE sc.itemCategoryId = ? AND sc.quantity > 0";
+              WHERE sc.itemCategoryId = ?";
     $stmt = $con->prepare($query);
     $stmt->bind_param("i", $categoryId);
     $stmt->execute();
