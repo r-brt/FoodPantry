@@ -504,6 +504,9 @@ if(isset($_GET["removeTestData"])){
             font-weight: 500;
             max-width: 500px;
         }
+        .modify-button:hover {
+            opacity: 0.85;
+        }
         @media only screen and (max-width: 768px) {
             pageheader {
                 top: 100px;
