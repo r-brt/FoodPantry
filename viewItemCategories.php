@@ -263,6 +263,7 @@
                                     <tr>
                                         <th>Name</th>
                                         <th>Banana Box</th>
+                                        <th>Shopping List Only</th>
                                         <th>Items Per Box</th>
                                         <th>Actions</th>
                                     </tr>
@@ -278,11 +279,13 @@
                                         $name = $category->getName();
                                         $itemsPerBox = $category->getItemsPerBox();
                                         $bananaBox = $category->getBananaBox() == 1 ? "✓" : "";
+                                        $shopOnly = $category->getShopOnly() == 1 ? "✓" : "";
 
                                         echo '
                                         <tr>
                                             <td>' . $name . '</td>
                                             <td style="text-align: center;">' . $bananaBox . '</td>
+                                            <td style="text-align: center;">' . $shopOnly . '</td>
                                             <td>' . $itemsPerBox . '</td>';
                                         echo ' 
                                             <td><a href="viewModifyItemCategory.php?id=' . $category->getId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
@@ -292,7 +295,7 @@
                                 if($num_active == 0){
                                     echo '
                                     <tr>
-                                        <td colspan="7" class="empty-state">No '.$status.' Categories</td>
+                                        <td colspan="5" class="empty-state">No '.$status.' Categories</td>
                                     </tr>';
                                 }
 

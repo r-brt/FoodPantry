@@ -119,6 +119,11 @@
             else
                 $bananaBox = 0;
 
+            if(isset($_POST["shopOnly"]))
+                $shopOnly = 1;
+            else
+                $shopOnly = 0;
+
             /* check that Items Per Box is set */
             if(isset($_POST["itemsPerBox"])){
 
@@ -143,7 +148,7 @@
             }
             
             if(empty($errors)){
-                if(update_itemCategory($theCategory->getId(), $name, $bananaBox, $itemsPerBox)){
+                if(update_itemCategory($theCategory->getId(), $name, $bananaBox, $itemsPerBox, $shopOnly)){
                     header('Location: viewItemCategories.php');
                     die();
                 }
@@ -493,8 +498,12 @@
                                         <td class="modify-table-input"><input type="checkbox" id="bananaBox" name="bananaBox" value="1" 
                                                     <?php if($theCategory->getBananaBox() == 1) echo("checked")?>>
                                         </td>
-                                    </tr>
-                                    <tr>
+                                    </tr>                                    <tr>
+                                        <td class="modify-table-label"><label class="updateInv-label" for="shopOnly">Shopping List Only: </label></td>
+                                        <td class="modify-table-input"><input type="checkbox" id="shopOnly" name="shopOnly" value="1" 
+                                                    <?php if($theCategory->getShopOnly() == 1) echo("checked")?>
+                                        </td>
+                                    </tr>                                    <tr>
                                         <td class="modify-table-label"> <label class="updateInv-label" for="itemsPerBox">Items Per Box: </label></td>
                                         <td class="modify-table-input"><input type="number" class="updateInv-qty" 
                                                 value="<?php echo($theCategory->getItemsPerBox())?>"
