@@ -142,7 +142,7 @@
         $notes    = isset($_POST['notes'])    ? trim($_POST['notes'])    : null;
         header('Content-Type: application/json');
 
-        // Validate quantity: must be a whole number >= 1
+        // Validate quantity: must be a whole number >= 0
         $qtyError = null;
         if ($quantity === '' || $quantity === null) {
             $qtyError = 'Quantity is required';
@@ -152,8 +152,6 @@
             $qtyError = 'Quantity must be a whole number';
         } else if ((int)$quantity < 0) {
             $qtyError = 'Quantity cannot be negative';
-        } else if ((int)$quantity == 0) {
-            $qtyError = 'Quantity cannot be 0';
         }
 
         if ($qtyError !== null) {
@@ -890,7 +888,7 @@
                                         <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                         <td class="row-number"><?= $rowNum++ ?></td>
                                         <td data-item-name="<?= htmlspecialchars($item['item_name']) ?>"><span class="group-indent">&#8627;</span><?= htmlspecialchars($item['item_name']) ?></td>
-                                        <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="1" draggable="false"></td>
+                                        <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="0" draggable="false"></td>
                                         <td><div class="basket-notes-cell">
                                             <input type="text" class="basket-notes-input" placeholder="Optional..." value="<?= htmlspecialchars($item['notes']) ?>" draggable="false">
                                             <button class="remove-from-group-btn" data-item-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>" title="Remove from group">&#215;</button>
@@ -907,7 +905,7 @@
                                         <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                         <td class="row-number"><?= $rowNum++ ?></td>
                                         <td data-item-name="<?= htmlspecialchars($item['item_name']) ?>"><?= htmlspecialchars($item['item_name']) ?></td>
-                                        <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="1" draggable="false"></td>
+                                        <td><input type="number" class="basket-qty-input" value="<?= $item['quantity'] ?>" min="0" draggable="false"></td>
                                         <td><input type="text" class="basket-notes-input" placeholder="Optional..." value="<?= htmlspecialchars($item['notes']) ?>" draggable="false"></td>
                                         <td style="text-align:center;"><input type="checkbox" class="exclude-checkbox" data-count-id="<?= $item['id'] ?>" <?= $item['exclude'] ? '' : 'checked' ?> title="Include in consumption rate calculation" draggable="false"></td>
                                         <td><button class="remove-item-btn" data-count-id="<?= $item['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>" title="Remove item from list">&#215;</button></td>
@@ -1492,7 +1490,7 @@
                         '<td class="drag-handle" title="Drag to reorder">&#8597;</td>' +
                         '<td class="row-number"></td>' +
                         '<td data-item-name="' + escHtml(catName) + '">' + escHtml(catName) + '</td>' +
-                        '<td><input type="number" class="basket-qty-input" value="1" min="1" draggable="false"></td>' +
+                        '<td><input type="number" class="basket-qty-input" value="1" min="0" draggable="false"></td>' +
                         '<td><input type="text" class="basket-notes-input" placeholder="Optional..." value="" draggable="false"></td>' +
                         '<td style="text-align:center;"><input type="checkbox" class="exclude-checkbox" data-count-id="' + data.id + '" checked title="Include in consumption rate calculation" draggable="false"></td>' +
                         '<td><button class="remove-item-btn" data-count-id="' + data.id + '" data-cat-id="' + escHtml(catId) + '" data-cat-name="' + escHtml(catName) + '" title="Remove item from list">&#215;</button></td>';
