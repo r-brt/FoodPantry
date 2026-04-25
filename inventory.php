@@ -707,15 +707,15 @@ if(isset($_GET["removeTestData"])){
                 if (sortValue === 'name-asc') {
                     // Sort by name A-Z
                     $rows.sort(function(a, b) {
-                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
-                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        var nameA = $(a).find('td').eq(0).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(0).text().toLowerCase();
                         return nameA.localeCompare(nameB);
                     });
                 } else if (sortValue === 'name-desc') {
                     // Sort by name Z-A
                     $rows.sort(function(a, b) {
-                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
-                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        var nameA = $(a).find('td').eq(0).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(0).text().toLowerCase();
                         return nameB.localeCompare(nameA);
                     });
                 }
@@ -731,7 +731,7 @@ if(isset($_GET["removeTestData"])){
                 var searchTerm = $(this).val().toLowerCase();
 
                 $('#inventoryTable tbody tr').each(function() {
-                    var itemName = $(this).find('td').eq(1).text().toLowerCase();
+                    var itemName = $(this).find('td').eq(0).text().toLowerCase();
 
                     if (itemName.indexOf(searchTerm) > -1) {
                         $(this).show();
