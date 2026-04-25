@@ -22,13 +22,9 @@
             $bananaBox = isset($_POST['bananaBox']) ? 1 : 0;
             $itemsPerBox = intval($_POST['itemsPerBox']);
             $status = "Active";
-            var_dump($cat_name);
 
             if (retrieve_ItemCategory_by_name($cat_name)) {
-                var_dump(retrieve_ItemCategoryStatus($cat_name));
                 if(retrieve_ItemCategoryStatus($cat_name) == 'Deleted') {
-                    var_dump(retrieve_ItemCategoryStatus($cat_name));
-                    var_dump(retrieve_ItemID($cat_name));
                     activate_itemCategory(retrieve_ItemID($cat_name));
                 } else {
                     $errors[] = "Category already exists";
