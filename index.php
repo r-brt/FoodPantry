@@ -747,6 +747,15 @@
         <div class="large-text-sub" style="color:white;">Weekly Inventory Report</div>
         <div class="graph-text" style="color:white;">View updated weekly inventory.</div>
     </div>
+    
+    <!-- Shopping List -->
+    <div class="content-box-test" onclick="window.location.href='viewShoppingList.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
+        <div class="icon-overlay">
+            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Shopping List Icon">
+        </div>
+        <div class="large-text-sub" style="color:white;">Shopping List</div>
+        <div class="graph-text" style="color:white;">View and manage recommended baskets by family size.</div>
+    </div>
 
     <!-- Inventory Analytics -->
     <div class="content-box-test" onclick="window.location.href='generateReport.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
@@ -756,15 +765,6 @@
         
         <div class="large-text-sub"style="color:white;">Inventory Analytics</div>
         <div class="graph-text"style="color:white;">Explore visual reports and analytics for inventory data.</div>
-    </div>
-
-    <!-- Shopping List -->
-    <div class="content-box-test" onclick="window.location.href='viewShoppingList.php'" style="background-color: #4d98f3; border-radius: 12px; padding: 20px; color: white;">
-        <div class="icon-overlay">
-            <img style="border-radius: 5px;" src="images/clipboard-list-alt.svg" alt="Shopping List Icon">
-        </div>
-        <div class="large-text-sub" style="color:white;">Shopping List</div>
-        <div class="graph-text" style="color:white;">View and manage recommended baskets by family size.</div>
     </div>
     </div>
 
