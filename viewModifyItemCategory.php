@@ -139,12 +139,12 @@
                 if(!is_int($itemsPerBox)){
                     $errors[] = 'Items Per Box must be in whole numbers';
                 }
-                else if($itemsPerBox <= 0){
-                    $errors[] = 'Items Per Box must be greater than 0';
+                else if($itemsPerBox < 0){
+                    $errors[] = 'Items Per Box cannot be negative';
                 }
             }
             else{
-                $errors[] = 'Items Per Box must be a whole number greater than 0';
+                $errors[] = 'Items Per Box must be a whole number';
             }
             
             if(empty($errors)){
