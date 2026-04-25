@@ -21,25 +21,49 @@
             $cat_name = trim($_POST['cat_name']);
             $bananaBox = isset($_POST['bananaBox']) ? 1 : 0;
             $shopOnly = isset($_POST['shopOnly']) ? 1 : 0;
-            $itemsPerBox = intval($_POST['itemsPerBox']);
             $status = "Active";
-            
-            $existing_item = retrieve_ItemCategory_by_name($cat_name);
-            if ($existing_item) {
-                if($existing_item->getStatus() == 'Deleted') {
-                    activate_itemCategory($existing_item->getId());
-                    update_itemCategory($existing_item->getId(), $cat_name, $bananaBox, $itemsPerBox);
+
+            /* check that Items Per Box is set */
+            if(isset($_POST["itemsPerBox"])){
+
+                /* try to convert items per box to a number. If it cannot convert, leave it as a string */
+                try{
+                    $itemsPerBox = +$_POST["itemsPerBox"];
+                }
+                catch(TypeError  $e){
+                    $itemsPerBox = " ";
+                }
+
+                /* check for errors */
+                if(!is_int($itemsPerBox)){
+                    $errors[] = 'Items Per Box must be in whole numbers';
+                }
+                else if($itemsPerBox < 0){
+                    $errors[] = 'Items Per Box cannot be negative';
+                }
+            }
+            else{
+                $errors[] = 'Items Per Box must be a whole number';
+            }
+
+            if(empty($errors)){
+                $existing_item = retrieve_ItemCategory_by_name($cat_name);
+                if ($existing_item) {
+                    if($existing_item->getStatus() == 'Deleted') {
+                        activate_itemCategory($existing_item->getId());
+                        update_itemCategory($existing_item->getId(), $cat_name, $bananaBox, $itemsPerBox);
+                        header("Location: viewItemCategories.php");
+                        exit();
+                    } else {
+                        $errors[] = "Category already exists";
+                    }
+
+                } else {
+                    add_itemCategory($cat_name, $bananaBox, $itemsPerBox, $status, $shopOnly);
+
                     header("Location: viewItemCategories.php");
                     exit();
-                } else {
-                    $errors[] = "Category already exists";
                 }
-                
-            } else {
-                add_itemCategory($cat_name, $bananaBox, $itemsPerBox, $status, $shopOnly);
-
-                header("Location: viewItemCategories.php");
-                exit();
             }
         }
 
