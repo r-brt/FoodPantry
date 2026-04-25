@@ -20,6 +20,7 @@
         if (isset($_POST['add_category'])) {
             $cat_name = trim($_POST['cat_name']);
             $bananaBox = isset($_POST['bananaBox']) ? 1 : 0;
+            $shopOnly = isset($_POST['shopOnly']) ? 1 : 0;
             $itemsPerBox = intval($_POST['itemsPerBox']);
             $status = "Active";
             var_dump($cat_name);
@@ -35,7 +36,7 @@
                 }
                 
             } else {
-                add_itemCategory($cat_name, $bananaBox, $itemsPerBox, $status);
+                add_itemCategory($cat_name, $bananaBox, $itemsPerBox, $status, $shopOnly);
 
                 header("Location: viewItemCategories.php");
                 exit();
@@ -145,6 +146,12 @@
                             <label>
                                 <input type="checkbox" name="bananaBox">
                                 Banana Box
+                            </label>
+                        </div>
+                        <div>
+                            <label>
+                                <input type="checkbox" name="shopOnly">
+                                Shopping List Only
                             </label>
                         </div>
                         <div>

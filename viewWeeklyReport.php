@@ -283,6 +283,11 @@ else if(isset($_GET['week'])){
     foreach ($allCategories as $category) {
         $categoryId = $category->getId();
 
+        // Skip items marked as Shopping List Only
+        if ($category->getShopOnly() == 1) {
+            continue;
+        }
+
         // Only show categories with data in current or previous inventory
         $hasCurrentData = isset($currentCounts[$categoryId]);
         $hasPreviousData = isset($previousCounts[$categoryId]);

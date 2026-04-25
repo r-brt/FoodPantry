@@ -6,16 +6,14 @@ include_once(dirname(__FILE__).'/../domain/ItemCategory.php');
 /*
  * Add a item Category to dbitemcategory table: return id
  */
-function add_itemCategory($name, $bananaBox, $itemsPerBox, $status) {
+function add_itemCategory($name, $bananaBox, $itemsPerBox, $status, $shopOnly = 0) {
     $con=connect();
-    mysqli_query($con,'INSERT INTO dbitemcategory (name, bananaBox, itemsPerBox, status) VALUES("' .
+    mysqli_query($con,'INSERT INTO dbitemcategory (name, bananaBox, itemsPerBox, status, shopOnly) VALUES("' .
             $name . '","' . 
             $bananaBox . '","' . 
             $itemsPerBox . '","' . 
-            $status . '");');							
-    $id = mysqli_insert_id($con);
-    mysqli_close($con);
-    
+            $status . '","' .
+            $shopOnly . '");');
     return $id;
 }
 
@@ -86,7 +84,7 @@ function retrieve_ItemCategory($category) {
         return false;
     }
     $result_row = mysqli_fetch_assoc($result);
-    $theCategory = new ItemCategory($result_row['id'], $result_row['name'], $result_row['bananaBox'], $result_row['itemsPerBox'], $result_row['status']);
+    $theCategory = new ItemCategory($result_row['id'], $result_row['name'], $result_row['bananaBox'], $result_row['itemsPerBox'], $result_row['status'], $result_row['shopOnly'] ?? 0);
     mysqli_close($con);
     return $theCategory;
 }
@@ -104,7 +102,7 @@ function retrieve_ItemCategory_by_name($name) {
         return false;
     }
     $result_row = mysqli_fetch_assoc($result);
-    $theCategory = new ItemCategory($result_row['id'], $result_row['name'], $result_row['bananaBox'], $result_row['itemsPerBox'], $result_row['status']);
+    $theCategory = new ItemCategory($result_row['id'], $result_row['name'], $result_row['bananaBox'], $result_row['itemsPerBox'], $result_row['status'], $result_row['shopOnly'] ?? 0);
     mysqli_close($con);
     return $theCategory;
 }
@@ -159,7 +157,7 @@ function get_all_ItemCategory() {
     $categories = [];
     if ($result && mysqli_num_rows($result) > 0) {
         while ($row = mysqli_fetch_assoc($result)) {
-            $categories[] = new ItemCategory($row['id'], $row['name'], $row['bananaBox'], $row['itemsPerBox'], $row['status']);
+            $categories[] = new ItemCategory($row['id'], $row['name'], $row['bananaBox'], $row['itemsPerBox'], $row['status'], $row['shopOnly'] ?? 0);
         //$category[] = $category;
         }
     }
@@ -187,7 +185,7 @@ function get_all_active_ItemCategory() {
     $categories = [];
     if ($result && mysqli_num_rows($result) > 0) {
         while ($row = mysqli_fetch_assoc($result)) {
-            $categories[] = new ItemCategory($row['id'], $row['name'], $row['bananaBox'], $row['itemsPerBox'], $row['status']);
+            $categories[] = new ItemCategory($row['id'], $row['name'], $row['bananaBox'], $row['itemsPerBox'], $row['status'], $row['shopOnly'] ?? 0);
         //$category[] = $category;
         }
     }
@@ -201,9 +199,9 @@ function get_all_active_ItemCategory() {
 }
 
 /*
- * Update an exisint item Category with a new name, bananaBox, and itemsPerBox
+ * Update an exisint item Category with a new name, bananaBox, itemsPerBox, and shopOnly
  */
-function update_itemCategory($id, $name, $bananaBox, $itemsPerBox) {
+function update_itemCategory($id, $name, $bananaBox, $itemsPerBox, $shopOnly = 0) {
     $con=connect();
     $query = 'SELECT * FROM dbitemcategory WHERE id = "' . $id . '"';
     $result = mysqli_query($con,$query);
@@ -215,7 +213,8 @@ function update_itemCategory($id, $name, $bananaBox, $itemsPerBox) {
     $update_query = "UPDATE `dbitemcategory` SET 
        `name` = '$name', 
        `bananaBox` = '$bananaBox', 
-       `itemsPerBox` = '$itemsPerBox' 
+       `itemsPerBox` = '$itemsPerBox',
+       `shopOnly` = '$shopOnly' 
     where `id` = '$id' ";
 
     // Perform the insert

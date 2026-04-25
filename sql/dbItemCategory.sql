@@ -33,7 +33,8 @@ CREATE TABLE `dbitemcategory` (
   `name` varchar(50) NOT NULL,
   `bananaBox` tinyint(1) NOT NULL DEFAULT 0,
   `itemsPerBox` int(11) NOT NULL DEFAULT 1,
-  `status` varchar(11) NOT NULL
+  `status` varchar(11) NOT NULL,
+  `shopOnly` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
