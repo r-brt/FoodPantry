@@ -811,6 +811,9 @@
             div.table-wrapper { overflow-x: auto; }
             .data-entry-row  { flex-direction: column; align-items: stretch; }
             .data-entry-label { width: auto; }
+            .report-section{
+                padding: 0;
+            }
         }
     </style>
 </head>
