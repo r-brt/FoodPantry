@@ -118,7 +118,6 @@ function retrieve_ItemCategoryStatus($name) {
         return false;
     }
     $result_row = mysqli_fetch_assoc($result);
-    var_dump($result_row['status']);
     if($result_row['status'] == 'Deleted') {
         return 'Deleted';
     } 
