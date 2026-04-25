@@ -894,16 +894,16 @@ echo('<a href="viewUpdateInventory.php" style="text-decoration: none;">
     <span>Weekly Inventory Report</span>
   </div>
 </a>
-<a href="generateReport.php" style="text-decoration: none;">
-  <div class="in-nav">
-    <img src="images/document-report.svg" alt="Report Icon">
-    <span>Inventory Analytics</span>
-  </div>
-</a>
 <a href="viewShoppingList.php" style="text-decoration: none;">
   <div class="in-nav">
     <img src="images/clipboard-list-alt.svg" alt="Report Icon">
     <span>Shopping List</span>
+  </div>
+</a>
+<a href="generateReport.php" style="text-decoration: none;">
+  <div class="in-nav">
+    <img src="images/document-report.svg" alt="Report Icon">
+    <span>Inventory Analytics</span>
   </div>
 </a>
 

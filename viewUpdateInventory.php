@@ -448,7 +448,8 @@
             margin-bottom: 0.5rem;
             border: 1px solid black;
         }
-        .modify-btn:hover {
+        .modify-btn:hover,
+        .manage-pallet-lnk:hover {
             opacity: 0.85;
         }
         .manage-pallet-lnk {
@@ -531,6 +532,9 @@
             }
             .report-table td {
                 padding: 4px;
+            }
+            .report-section{
+                padding: 0;
             }
         }
     </style>

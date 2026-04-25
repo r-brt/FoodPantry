@@ -23,14 +23,14 @@
             $shopOnly = isset($_POST['shopOnly']) ? 1 : 0;
             $itemsPerBox = intval($_POST['itemsPerBox']);
             $status = "Active";
-            var_dump($cat_name);
-
-            if (retrieve_ItemCategory_by_name($cat_name)) {
-                var_dump(retrieve_ItemCategoryStatus($cat_name));
-                if(retrieve_ItemCategoryStatus($cat_name) == 'Deleted') {
-                    var_dump(retrieve_ItemCategoryStatus($cat_name));
-                    var_dump(retrieve_ItemID($cat_name));
-                    activate_itemCategory(retrieve_ItemID($cat_name));
+            
+            $existing_item = retrieve_ItemCategory_by_name($cat_name);
+            if ($existing_item) {
+                if($existing_item->getStatus() == 'Deleted') {
+                    activate_itemCategory($existing_item->getId());
+                    update_itemCategory($existing_item->getId(), $cat_name, $bananaBox, $itemsPerBox);
+                    header("Location: viewItemCategories.php");
+                    exit();
                 } else {
                     $errors[] = "Category already exists";
                 }

@@ -582,6 +582,9 @@ $availableMonths = array_keys($monthlyData);
             div.table-wrapper {
                 overflow-x: auto;
             }
+            .report-section{
+                padding: 0;
+            }
         }
     </style>
 </head>
