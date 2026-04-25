@@ -366,6 +366,8 @@ else if(isset($_GET['week'])){
             padding-top: .4rem;
             border-radius: 10px;
             background-color: #ffffffee;
+            white-space: nowrap;
+            overflow: hidden;
         }
         .report-container {
             max-width: 1100px;
@@ -746,6 +748,9 @@ else if(isset($_GET['week'])){
             }
             .data-entry-label {
                 width: auto;
+            }
+            .report-section{
+                padding: 0;
             }
         }
     </style>

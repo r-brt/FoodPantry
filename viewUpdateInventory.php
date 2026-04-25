@@ -533,6 +533,9 @@
             .report-table td {
                 padding: 4px;
             }
+            .report-section{
+                padding: 0;
+            }
         }
     </style>
 </head>

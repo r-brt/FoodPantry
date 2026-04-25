@@ -44,6 +44,8 @@
             padding-top: .4rem;
             border-radius: 10px;
             background-color: #ffffffee;
+            white-space: nowrap;
+            overflow: hidden;
         }
         .report-container {
             max-width: 1100px;
@@ -223,6 +225,9 @@
             }
             div.table-wrapper {
                 overflow-x: auto;
+            }
+            .report-section{
+                padding: 0;
             }
         }
     </style>
