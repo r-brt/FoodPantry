@@ -216,39 +216,6 @@ if ($selectedPairIndex !== null) {
     });
 }
 
-/*
- * DEBUG CODE ONLY
- */
-if(isset($_GET["addTestData"])){
-    $numNewData = $_GET["addTestData"];
-    if($numNewData > 0 && $numNewData < 1001){
-        if(isset($pair["date"])){
-            $currDate = date('Y-m-d', strtotime($pair["date"]));
-            while($numNewData > 0){
-                $numNewData--;
-                $currDate = date('Y-m-d', strtotime($currDate. ' + 7 days'));
-                add_inventoryEvent(999999, "Warehouse", $currDate);
-                add_inventoryEvent(999999, "Pantry", $currDate);
-                add_inventoryEvent(999999, "Pallet", $currDate);
-                echo "DONE: ".$numNewData."<br>";
-            }
-            header('Location: inventory.php');
-            exit;
-        }
-    }
-}
-
-if(isset($_GET["removeTestData"])){
-    $allInventoryEvents = get_all_inventoryEvents();
-    foreach($allInventoryEvents as $event){
-        if($event->getPersonId() == 999999){
-            remove_inventoryEvent($event->getId());
-        }
-    }
-    header('Location: inventory.php');
-    exit;
-}
-
 ?>
 
 <!DOCTYPE html>
@@ -758,9 +725,6 @@ if(isset($_GET["removeTestData"])){
             });
         });
     </script>
-
-    <button id="addTestData" name="addTestData" onclick="window.location.href='?addTestData=100'">Add Test Data</button>
-    <button id="removeTestData" name="removeTestData" onclick="window.location.href='?removeTestData=100'">Remove Test Data</button>
 
 </body>
 </html>
