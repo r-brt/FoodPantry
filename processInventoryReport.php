@@ -69,7 +69,7 @@ $sql = "SELECT dic.id, dic.name as item_name,
         SUM(dbic.quantity) * dic.itemsPerBox as total_count
         FROM dbitemcategory dic
         INNER JOIN dbitemcounts dbic on dic.id = dbic.itemCategoryId
-        WHERE dbic.inventoryEventID IN ($eventPlaceholders)";
+        WHERE dbic.inventoryEventID IN ($eventPlaceholders) AND dic.shopOnly = 0";
 $params = $eventIds;
 $types = str_repeat('i', count($eventIds));
 
