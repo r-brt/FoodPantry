@@ -884,7 +884,7 @@
                                         </td>
                                     </tr>
                                     <?php foreach ($group['items'] as $item): ?>
-                                    <tr class="group-item-row" draggable="true" data-count-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>">
+                                    <tr class="group-item-row" draggable="false" data-count-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>">
                                         <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                         <td class="row-number"><?= $rowNum++ ?></td>
                                         <td data-item-name="<?= htmlspecialchars($item['item_name']) ?>"><span class="group-indent">&#8627;</span><?= htmlspecialchars($item['item_name']) ?></td>
@@ -1089,6 +1089,7 @@
                         // Remove group indicators from member rows
                         document.querySelectorAll('#basketTbody tr[data-group-id="' + groupId + '"]:not(.group-header-row)')
                             .forEach(function(r) {
+                                r.draggable = true;
                                 delete r.dataset.groupId;
                                 r.classList.remove('group-item-row');
                                 var nc = r.querySelector('td[data-item-name]');
@@ -1117,6 +1118,7 @@
                         if (!data.success) return;
                         var row = document.querySelector('#basketTbody tr[data-count-id="' + itemId + '"]');
                         if (row) {
+                            row.draggable = true;
                             delete row.dataset.groupId;
                             row.classList.remove('group-item-row');
                             // Restore item name (remove indent arrow)
@@ -1142,6 +1144,7 @@
                             var header2 = document.querySelector('#basketTbody .group-header-row[data-group-id="' + groupId + '"]');
                             if (header2) {
                                 var lastRow = remainingMembers[0];
+                                lastRow.draggable = true;
                                 lastRow.classList.remove('group-item-row');
                                 delete lastRow.dataset.groupId;
                                 var nc2 = lastRow.querySelector('td[data-item-name]');
@@ -1164,6 +1167,7 @@
 
             // ---- Add remove-btn + group-item-row class to a row ----
             function markAsGroupItem(row, groupId) {
+                row.draggable = false;
                 row.classList.add('group-item-row');
                 row.dataset.groupId = groupId;
 
@@ -1174,17 +1178,14 @@
                 }
 
                 // Wrap the notes input in a .basket-notes-cell div and append the × button
-                var ntd = row.querySelector('td:last-child');
+                var ni  = row.querySelector('.basket-notes-input');
+                var ntd = ni ? ni.closest('td') : null;
                 if (ntd && !ntd.querySelector('.remove-from-group-btn')) {
-                    var ni = ntd.querySelector('.basket-notes-input');
                     var wrapper = document.createElement('div');
                     wrapper.className = 'basket-notes-cell';
-                    // Move the input into the wrapper (or create placeholder if absent)
-                    if (ni) {
-                        ni.setAttribute('draggable', 'false');
-                        ntd.removeChild(ni);
-                        wrapper.appendChild(ni);
-                    }
+                    ni.setAttribute('draggable', 'false');
+                    ntd.removeChild(ni);
+                    wrapper.appendChild(ni);
                     var btn = document.createElement('button');
                     btn.className       = 'remove-from-group-btn';
                     btn.dataset.itemId  = row.dataset.countId;
@@ -1268,13 +1269,18 @@
 
                 basketTbody.addEventListener('dragstart', function(e) {
                     dragSrc = e.target.closest('tr');
-                    if (dragSrc) dragSrc.classList.add('dragging');
+                    if (!dragSrc || dragSrc.classList.contains('group-item-row')) {
+                        dragSrc = null;
+                        return;
+                    }
+                    dragSrc.classList.add('dragging');
                     e.dataTransfer.effectAllowed = 'move';
                 });
 
                 basketTbody.addEventListener('dragover', function(e) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
+                    if (!dragSrc) return;
                     var target = e.target.closest('tr');
                     if (!target || target === dragSrc) return;
 
@@ -1291,6 +1297,13 @@
                     // Dropping on group header → always "add to group" indicator (unless dragging a header)
                     if (target.classList.contains('group-header-row') && !srcIsHeader) {
                         target.classList.add('drag-over-center');
+                        return;
+                    }
+
+                    // Dropping on a group item row: ungrouped items can only join the group (center);
+                    // group headers cannot be dropped inside another group at all.
+                    if (target.classList.contains('group-item-row')) {
+                        if (!srcIsHeader) target.classList.add('drag-over-center');
                         return;
                     }
 
@@ -1319,6 +1332,9 @@
                     delete basketTbody.dataset.pendingZone;
 
                     target.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-center');
+
+                    // Never allow reorder drops directly onto group item rows
+                    if (finalZone !== 'center' && target.classList.contains('group-item-row')) return;
 
                     if (finalZone === 'center') {
                         // GROUP ACTION
@@ -1364,11 +1380,20 @@
 
                 // Store drop zone during dragover so the drop handler can read it reliably
                 basketTbody.addEventListener('dragover', function(e) {
+                    if (!dragSrc) return;
                     var target = e.target.closest('tr');
                     if (!target || target === dragSrc) return;
-                    var srcIsHeader = dragSrc && dragSrc.classList.contains('group-header-row');
+                    var srcIsHeader = dragSrc.classList.contains('group-header-row');
                     if (target.classList.contains('group-header-row') && !srcIsHeader) {
                         basketTbody.dataset.pendingZone = 'center';
+                        return;
+                    }
+                    if (target.classList.contains('group-item-row')) {
+                        if (!srcIsHeader) {
+                            basketTbody.dataset.pendingZone = 'center';
+                        } else {
+                            delete basketTbody.dataset.pendingZone;
+                        }
                         return;
                     }
                     var rect = target.getBoundingClientRect();
@@ -1407,8 +1432,36 @@
                     if (!confirm('Remove "' + catName + '" from the shopping list?')) return;
                     $.post('viewShoppingList.php', { action: 'removeItem', countId: countId }, function(data) {
                         if (!data.success) return;
-                        var row = basketTbody.querySelector('tr[data-count-id="' + countId + '"]');
+                        var row     = basketTbody.querySelector('tr[data-count-id="' + countId + '"]');
+                        var groupId = row ? (row.dataset.groupId || null) : null;
                         if (row) row.remove();
+
+                        // If item was in a group, clean up group DOM to match server state
+                        if (groupId) {
+                            var remaining = basketTbody.querySelectorAll(
+                                'tr[data-group-id="' + groupId + '"]:not(.group-header-row)');
+                            var hdr = basketTbody.querySelector('.group-header-row[data-group-id="' + groupId + '"]');
+                            if (remaining.length === 0) {
+                                if (hdr) hdr.remove();
+                            } else if (remaining.length === 1) {
+                                // Server dissolved the group — unmark the last member
+                                var last = remaining[0];
+                                last.draggable = true;
+                                last.classList.remove('group-item-row');
+                                delete last.dataset.groupId;
+                                var nc = last.querySelector('td[data-item-name]');
+                                if (nc) nc.innerHTML = escHtml(nc.dataset.itemName);
+                                var wrapperEl = last.querySelector('.basket-notes-cell');
+                                if (wrapperEl) {
+                                    var ni = wrapperEl.querySelector('.basket-notes-input');
+                                    var ptd = wrapperEl.parentNode;
+                                    if (ni) ptd.insertBefore(ni, wrapperEl);
+                                    wrapperEl.remove();
+                                }
+                                if (hdr) hdr.remove();
+                            }
+                        }
+
                         renumberRows();
                         // Add the option back to the add-item dropdown (sorted alphabetically)
                         var select = document.getElementById('addItemSelect');
