@@ -287,6 +287,12 @@ else if(isset($_GET['week'])){
             continue;
         }
         $itemName = $category->getName();
+
+        // Skip items with no consumption rate
+        if (!isset($consumptionRates[$itemName]) || $consumptionRates[$itemName] <= 0) {
+            continue;
+        }
+
         $itemsPerBox = $category->getItemsPerBox();
 
         // Get current week data
