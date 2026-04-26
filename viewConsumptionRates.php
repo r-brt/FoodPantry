@@ -10,9 +10,9 @@
         $personId   = isset($_SESSION['_id']) ? $_SESSION['_id'] : 0;
         $familySize = isset($_POST['familySize']) ? trim($_POST['familySize']) : '';
         $numClients = isset($_POST['numClients']) ? (float)$_POST['numClients'] : -1;
-        $date       = isset($_POST['date']) ? trim($_POST['date']) : '';
+        $date       = date('Y-m-d');
         header('Content-Type: application/json');
-        if (!empty($familySize) && $numClients >= 0 && !empty($date)) {
+        if (!empty($familySize) && $numClients >= 0) {
             $con    = connect();
             $query  = 'SELECT id FROM dbshoppingevent WHERE familySize = "' . mysqli_real_escape_string($con, $familySize) . '" ORDER BY date DESC, id DESC LIMIT 1';
             $result = mysqli_query($con, $query);
@@ -64,9 +64,9 @@
         require_once('database/dbDistribution.php');
         $personId         = isset($_SESSION['_id']) ? $_SESSION['_id'] : 0;
         $distributionDays = isset($_POST['distributionDays']) ? (int)$_POST['distributionDays'] : 0;
-        $date             = isset($_POST['date']) ? trim($_POST['date']) : '';
+        $date             = date('Y-m-d');
         header('Content-Type: application/json');
-        if ($distributionDays > 0 && !empty($date)) {
+        if ($distributionDays > 0) {
             $id = add_distribution($distributionDays, $personId, $date);
             echo json_encode(['success' => $id > 0, 'id' => $id]);
         } else {
@@ -465,10 +465,6 @@ if (!empty($consumptionRateRows)) {
                         </select>
                     </div>
                     <div class="data-entry-row">
-                        <label class="data-entry-label" for="clientDate">Month:</label>
-                        <input type="date" id="clientDate" class="data-entry-input">
-                    </div>
-                    <div class="data-entry-row">
                         <label class="data-entry-label" for="numClients">Number of Clients:</label>
                         <input type="number" id="numClients" class="data-entry-input" min="0" step="0.01" placeholder="e.g. 50">
                     </div>
@@ -483,10 +479,6 @@ if (!empty($consumptionRateRows)) {
                 <p style="color: var(--page-font-color); margin-bottom: 1rem;">Record the number of distribution days for a specific date.</p>
 
                 <div class="data-entry-grid">
-                    <div class="data-entry-row">
-                        <label class="data-entry-label" for="distDate">Date:</label>
-                        <input type="date" id="distDate" class="data-entry-input">
-                    </div>
                     <div class="data-entry-row">
                         <label class="data-entry-label" for="distributionDays">Distribution Days:</label>
                         <input type="number" id="distributionDays" class="data-entry-input" min="1" step="1" placeholder="e.g. 5">
@@ -607,11 +599,10 @@ if (!empty($consumptionRateRows)) {
             $('#saveClientBtn').on('click', function() {
                 var btn = $(this);
                 var familySize = $('#clientFamilySize').val();
-                var date       = $('#clientDate').val();
                 var numClients = $('#numClients').val();
                 var $feedback  = $('#clientFeedback');
 
-                if (!familySize || !date || numClients === '') {
+                if (!familySize || numClients === '') {
                     $feedback.removeClass('feedback-success').addClass('feedback-error').text('Please fill in all fields.');
                     return;
                 }
@@ -619,7 +610,7 @@ if (!empty($consumptionRateRows)) {
                 $feedback.removeClass('feedback-success feedback-error').text('');
 
                 $.post('viewConsumptionRates.php', {
-                    action: 'saveClient', familySize: familySize, date: date, numClients: numClients
+                    action: 'saveClient', familySize: familySize, numClients: numClients
                 }, function(data) {
                     if (data.success) {
                         $feedback.removeClass('feedback-error').addClass('feedback-success').text('Saved! Updating rates...');
@@ -638,11 +629,10 @@ if (!empty($consumptionRateRows)) {
             // ---- Save Distribution Days ----
             $('#saveDistributionBtn').on('click', function() {
                 var btn = $(this);
-                var date             = $('#distDate').val();
                 var distributionDays = $('#distributionDays').val();
                 var $feedback        = $('#distributionFeedback');
 
-                if (!date || !distributionDays) {
+                if (!distributionDays) {
                     $feedback.removeClass('feedback-success').addClass('feedback-error').text('Please fill in all fields.');
                     return;
                 }
@@ -650,7 +640,7 @@ if (!empty($consumptionRateRows)) {
                 $feedback.removeClass('feedback-success feedback-error').text('');
 
                 $.post('viewConsumptionRates.php', {
-                    action: 'saveDistribution', date: date, distributionDays: distributionDays
+                    action: 'saveDistribution', distributionDays: distributionDays
                 }, function(data) {
                     if (data.success) {
                         $feedback.removeClass('feedback-error').addClass('feedback-success').text('Saved! Updating rates...');
