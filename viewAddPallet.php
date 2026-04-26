@@ -541,7 +541,8 @@
                                             <select name="category_<?php echo($row_count); ?>" id="category_<?php echo($row_count); ?>" onchange="updateCategoryColumns(this)">
                                                 <option value="">-- Select Category --</option>
                                                 <?php foreach($allCategories AS $category): ?>
-                                                    <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>"><?php echo($category->getName())?></option>
+                                                    <?php if ($category->getShopOnly() == 1) { continue; } ?>
+                                                    <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>">><?php echo($category->getName())?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
@@ -567,7 +568,8 @@
                                             <select name="category_<?php echo($row_count); ?>" id="category_<?php echo($row_count); ?>" onchange="updateCategoryColumns(this)">
                                                 <option value="">-- Select Category --</option>
                                                 <?php foreach($allCategories AS $cat): ?>
-                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?>" <?php if($cat->getId() == $category->getId()) echo("selected")?>><?php echo($cat->getName())?></option>
+                                                    <?php if ($cat->getShopOnly() == 1) { continue; } ?>
+                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?> "<?php if($cat->getId() == $category->getId()) echo("selected")?>><?php echo($cat->getName())?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
@@ -594,7 +596,8 @@
                                         <select name="category_0" id="category_0" onchange="updateCategoryColumns(this)">
                                             <option value="">-- Select Category --</option>
                                             <?php foreach($allCategories AS $category): ?>
-                                                <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>"><?php echo($category->getName())?></option>
+                                                <?php if ($category->getShopOnly() == 1) { continue; } ?>
+                                                <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>">><?php echo($category->getName())?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </td>

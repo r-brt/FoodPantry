@@ -612,7 +612,12 @@
                             <tbody>
                                 <?php
                                 $categories = get_all_active_ItemCategory();
-                                foreach($categories AS $category): ?>
+                                foreach($categories AS $category): 
+                                    // Skip shopping list only items
+                                    if ($category->getShopOnly() == 1) {
+                                        continue;
+                                    }
+                                ?>
                                     <tr class="updateInv-row">
                                         <td>
                                             <label class="updateInv-label" for="warehouse_<?php echo($category->getId())?>">

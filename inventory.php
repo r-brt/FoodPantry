@@ -165,6 +165,11 @@ if ($selectedPairIndex !== null) {
     foreach ($allCategories as $category) {
         $categoryId = $category->getId();
 
+        // Skip shopping list only items
+        if ($category->getShopOnly() == 1) {
+            continue;
+        }
+
         // Only show categories that have data in this inventory
         if (!isset($categoriesWithData[$categoryId])) {
             continue;
