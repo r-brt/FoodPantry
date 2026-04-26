@@ -599,7 +599,7 @@
                                                 <option value="">-- Select Category --</option>
                                                 <?php foreach($allCategories AS $category): ?>
                                                     <?php if ($category->getShopOnly() == 1) { continue; } ?>
-                                                    <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>">><?php echo($category->getName())?></option>
+                                                    <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>"><?php echo($category->getName())?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
@@ -625,7 +625,7 @@
                                                 <option value="">-- Select Category --</option>
                                                 <?php foreach($allCategories AS $cat): ?>
                                                     <?php if ($cat->getShopOnly() == 1) { continue; } ?>
-                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?> "<?php if($cat->getId() == $category->getId()) echo("selected")?>><?php echo($cat->getName())?></option>
+                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?>"<?php if($cat->getId() == $category->getId()) echo("selected")?>><?php echo($cat->getName())?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
@@ -653,7 +653,7 @@
                                             <option value="">-- Select Category --</option>
                                             <?php foreach($allCategories AS $category): ?>
                                                 <?php if ($category->getShopOnly() == 1) { continue; } ?>
-                                                <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>">><?php echo($category->getName())?></option>
+                                                <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>"><?php echo($category->getName())?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </td>

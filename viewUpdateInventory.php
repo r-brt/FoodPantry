@@ -165,6 +165,10 @@
             /* auto-fill missing items with 0 for complete analytics data */
             $allCategories = get_all_active_ItemCategory();
             foreach($allCategories as $category){
+                // Skip shopping list only items
+                if ($category->getShopOnly() == 1) {
+                    continue;
+                }
                 $categoryId = $category->getId();
                 if(!isset($warehouseItems[$categoryId])){
                     $warehouseItems[$categoryId] = 0;
