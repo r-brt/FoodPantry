@@ -622,13 +622,13 @@ if (!empty($consumptionRateRows)) {
                     action: 'saveClient', familySize: familySize, date: date, numClients: numClients
                 }, function(data) {
                     if (data.success) {
-                        $feedback.removeClass('feedback-error').addClass('feedback-success').text('Saved successfully!');
-                        $('#numClients').val('');
+                        $feedback.removeClass('feedback-error').addClass('feedback-success').text('Saved! Updating rates...');
+                        setTimeout(function() { location.reload(); }, 600);
                     } else {
                         $feedback.removeClass('feedback-success').addClass('feedback-error').text(data.error || 'Save failed.');
+                        btn.prop('disabled', false).text('Save Client Count');
+                        setTimeout(function() { $feedback.text(''); }, 4000);
                     }
-                    btn.prop('disabled', false).text('Save Client Count');
-                    setTimeout(function() { $feedback.text(''); }, 4000);
                 }, 'json').fail(function() {
                     $feedback.removeClass('feedback-success').addClass('feedback-error').text('Server error. Please try again.');
                     btn.prop('disabled', false).text('Save Client Count');
@@ -653,13 +653,13 @@ if (!empty($consumptionRateRows)) {
                     action: 'saveDistribution', date: date, distributionDays: distributionDays
                 }, function(data) {
                     if (data.success) {
-                        $feedback.removeClass('feedback-error').addClass('feedback-success').text('Saved successfully!');
-                        $('#distributionDays').val('');
+                        $feedback.removeClass('feedback-error').addClass('feedback-success').text('Saved! Updating rates...');
+                        setTimeout(function() { location.reload(); }, 600);
                     } else {
                         $feedback.removeClass('feedback-success').addClass('feedback-error').text(data.error || 'Save failed.');
+                        btn.prop('disabled', false).text('Save Distribution Days');
+                        setTimeout(function() { $feedback.text(''); }, 4000);
                     }
-                    btn.prop('disabled', false).text('Save Distribution Days');
-                    setTimeout(function() { $feedback.text(''); }, 4000);
                 }, 'json').fail(function() {
                     $feedback.removeClass('feedback-success').addClass('feedback-error').text('Server error. Please try again.');
                     btn.prop('disabled', false).text('Save Distribution Days');
