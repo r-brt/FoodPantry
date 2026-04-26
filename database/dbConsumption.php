@@ -151,6 +151,82 @@ function delete_consumption_by_event_items($shoppingEventId, $itemCategoryIds) {
 }
 
 /*
+ * Compute current consumption rates per itemCategoryId directly from live shopping list,
+ * client, and distribution data — same formula as viewConsumptionRates.php. Returns
+ * an associative array of itemCategoryId => total rate (summed across family sizes),
+ * or [] when there isn't enough data to compute. Used by the weekly report so it
+ * reflects shopping list changes immediately, without waiting for the cached
+ * dbcomsumption rows to be refreshed by a visit to viewConsumptionRates.php.
+ */
+function compute_current_consumption_rates_by_category() {
+    $con = connect();
+
+    // Latest distribution days
+    $distRow = mysqli_fetch_assoc(mysqli_query($con,
+        'SELECT distributionDays FROM dbdistribution ORDER BY date DESC, id DESC LIMIT 1'));
+    if (!$distRow) { mysqli_close($con); return []; }
+    $distDays = (int)$distRow['distributionDays'];
+    if ($distDays <= 0) { mysqli_close($con); return []; }
+
+    // Latest client record per shoppingEventId
+    $latestClients = [];
+    $totalClients  = 0;
+    $cRes = mysqli_query($con,
+        'SELECT c.shoppingEventId, c.numClients FROM dbclient c
+         WHERE c.id IN (SELECT MAX(id) FROM dbclient GROUP BY shoppingEventId)');
+    if ($cRes) {
+        while ($row = mysqli_fetch_assoc($cRes)) {
+            $latestClients[] = $row;
+            $totalClients   += (float)$row['numClients'];
+        }
+    }
+    if (empty($latestClients) || $totalClients <= 0) {
+        mysqli_close($con);
+        return [];
+    }
+
+    $clientsPerDay = round($totalClients / $distDays);
+    if ($clientsPerDay <= 0) { mysqli_close($con); return []; }
+
+    $rates = []; // categoryId => total rate (summed across family sizes)
+    foreach ($latestClients as $lc) {
+        $seId               = (int)$lc['shoppingEventId'];
+        $groupClientsPerDay = (float)$lc['numClients'] / $clientsPerDay;
+
+        $cntRes = mysqli_query($con,
+            'SELECT itemCategoryId, quantity, groupId, excludeFromConsumption
+             FROM dbshoppingcounts WHERE shoppingEventId = ' . $seId);
+
+        $countsForEvent = [];
+        $groupSizeMap   = [];
+        if ($cntRes) {
+            while ($cRow = mysqli_fetch_assoc($cntRes)) {
+                $countsForEvent[] = $cRow;
+                if ($cRow['groupId'] !== null && empty($cRow['excludeFromConsumption'])) {
+                    $gId = (int)$cRow['groupId'];
+                    $groupSizeMap[$gId] = ($groupSizeMap[$gId] ?? 0) + 1;
+                }
+            }
+        }
+
+        foreach ($countsForEvent as $sc) {
+            if (!empty($sc['excludeFromConsumption'])) continue;
+            $catId    = (int)$sc['itemCategoryId'];
+            $qty      = (int)$sc['quantity'];
+            $gId      = $sc['groupId'] !== null ? (int)$sc['groupId'] : null;
+            $gSize    = ($gId !== null && isset($groupSizeMap[$gId])) ? $groupSizeMap[$gId] : 1;
+            $baseRate = $groupClientsPerDay * $qty;
+            $rate     = round($gSize > 1 ? $baseRate / $gSize : $baseRate, 2);
+
+            if (!isset($rates[$catId])) $rates[$catId] = 0;
+            $rates[$catId] += $rate;
+        }
+    }
+    mysqli_close($con);
+    return $rates;
+}
+
+/*
  * update the itemsConsumed for a Consumption in dbcomsumption table: if it does not exist, return false
  */
 
