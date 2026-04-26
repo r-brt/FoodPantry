@@ -43,29 +43,16 @@
         $categoryMap[$cat->getId()] = $cat->getName();
     }
 
-    // Load saved consumption rates from dbcomsumption.
-    // Each save from viewConsumptionRates.php writes one row per family size per item,
-    // all sharing the same date. Sum all rows from the most recent date per category.
+    // Compute consumption rates live from shopping list, client, and distribution data so
+    // shopping list changes (quantity, exclude flag, grouping) are reflected here without
+    // requiring a visit to viewConsumptionRates.php to refresh the cached dbcomsumption rows.
     $consumptionRates = [];
-    $con = connect();
-    $result = mysqli_query($con,
-        'SELECT c1.itemCategoryId, SUM(c1.itemsConsumed) AS totalRate
-         FROM dbcomsumption c1
-         INNER JOIN (
-             SELECT itemCategoryId, MAX(date) AS maxDate
-             FROM dbcomsumption
-             GROUP BY itemCategoryId
-         ) c2 ON c1.itemCategoryId = c2.itemCategoryId AND c1.date = c2.maxDate
-         GROUP BY c1.itemCategoryId');
-    if ($result) {
-        while ($row = mysqli_fetch_assoc($result)) {
-            $catId = (int)$row['itemCategoryId'];
-            if (isset($categoryMap[$catId])) {
-                $consumptionRates[$categoryMap[$catId]] = (float)$row['totalRate'];
-            }
+    $ratesByCatId = compute_current_consumption_rates_by_category();
+    foreach ($ratesByCatId as $catId => $rate) {
+        if (isset($categoryMap[$catId])) {
+            $consumptionRates[$categoryMap[$catId]] = (float)$rate;
         }
     }
-    mysqli_close($con);
 
 
 

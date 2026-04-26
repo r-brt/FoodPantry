@@ -283,6 +283,7 @@ function get_monthly_inventory_totals(){
               FROM dbinventoryevent ie
               INNER JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
               INNER JOIN dbitemcategory dic ON dbic.itemCategoryId = dic.id
+              WHERE dic.shopOnly = 0
               GROUP BY DATE_FORMAT(ie.date, '%Y-%m'), dic.id, dic.name
               ORDER BY month DESC, dic.name ASC";
     $sql_result = mysqli_query($con, $query);

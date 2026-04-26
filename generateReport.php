@@ -91,11 +91,12 @@ usort($eventPairs, function($a, $b) {
 $categoryResult = $conn->query("
     SELECT DISTINCT dic.id, dic.name, dic.status
     FROM dbitemcategory dic
-    WHERE dic.status = 'Active'
-       OR (dic.status = 'Inactive' AND dic.id IN (
-           SELECT DISTINCT itemCategoryId
-           FROM dbitemcounts
-       ))
+    WHERE dic.shopOnly = 0
+      AND (dic.status = 'Active'
+           OR (dic.status = 'Inactive' AND dic.id IN (
+               SELECT DISTINCT itemCategoryId
+               FROM dbitemcounts
+           )))
     ORDER BY dic.name ASC
 ");
 $categories = [];
@@ -111,11 +112,12 @@ $allDataCategoryIds = [];
 $allDataResult = $conn->query("
     SELECT DISTINCT dic.id
     FROM dbitemcategory dic
-    WHERE dic.status = 'Active'
-       OR dic.id IN (
-           SELECT DISTINCT itemCategoryId
-           FROM dbitemcounts
-       )
+    WHERE dic.shopOnly = 0
+      AND (dic.status = 'Active'
+           OR dic.id IN (
+               SELECT DISTINCT itemCategoryId
+               FROM dbitemcounts
+           ))
 ");
 if ($allDataResult) {
     while ($row = $allDataResult->fetch_assoc()) {
@@ -138,7 +140,7 @@ if ($selectedCategory) {
         FROM dbinventoryevent ie
         LEFT JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
         LEFT JOIN dbitemcategory dic ON dbic.itemCategoryId = dic.id
-        WHERE dic.id = ?
+        WHERE dic.id = ? AND dic.shopOnly = 0
         GROUP BY DATE(ie.date), dic.name, dic.itemsPerBox
         ORDER BY DATE(ie.date) ASC
     ";
@@ -164,7 +166,7 @@ $sqlAll = "
     FROM dbinventoryevent ie
     LEFT JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
     LEFT JOIN dbitemcategory dic ON dbic.itemCategoryId = dic.id
-    WHERE dic.id IS NOT NULL
+    WHERE dic.id IS NOT NULL AND dic.shopOnly = 0
     GROUP BY DATE(ie.date), dic.id, dic.name
     ORDER BY DATE(ie.date) ASC, dic.name ASC
 ";
@@ -186,7 +188,7 @@ $sqlGraph = "
     FROM dbinventoryevent ie
     LEFT JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
     LEFT JOIN dbitemcategory dic ON dbic.itemCategoryId = dic.id
-    WHERE dic.id IS NOT NULL
+    WHERE dic.id IS NOT NULL AND dic.shopOnly = 0
     AND ie.id >= (
         SELECT MAX(ie2.id)
         FROM dbinventoryevent ie2
