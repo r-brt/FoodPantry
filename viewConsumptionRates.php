@@ -478,12 +478,24 @@ if (!empty($consumptionRateRows)) {
                 <div class="data-entry-grid">
                     <div class="data-entry-row">
                         <label class="data-entry-label" for="clientFamilySize">Family Size:</label>
-                        <select id="clientFamilySize" class="data-entry-input select">
+                        <select id="clientFamilySize" class="data-entry-input select" onchange="displayClientCount(this)">
                             <option value="">-- Select Family Size --</option>
                             <?php foreach ($familySizes as $fs): ?>
                                 <option value="<?= htmlspecialchars($fs) ?>"><?= htmlspecialchars($fs) ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <div id="all-client-counts">
+                        <?php foreach ($latestClients as $client):
+                            $se = $client->getShoppingEventId(); 
+                            if(!isset($shoppingEventFamilyMap[$se])) continue;
+                            $fs = $shoppingEventFamilyMap[$se]; ?>
+                            <div id="clientCount_<?= htmlspecialchars($fs) ?>" style="display: none;">
+                                <strong>Current Client Count:</strong> <?= htmlspecialchars($client->getNumClients()) ?>
+                                    &nbsp;(<?= htmlspecialchars(date('m/d/Y', strtotime($client->getDate()))) ?>) 
+                                <br>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                     <div class="data-entry-row">
                         <label class="data-entry-label" for="numClients">Number of Clients:</label>
@@ -498,6 +510,9 @@ if (!empty($consumptionRateRows)) {
             <div class="report-section">
                 <h2>Distribution Days</h2>
                 <p style="color: var(--page-font-color); margin-bottom: 1rem;">Record the number of distribution days for a specific date.</p>
+                <strong>Current Distribution Days:</strong> <?= htmlspecialchars($latestDistribution->getDistributionDays()) ?>
+                            &nbsp;(<?= htmlspecialchars(date('m/d/Y', strtotime($latestDistribution->getDate()))) ?>) 
+                <br><br>
 
                 <div class="data-entry-grid">
                     <div class="data-entry-row">
@@ -526,12 +541,12 @@ if (!empty($consumptionRateRows)) {
                     <div style="display:flex; gap:2rem; margin-bottom:1.25rem; flex-wrap:wrap;">
                         <span style="color:var(--page-font-color);">
                             <strong>Distribution Days:</strong> <?= htmlspecialchars($latestDistribution->getDistributionDays()) ?>
-                            &nbsp;(<?= htmlspecialchars($latestDistribution->getDate()) ?>)
+                            &nbsp;(<?= htmlspecialchars(date('m/d/Y', strtotime($latestDistribution->getDate()))) ?>) 
                         </span>
                         <span style="color:var(--page-font-color);">
                             <strong>Total Clients:</strong>
                             <?= htmlspecialchars(array_sum(array_map(function($c){ return $c->getNumClients(); }, $latestClients))) ?>
-                            &nbsp;(<?= htmlspecialchars($latestClientDate) ?>)
+
                         </span>
                         <span style="color:var(--page-font-color);">
                             <strong>Clients/Day:</strong> <?= htmlspecialchars($clientsPerDay) ?>
@@ -747,5 +762,23 @@ if (!empty($consumptionRateRows)) {
 
         });
     </script>
+    <script>
+
+    function displayClientCount(element){
+        const familySizeSelect = element.value;
+
+        const allClientCountsParentDiv = document.getElementById('all-client-counts');
+        const allClientCounts = allClientCountsParentDiv.querySelectorAll('div');
+
+        var selectedCount = "clientCount_"+familySizeSelect;
+        for(var i=0; i< allClientCounts.length; i++){
+            if(allClientCounts[i].id == selectedCount)
+                allClientCounts[i].style.display = "block";
+            else
+                allClientCounts[i].style.display = "none";
+        }
+    }
+    </script>
+
 </body>
 </html>
