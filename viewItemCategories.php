@@ -280,9 +280,11 @@
                                         $itemsPerBox = $category->getItemsPerBox();
                                         $bananaBox = $category->getBananaBox() == 1 ? "✓" : "";
                                         $shopOnly = $category->getShopOnly() == 1 ? "✓" : "";
+                                        // Gray out rows for shopping list only items
+                                        $rowClass = $category->getShopOnly() == 1 ? ' class="row-gray"' : '';
 
                                         echo '
-                                        <tr>
+                                        <tr' . $rowClass . '>
                                             <td>' . $name . '</td>
                                             <td style="text-align: center;">' . $bananaBox . '</td>
                                             <td style="text-align: center;">' . $shopOnly . '</td>

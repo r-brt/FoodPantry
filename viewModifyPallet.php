@@ -591,6 +591,16 @@
                         <?php $allCategories = get_all_active_ItemCategory(); ?>
                         <?php $row_count = 0; ?>
                         <?php foreach($categories_by_row AS $categoryid): ?>
+                            <?php
+                                // Skip rows for shopping list only items
+                                if (!empty($categoryid)) {
+                                    $rowCategory = retrieve_ItemCategory($categoryid);
+                                    if ($rowCategory && $rowCategory->getShopOnly() == 1) {
+                                        $row_count++;
+                                        continue;
+                                    }
+                                }
+                            ?>
                             <?php if(empty($categoryid)) : ?>
                                 <tr class="rowClass">
                                     <div class="updateInv-row">
@@ -625,7 +635,7 @@
                                                 <option value="">-- Select Category --</option>
                                                 <?php foreach($allCategories AS $cat): ?>
                                                     <?php if ($cat->getShopOnly() == 1) { continue; } ?>
-                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?>"<?php if($cat->getId() == $category->getId()) echo("selected")?>><?php echo($cat->getName())?></option>
+                                                    <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?>" <?php if($cat->getId() == $category->getId()) echo("selected")?>><?php echo($cat->getName())?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
