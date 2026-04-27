@@ -355,7 +355,8 @@ $availableMonths = array_keys($monthlyData);
         .week-selector select:hover {
             background-color: rgba(0,0,0,0.3);
         }
-        .week-and-filter-section{
+        .week-and-filter-section,
+        .graph-week-and-filter-section{
             display: flex;
             flex-direction: row;
             gap: 2rem;
@@ -465,16 +466,19 @@ $availableMonths = array_keys($monthlyData);
         .generate-btn:hover {
             opacity: 0.85;
         }
-        .form-section {
+        .form-section,
+        .graph-form-section{
             margin-bottom: 1.5rem;
         }
-        .form-section label {
+        .form-section label,
+        .graph-form-section label {
             display: block;
             color: var(--page-font-color);
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
-        .form-section select {
+        .form-section select,
+        .graph-form-section select {
             width: 100%;
             max-width: 300px;
             padding: 0.5rem 0.75rem;
@@ -484,7 +488,8 @@ $availableMonths = array_keys($monthlyData);
             color: var(--page-font-color);
             cursor: pointer;
         }
-        .form-section select:hover {
+        .form-section select:hover,
+        .graph-form-section select:hover {
             background-color: rgba(0,0,0,0.3);
         }
         ul.checkbox {
@@ -630,7 +635,7 @@ $availableMonths = array_keys($monthlyData);
 
                         <div class="form-section">
                             <label for="yearSelect" style="font-weight: 500;">Filter Inventories:</label>
-                            <select id="yearSelect" name="year" class="toolbar-select" onchange="filterWeekSelect(this);">
+                            <select id="yearSelect" name="year" class="toolbar-select" onchange="filterWeekSelect(this, 'weekSelect');">
                                 <option value="Most Recent">
                                     Most Recent 
                                 </option>
@@ -746,33 +751,71 @@ $availableMonths = array_keys($monthlyData);
                 <!-- Date Range Selector -->
                 <div class="form-section">
                     <label>Select Date Range</label>
-                    <div class="date-range-selector">
-                        <?php
-                        // Get unique dates from event pairs
-                        $uniqueDates = array_unique(array_column($eventPairs, 'date'));
-                        sort($uniqueDates); // Oldest first
-                        $uniqueDatesDesc = array_reverse($uniqueDates); // Newest first
-                        ?>
-                        <div class="date-select-group">
-                            <label for="graphFromDate">From:</label>
-                            <select id="graphFromDate" class="date-select">
-                                <?php foreach ($uniqueDates as $date): ?>
-                                    <option value="<?= htmlspecialchars($date) ?>">
-                                        <?= date('m/d/Y', strtotime($date)) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="date-select-group">
-                            <label for="graphToDate">To:</label>
-                            <select id="graphToDate" class="date-select">
-                                <?php foreach ($uniqueDatesDesc as $date): ?>
-                                    <option value="<?= htmlspecialchars($date) ?>">
-                                        <?= date('m/d/Y', strtotime($date)) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
+                </div>
+
+                <div class="graph-week-and-filter-section">
+                    <div class="graph-form-section">
+                        <label for="graphFromDate">From:</label>
+                        <select name="week" id="graphFromDate" required>
+                            <?php 
+                                $count = 0;
+                                foreach ($eventPairs as $pair): ?>
+                                <?php 
+                                    $count++;
+                                    $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
+                                <option 
+                                    value="<?= htmlspecialchars($pair['date']) ?>" 
+                                    <?php if($count == count($eventPairs)) echo " selected "; ?> 
+                                >
+                                    <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="graph-form-section">
+                        <label for="yearSelect" style="font-weight: 500;">Filter Inventories:</label>
+                        <select id="yearSelect" name="year" class="toolbar-select" onchange="filterWeekSelect(this, 'graphFromDate');">
+                            <option value="Most Recent">
+                                Most Recent 
+                            </option>
+                            <optgroup label="By Year">
+                            <?php foreach ($uniqueYears as $year): ?>
+                                <option value="<?= $year ?>">
+                                    <?= $year ?>
+                                </option>
+                            <?php endforeach; ?>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                <div class="graph-week-and-filter-section">
+                    <div class="form-section">
+                        <label for="graphToDate">To: </label>
+                        <select name="week" id="graphToDate" required>
+                            <?php foreach ($eventPairs as $pair): ?>
+                                <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
+                                <option value="<?= htmlspecialchars($pair['date']) ?>">
+                                    <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="graph-form-section">
+                        <label for="yearSelect" style="font-weight: 500;">Filter Inventories:</label>
+                        <select id="yearSelect" name="year" class="toolbar-select" onchange="filterWeekSelect(this, 'graphToDate');">
+                            <option value="Most Recent">
+                                Most Recent 
+                            </option>
+                            <optgroup label="By Year">
+                            <?php foreach ($uniqueYears as $year): ?>
+                                <option value="<?= $year ?>">
+                                    <?= $year ?>
+                                </option>
+                            <?php endforeach; ?>
+                            </optgroup>
+                        </select>
                     </div>
                 </div>
 
@@ -1307,6 +1350,11 @@ $availableMonths = array_keys($monthlyData);
                 var selectAll = document.getElementById('graphSelectAll').checked;
                 var selectedItems = [];
 
+                if(fromDate > toDate){
+                    fromDate = document.getElementById('graphToDate').value;
+                    toDate = document.getElementById('graphFromDate').value;
+                }
+
                 if (selectAll) {
                     // Use all category IDs with data (includes deleted items' historical data)
                     selectedItems = allDataCategoryIds.map(function(id) { return id.toString(); });
@@ -1458,6 +1506,12 @@ $availableMonths = array_keys($monthlyData);
                 pdf.setFontSize(11);
                 var fromDate = document.getElementById('graphFromDate');
                 var toDate = document.getElementById('graphToDate');
+
+                if(fromDate.value > toDate.value){
+                    fromDate = document.getElementById('graphToDate');
+                    toDate = document.getElementById('graphFromDate');
+                }
+
                 var fromText = fromDate.options[fromDate.selectedIndex].text;
                 var toText = toDate.options[toDate.selectedIndex].text;
                 pdf.text('Date Range: ' + fromText + ' to ' + toText, 14, 25);
@@ -1552,8 +1606,8 @@ $availableMonths = array_keys($monthlyData);
     </script>
     <script>
         //Filter the dropdown list of weeks
-        function filterWeekSelect(element){
-            var weekSelect = document.getElementById("weekSelect");
+        function filterWeekSelect(element, selectId){
+            var weekSelect = document.getElementById(selectId);
             const filterSelect = element.value;
             var firstMatch = true;
 
@@ -1597,6 +1651,8 @@ $availableMonths = array_keys($monthlyData);
             }
         }
     </script>
+
+    <p id="demo"></p>
 
 </body>
 </html>
