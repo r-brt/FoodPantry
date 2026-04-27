@@ -119,8 +119,16 @@
             else
                 $bananaBox = 0;
 
-            if(isset($_POST["shopOnly"]))
-                $shopOnly = 1;
+            if(isset($_POST["shopOnly"])){
+                $palletNames = get_pallet_names_with_category($theCategory->getId());
+                if (!empty($palletNames)) {
+                    $msg = "Cannot set to Shopping List Only - this item is currently in use:";
+                    $msg .= " Pallet(s): " . implode(', ', $palletNames) . ".";
+                    $errors[] = $msg;
+                }
+                else
+                    $shopOnly = 1;
+            }
             else
                 $shopOnly = 0;
 
