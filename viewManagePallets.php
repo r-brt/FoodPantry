@@ -314,6 +314,10 @@
                                 <tbody> ';
                                 foreach($palletCounts as $count){
                                     $category = retrieve_ItemCategory($count->getItemCategory());
+                                    // Skip shopping list only items
+                                    if ($category->getShopOnly() == 1) {
+                                        continue;
+                                    }
                                     echo '
                                         <tr ';
                                          /* highlight row red if expiration date is less than 1 week away */

@@ -1538,3 +1538,10 @@ div .dd {
     padding: 1rem;
     background-color: rgba(0,0,0,0.15);
 }
+
+.row-gray {
+    background-color: rgba(156, 163, 175, 0.25) !important;
+}
+.row-gray:hover {
+    background-color: rgba(156, 163, 175, 0.35) !important;
+}
