@@ -95,6 +95,7 @@
     require_once('database/dbShoppingCount.php');
     require_once('database/dbClient.php');
     require_once('database/dbDistribution.php');
+    require_once('database/dbConsumption.php');
 
     // Get all item categories and build category ID → name map
     $allCategories = get_all_ItemCategory();
@@ -160,7 +161,8 @@
         // Matches spreadsheet: ROUND(total_clients / dist_days, 0)
         $clientsPerDay = round($totalClients / $distDays);
 
-        if ($totalClients > 0 && $clientsPerDay > 0) {
+
+        /*if ($totalClients > 0 && $clientsPerDay > 0) {
             foreach ($latestClients as $c) {
                 $seId       = $c->getShoppingEventId();
                 $familySize = isset($shoppingEventFamilyMap[$seId]) ? $shoppingEventFamilyMap[$seId] : 'Unknown';
@@ -218,6 +220,32 @@
                         'groupSize'         => $gSize,
                     );
                 }
+            }
+        }*/
+        
+        $consumptionRateRows_byEvent = array();
+         foreach ($allShoppingEvents as $event) {
+            $rates = compute_current_consumption_rates_by_shoppingEvent($event->getId());
+            if(!empty($rates))
+                $consumptionRateRows_byEvent[$event->getId()] = $rates;
+        }
+
+        foreach ($consumptionRateRows_byEvent as $id=>$rows){
+            foreach ($rows as $rec){
+                    $consumptionRateRows[] = array(
+                        'shoppingEventId'   => $rec['shoppingEventId'],
+                        'itemCategoryId'    => $rec['itemCategoryId'],
+                        'itemName'          => $rec['itemName'],
+                        'familySize'        => $rec['familySize'],
+                        'clientsInGroup'    => $rec['clientsInGroup'],
+                        'groupClientsPerDay'=> $rec['groupClientsPerDay'],
+                        'itemsPerCart'      => $rec['itemsPerCart'],
+                        'consumptionRate'   => $rec['consumptionRate'],
+                        'date'              => $rec['date'],
+                        'groupName'         => $rec['groupName'],
+                        'groupSize'         => $rec['groupSize'],
+                    );
+                //echo "ID: ".$id.", Key: ".$key.", value: ".$value."<br>";
             }
         }
     }
@@ -596,7 +624,6 @@ if (!empty($consumptionRateRows)) {
                     <?php endif; ?>
                 <?php endif; ?>
             </div>
-
         </div>
     </main>
 
