@@ -123,7 +123,7 @@
                 $palletNames = get_pallet_names_with_category($theCategory->getId());
                 if (!empty($palletNames)) {
                     $msg = "Cannot set to Shopping List Only - this item is currently in use:";
-                    $msg .= " Pallet(s): " . implode(', ', $palletNames) . ".";
+                    $msg .= "<br>Pallet: " . implode(', ', $palletNames) . ".";
                     $errors[] = $msg;
                 }
                 else
