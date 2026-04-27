@@ -223,29 +223,22 @@
             }
         }*/
         
-        $consumptionRateRows_byEvent = array();
          foreach ($allShoppingEvents as $event) {
             $rates = compute_current_consumption_rates_by_shoppingEvent($event->getId());
-            if(!empty($rates))
-                $consumptionRateRows_byEvent[$event->getId()] = $rates;
-        }
-
-        foreach ($consumptionRateRows_byEvent as $id=>$rows){
-            foreach ($rows as $rec){
-                    $consumptionRateRows[] = array(
-                        'shoppingEventId'   => $rec['shoppingEventId'],
-                        'itemCategoryId'    => $rec['itemCategoryId'],
-                        'itemName'          => $rec['itemName'],
-                        'familySize'        => $rec['familySize'],
-                        'clientsInGroup'    => $rec['clientsInGroup'],
-                        'groupClientsPerDay'=> $rec['groupClientsPerDay'],
-                        'itemsPerCart'      => $rec['itemsPerCart'],
-                        'consumptionRate'   => $rec['consumptionRate'],
-                        'date'              => $rec['date'],
-                        'groupName'         => $rec['groupName'],
-                        'groupSize'         => $rec['groupSize'],
-                    );
-                //echo "ID: ".$id.", Key: ".$key.", value: ".$value."<br>";
+            foreach ($rates as $rec){
+                $consumptionRateRows[] = array(
+                    'shoppingEventId'   => $rec['shoppingEventId'],
+                    'itemCategoryId'    => $rec['itemCategoryId'],
+                    'itemName'          => $rec['itemName'],
+                    'familySize'        => $rec['familySize'],
+                    'clientsInGroup'    => $rec['clientsInGroup'],
+                    'groupClientsPerDay'=> $rec['groupClientsPerDay'],
+                    'itemsPerCart'      => $rec['itemsPerCart'],
+                    'consumptionRate'   => $rec['consumptionRate'],
+                    'date'              => $rec['date'],
+                    'groupName'         => $rec['groupName'],
+                    'groupSize'         => $rec['groupSize'],
+                );
             }
         }
     }

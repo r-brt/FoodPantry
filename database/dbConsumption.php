@@ -3,6 +3,8 @@
 include_once('dbinfo.php');
 include_once(dirname(__FILE__).'/../domain/Consumption.php');
 include_once('dbShoppingCountGroup.php');
+include_once('database/dbShoppingEvent.php');
+include_once('dbClient.php');
 
 /*
  * add a Consumption to dbcomsumption table: return id generated from sql autoincrement
@@ -160,70 +162,21 @@ function delete_consumption_by_event_items($shoppingEventId, $itemCategoryIds) {
  * dbcomsumption rows to be refreshed by a visit to viewConsumptionRates.php.
  */
 function compute_current_consumption_rates_by_category() {
-    $con = connect();
 
-    // Latest distribution days
-    $distRow = mysqli_fetch_assoc(mysqli_query($con,
-        'SELECT distributionDays FROM dbdistribution ORDER BY date DESC, id DESC LIMIT 1'));
-    if (!$distRow) { mysqli_close($con); return []; }
-    $distDays = (int)$distRow['distributionDays'];
-    if ($distDays <= 0) { mysqli_close($con); return []; }
+    $allShoppingEvents = get_all_shoppingEvents();
+    foreach ($allShoppingEvents as $event){
+        $rates_by_event = compute_current_consumption_rates_by_shoppingEvent($event->getId());
+        if(!isset($rates_by_event)) continue;
 
-    // Latest client record per shoppingEventId
-    $latestClients = [];
-    $totalClients  = 0;
-    $cRes = mysqli_query($con,
-        'SELECT c.shoppingEventId, c.numClients FROM dbclient c
-         WHERE c.id IN (SELECT MAX(id) FROM dbclient GROUP BY shoppingEventId)');
-    if ($cRes) {
-        while ($row = mysqli_fetch_assoc($cRes)) {
-            $latestClients[] = $row;
-            $totalClients   += (float)$row['numClients'];
-        }
-    }
-    if (empty($latestClients) || $totalClients <= 0) {
-        mysqli_close($con);
-        return [];
-    }
-
-    $clientsPerDay = round($totalClients / $distDays);
-    if ($clientsPerDay <= 0) { mysqli_close($con); return []; }
-
-    $rates = []; // categoryId => total rate (summed across family sizes)
-    foreach ($latestClients as $lc) {
-        $seId               = (int)$lc['shoppingEventId'];
-        $groupClientsPerDay = (float)$lc['numClients'] / $clientsPerDay;
-
-        $cntRes = mysqli_query($con,
-            'SELECT itemCategoryId, quantity, groupId, excludeFromConsumption
-             FROM dbshoppingcounts WHERE shoppingEventId = ' . $seId);
-
-        $countsForEvent = [];
-        $groupSizeMap   = [];
-        if ($cntRes) {
-            while ($cRow = mysqli_fetch_assoc($cntRes)) {
-                $countsForEvent[] = $cRow;
-                if ($cRow['groupId'] !== null && empty($cRow['excludeFromConsumption'])) {
-                    $gId = (int)$cRow['groupId'];
-                    $groupSizeMap[$gId] = ($groupSizeMap[$gId] ?? 0) + 1;
-                }
-            }
-        }
-
-        foreach ($countsForEvent as $sc) {
-            if (!empty($sc['excludeFromConsumption'])) continue;
-            $catId    = (int)$sc['itemCategoryId'];
-            $qty      = (int)$sc['quantity'];
-            $gId      = $sc['groupId'] !== null ? (int)$sc['groupId'] : null;
-            $gSize    = ($gId !== null && isset($groupSizeMap[$gId])) ? $groupSizeMap[$gId] : 1;
-            $baseRate = $groupClientsPerDay * $qty;
-            $rate     = round($gSize > 1 ? $baseRate / $gSize : $baseRate, 2);
-
+        foreach($rates_by_event as $rec){
+            if(!isset($rec['itemCategoryId']) || !isset($rec['consumptionRate'])) continue;
+            $catId = $rec['itemCategoryId'];
+            $rate = $rec['consumptionRate'];
             if (!isset($rates[$catId])) $rates[$catId] = 0;
             $rates[$catId] += $rate;
         }
     }
-    mysqli_close($con);
+
     return $rates;
 }
 
@@ -244,6 +197,7 @@ function compute_current_consumption_rates_by_shoppingEvent($shoppingEventId) {
     if (!$distRow) { mysqli_close($con); return []; }
     $distDays = (int)$distRow['distributionDays'];
     if ($distDays <= 0) { mysqli_close($con); return []; }
+    mysqli_close($con);
 
     // Latest client record for given shoppingEventId
     $client = get_newest_client_by_shoppingEvent($shoppingEventId);
@@ -253,11 +207,17 @@ function compute_current_consumption_rates_by_shoppingEvent($shoppingEventId) {
     $groupClientsPerDay = (float)$numClients / $distDays;
 
     $shoppingCounts = get_shoppingCounts_by_shoppingEvent($shoppingEventId);
+    $allCategories = get_all_ItemCategory();
+    $catNames = array();
+    foreach($allCategories as $cat){
+        $catNames[$cat->getId()] = $cat->getName();
+    }
 
-    $rates = []; 
-    $cntRes = mysqli_query($con,
-        'SELECT itemCategoryId, quantity, groupId, excludeFromConsumption
-            FROM dbshoppingcounts WHERE shoppingEventId = ' . $shoppingEventId);
+    $shoppingEvent = retrieve_shoppingEvent($shoppingEventId);
+    if(isset($shoppingEvent))
+        $familySize = $shoppingEvent->getFamilySize();
+    else
+        $familySize = 'Unknown';
 
     $groupSizeMap   = [];
     foreach($shoppingCounts as $sc){
@@ -265,6 +225,7 @@ function compute_current_consumption_rates_by_shoppingEvent($shoppingEventId) {
         $groupSizeMap[$gId] = ($groupSizeMap[$gId] ?? 0) + 1;
     }
 
+    $consumptionRateRows = array(); 
     foreach ($shoppingCounts as $sc) {
         if ($sc->getExcludeFromConsumption() == 1) continue;
         $catId    = (int)$sc->getItemCategory();
@@ -274,28 +235,17 @@ function compute_current_consumption_rates_by_shoppingEvent($shoppingEventId) {
         $baseRate = $groupClientsPerDay * $qty;
         $rate     = round($gSize > 1 ? $baseRate / $gSize : $baseRate, 2);
 
-        if (!isset($rates[$catId])) $rates[$catId] = 0;
-        $rates[$catId] += $rate;
-
-        $item = retrieve_ItemCategory($catId);
-        if(isset($item))
-            $itemName = $item->getName();
+        if(isset($catNames[$catId]))
+            $itemName = $catNames[$catId];
         else
             $itemName = 'Unknown';
-
-        $shoppingEvent = retrieve_shoppingEvent($shoppingEventId);
-        if(isset($shoppingEvent))
-            $familySize = $shoppingEvent->getFamilySize();
-        else
-            $familySize = 'Unknown';
 
         $gName = NULL;
         if(isset($gId)){
             $group = get_shoppingCountGroup_by_id($gId);
             if(isset($group))
                 $gName = $group->getGroupName();
-        }
-            
+        } 
 
         $consumptionRateRows[] = array(
                         'shoppingEventId'   => $shoppingEventId,
@@ -314,7 +264,6 @@ function compute_current_consumption_rates_by_shoppingEvent($shoppingEventId) {
         
     }
  
-    mysqli_close($con);
     return $consumptionRateRows;
 }
 

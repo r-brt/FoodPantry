@@ -14,6 +14,10 @@ function add_itemCategory($name, $bananaBox, $itemsPerBox, $status, $shopOnly = 
             $itemsPerBox . '","' . 
             $status . '","' .
             $shopOnly . '");');
+    
+    $id = mysqli_insert_id($con);
+    mysqli_close($con);
+    
     return $id;
 }
 
