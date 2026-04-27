@@ -51,7 +51,7 @@ function get_shoppingCount_by_id($id){
         return null;
     }
     $array_result = mysqli_fetch_array($sql_result, MYSQLI_ASSOC);
-    $shoppingCount = new ShoppingCount($array_result['id'],$array_result['shoppingEventId'],$array_result['itemCategoryId'],$array_result['quantity']);
+    $shoppingCount = new ShoppingCount($array_result['id'],$array_result['shoppingEventId'],$array_result['itemCategoryId'],$array_result['quantity'],$array_result['groupId'],$array_result['excludeFromConsumption']);
     mysqli_close($con);
     return $shoppingCount;
 }
@@ -67,7 +67,7 @@ function get_shoppingCounts_by_shoppingEvent($shoppingEventId){
     $array_result = mysqli_fetch_all($sql_result, MYSQLI_ASSOC);
     $shoppingCount_array = array();
     foreach($array_result as $result){
-        $shoppingCount_array[] = new ShoppingCount($result['id'],$result['shoppingEventId'],$result['itemCategoryId'],$result['quantity']);
+        $shoppingCount_array[] = new ShoppingCount($result['id'],$result['shoppingEventId'],$result['itemCategoryId'],$result['quantity'],$result['groupId'],$result['excludeFromConsumption']);
     }
     mysqli_close($con);
     return $shoppingCount_array;
@@ -84,7 +84,7 @@ function get_shoppingCounts_by_itemCategory($itemCategoryId){
     $array_result = mysqli_fetch_all($sql_result, MYSQLI_ASSOC);
     $shoppingCount_array = array();
     foreach($array_result as $result){
-        $shoppingCount_array[] = new ShoppingCount($result['id'],$result['shoppingEventId'],$result['itemCategoryId'],$result['quantity']);
+        $shoppingCount_array[] = new ShoppingCount($result['id'],$result['shoppingEventId'],$result['itemCategoryId'],$result['quantity'],$result['groupId'],$result['excludeFromConsumption']);
     }
     mysqli_close($con);
     return $shoppingCount_array;
@@ -135,7 +135,7 @@ function get_most_recent_shoppingCounts_up_to_event($maxEventId){
     foreach($array_result as $result){
         $categoryId = $result['itemCategoryId'];
         if(!in_array($categoryId, $seen_categories)){
-            $shoppingCount_array[] = new ShoppingCount($result['id'],$result['shoppingEventId'],$result['itemCategoryId'],$result['quantity']);
+            $shoppingCount_array[] = new ShoppingCount($result['id'],$result['shoppingEventId'],$result['itemCategoryId'],$result['quantity'],$result['groupId'],$result['excludeFromConsumption']);
             $seen_categories[] = $categoryId;
         }
     }
@@ -180,18 +180,6 @@ function create_shoppingCount_group($shoppingEventId, $groupName) {
 }
 
 /**
- * Rename a group; returns true on success.
- */
-function rename_shoppingCount_group($groupId, $groupName) {
-    $con  = connect();
-    $name = mysqli_real_escape_string($con, $groupName);
-    $ok   = mysqli_query($con, 'UPDATE dbshoppingcountgroup SET groupName = "' . $name .
-        '" WHERE id = ' . (int)$groupId);
-    mysqli_close($con);
-    return (bool)$ok;
-}
-
-/**
  * Assign a shopping-count row to a group.
  */
 function assign_to_group($countId, $groupId) {
@@ -207,16 +195,6 @@ function assign_to_group($countId, $groupId) {
 function remove_from_group($countId) {
     $con = connect();
     mysqli_query($con, 'UPDATE dbshoppingcounts SET groupId = NULL WHERE id = ' . (int)$countId);
-    mysqli_close($con);
-}
-
-/**
- * Delete a group and ungroup all its members.
- */
-function delete_shoppingCount_group($groupId) {
-    $con = connect();
-    mysqli_query($con, 'UPDATE dbshoppingcounts SET groupId = NULL WHERE groupId = ' . (int)$groupId);
-    mysqli_query($con, 'DELETE FROM dbshoppingcountgroup WHERE id = ' . (int)$groupId);
     mysqli_close($con);
 }
 

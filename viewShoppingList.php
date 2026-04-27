@@ -387,6 +387,7 @@
     require_once('database/dbItemCategory.php');
     require_once('database/dbShoppingEvent.php');
     require_once('database/dbShoppingCount.php');
+    require_once('database/dbShoppingCountGroup.php');
 
     // Get all item categories and build category ID → name map
     $allCategories = get_all_ItemCategory();

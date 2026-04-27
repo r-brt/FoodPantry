@@ -2,6 +2,7 @@
 
 include_once('dbinfo.php');
 include_once(dirname(__FILE__).'/../domain/Consumption.php');
+include_once('dbShoppingCountGroup.php');
 
 /*
  * add a Consumption to dbcomsumption table: return id generated from sql autoincrement
@@ -224,6 +225,97 @@ function compute_current_consumption_rates_by_category() {
     }
     mysqli_close($con);
     return $rates;
+}
+
+/*
+ * Compute current consumption rates per itemCategoryId directly from live shopping list,
+ * client, and distribution data — same formula as viewConsumptionRates.php. Returns
+ * an associative array of itemCategoryId => total rate (summed across family sizes),
+ * or [] when there isn't enough data to compute. Used by the weekly report so it
+ * reflects shopping list changes immediately, without waiting for the cached
+ * dbcomsumption rows to be refreshed by a visit to viewConsumptionRates.php.
+ */
+function compute_current_consumption_rates_by_shoppingEvent($shoppingEventId) {
+    $con = connect();
+
+    // Latest distribution days
+    $distRow = mysqli_fetch_assoc(mysqli_query($con,
+        'SELECT distributionDays FROM dbdistribution ORDER BY date DESC, id DESC LIMIT 1'));
+    if (!$distRow) { mysqli_close($con); return []; }
+    $distDays = (int)$distRow['distributionDays'];
+    if ($distDays <= 0) { mysqli_close($con); return []; }
+
+    // Latest client record for given shoppingEventId
+    $client = get_newest_client_by_shoppingEvent($shoppingEventId);
+    if(!isset($client)) return [];
+    $numClients = $client->getNumClients();
+    $clientDate = $client->getDate();
+    $groupClientsPerDay = (float)$numClients / $distDays;
+
+    $shoppingCounts = get_shoppingCounts_by_shoppingEvent($shoppingEventId);
+
+    $rates = []; 
+    $cntRes = mysqli_query($con,
+        'SELECT itemCategoryId, quantity, groupId, excludeFromConsumption
+            FROM dbshoppingcounts WHERE shoppingEventId = ' . $shoppingEventId);
+
+    $groupSizeMap   = [];
+    foreach($shoppingCounts as $sc){
+        $gId = $sc->getGroupId();
+        $groupSizeMap[$gId] = ($groupSizeMap[$gId] ?? 0) + 1;
+    }
+
+    foreach ($shoppingCounts as $sc) {
+        if ($sc->getExcludeFromConsumption() == 1) continue;
+        $catId    = (int)$sc->getItemCategory();
+        $qty      = (int)$sc->getQuantity();
+        $gId      = $sc->getGroupId();
+        $gSize    = ($gId !== null && isset($groupSizeMap[$gId])) ? $groupSizeMap[$gId] : 1;
+        $baseRate = $groupClientsPerDay * $qty;
+        $rate     = round($gSize > 1 ? $baseRate / $gSize : $baseRate, 2);
+
+        if (!isset($rates[$catId])) $rates[$catId] = 0;
+        $rates[$catId] += $rate;
+
+        $item = retrieve_ItemCategory($catId);
+        if(isset($item))
+            $itemName = $item->getName();
+        else
+            $itemName = 'Unknown';
+
+        $shoppingEvent = retrieve_shoppingEvent($shoppingEventId);
+        if(isset($shoppingEvent))
+            $familySize = $shoppingEvent->getFamilySize();
+        else
+            $familySize = 'Unknown';
+
+        $gName = NULL;
+        if(isset($gId)){
+            $group = get_shoppingCountGroup_by_id($gId);
+            if(isset($group))
+                $gName = $group->getGroupName();
+        }
+            
+
+        $consumptionRateRows[] = array(
+                        'shoppingEventId'   => $shoppingEventId,
+                        'itemCategoryId'    => $catId,
+                        'itemName'          => $itemName,
+                        'familySize'        => $familySize,
+                        'clientsInGroup'    => $numClients,
+                        'groupClientsPerDay'=> round($groupClientsPerDay, 2),
+                        'itemsPerCart'      => $qty,
+                        'consumptionRate'   => $rate,
+                        'date'              => $clientDate,
+                        'groupName'         => $gName,
+                        'groupSize'         => $gSize,
+                    );
+        
+        
+    }
+ 
+    mysqli_close($con);
+    return $consumptionRateRows;
 }
 
 /*
