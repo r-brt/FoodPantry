@@ -885,7 +885,7 @@
                                         </td>
                                     </tr>
                                     <?php foreach ($group['items'] as $item): ?>
-                                    <tr class="group-item-row" draggable="true" data-count-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>">
+                                    <tr class="group-item-row" draggable="false" data-count-id="<?= $item['id'] ?>" data-group-id="<?= $group['id'] ?>" data-cat-id="<?= $item['catId'] ?>" data-cat-name="<?= htmlspecialchars($item['item_name']) ?>">
                                         <td class="drag-handle" title="Drag to reorder">&#8597;</td>
                                         <td class="row-number"><?= $rowNum++ ?></td>
                                         <td data-item-name="<?= htmlspecialchars($item['item_name']) ?>"><span class="group-indent">&#8627;</span><?= htmlspecialchars($item['item_name']) ?></td>
@@ -991,6 +991,70 @@
                 });
             }
 
+            // ---- Sort-order persistence (localStorage, keyed by shopping event ID) ----
+            function getOrderKey() {
+                return selectedShoppingEventId ? 'shopping-order-' + selectedShoppingEventId : null;
+            }
+
+            function saveSortOrder() {
+                var key = getOrderKey();
+                if (!key || !basketTbody) return;
+                var topOrder   = [];
+                var groupOrders = {};
+                basketTbody.querySelectorAll('tr').forEach(function(tr) {
+                    if (tr.classList.contains('group-header-row')) {
+                        var gid = tr.dataset.groupId;
+                        topOrder.push({ type: 'group', id: parseInt(gid) });
+                        groupOrders[gid] = [];
+                    } else if (tr.dataset.countId) {
+                        var gid2 = tr.dataset.groupId;
+                        if (gid2) {
+                            if (!groupOrders[gid2]) groupOrders[gid2] = [];
+                            groupOrders[gid2].push(parseInt(tr.dataset.countId));
+                        } else {
+                            topOrder.push({ type: 'item', id: parseInt(tr.dataset.countId) });
+                        }
+                    }
+                });
+                try {
+                    localStorage.setItem(key, JSON.stringify({ topOrder: topOrder, groupOrders: groupOrders }));
+                } catch(e) {}
+            }
+
+            function loadSortOrder() {
+                var key = getOrderKey();
+                if (!key || !basketTbody) return;
+                var savedJson;
+                try { savedJson = localStorage.getItem(key); } catch(e) { return; }
+                if (!savedJson) return;
+                try {
+                    var data       = JSON.parse(savedJson);
+                    var topOrder   = data.topOrder   || [];
+                    var groupOrders = data.groupOrders || {};
+                    topOrder.forEach(function(entry) {
+                        if (entry.type === 'group') {
+                            var gid    = String(entry.id);
+                            var header = basketTbody.querySelector('.group-header-row[data-group-id="' + gid + '"]');
+                            if (!header) return;
+                            basketTbody.appendChild(header);
+                            var savedItems = groupOrders[gid] || [];
+                            savedItems.forEach(function(itemId) {
+                                var row = basketTbody.querySelector('tr[data-count-id="' + itemId + '"]');
+                                if (row) basketTbody.appendChild(row);
+                            });
+                            // Append any group members not in saved order (items added after last save)
+                            basketTbody.querySelectorAll('tr[data-group-id="' + gid + '"]:not(.group-header-row)').forEach(function(r) {
+                                basketTbody.appendChild(r);
+                            });
+                        } else {
+                            var row = basketTbody.querySelector('tr[data-count-id="' + entry.id + '"]');
+                            if (row && !row.dataset.groupId) basketTbody.appendChild(row);
+                        }
+                    });
+                    renumberRows();
+                } catch(e) {}
+            }
+
             // ---- Group header: inline rename + ungroup-all ----
             function bindGroupHeaderEvents(headerRow) {
                 var nameDisplay = headerRow.querySelector('.group-name-display');
@@ -1026,6 +1090,7 @@
                         // Remove group indicators from member rows
                         document.querySelectorAll('#basketTbody tr[data-group-id="' + groupId + '"]:not(.group-header-row)')
                             .forEach(function(r) {
+                                r.draggable = true;
                                 delete r.dataset.groupId;
                                 r.classList.remove('group-item-row');
                                 var nc = r.querySelector('td[data-item-name]');
@@ -1040,6 +1105,7 @@
                             });
                         headerRow.remove();
                         renumberRows();
+                        saveSortOrder();
                     }, 'json');
                 });
             }
@@ -1053,6 +1119,7 @@
                         if (!data.success) return;
                         var row = document.querySelector('#basketTbody tr[data-count-id="' + itemId + '"]');
                         if (row) {
+                            row.draggable = true;
                             delete row.dataset.groupId;
                             row.classList.remove('group-item-row');
                             // Restore item name (remove indent arrow)
@@ -1078,6 +1145,7 @@
                             var header2 = document.querySelector('#basketTbody .group-header-row[data-group-id="' + groupId + '"]');
                             if (header2) {
                                 var lastRow = remainingMembers[0];
+                                lastRow.draggable = true;
                                 lastRow.classList.remove('group-item-row');
                                 delete lastRow.dataset.groupId;
                                 var nc2 = lastRow.querySelector('td[data-item-name]');
@@ -1093,12 +1161,14 @@
                             }
                         }
                         renumberRows();
+                        saveSortOrder();
                     }, 'json');
                 });
             }
 
             // ---- Add remove-btn + group-item-row class to a row ----
             function markAsGroupItem(row, groupId) {
+                row.draggable = false;
                 row.classList.add('group-item-row');
                 row.dataset.groupId = groupId;
 
@@ -1109,17 +1179,14 @@
                 }
 
                 // Wrap the notes input in a .basket-notes-cell div and append the × button
-                var ntd = row.querySelector('td:last-child');
+                var ni  = row.querySelector('.basket-notes-input');
+                var ntd = ni ? ni.closest('td') : null;
                 if (ntd && !ntd.querySelector('.remove-from-group-btn')) {
-                    var ni = ntd.querySelector('.basket-notes-input');
                     var wrapper = document.createElement('div');
                     wrapper.className = 'basket-notes-cell';
-                    // Move the input into the wrapper (or create placeholder if absent)
-                    if (ni) {
-                        ni.setAttribute('draggable', 'false');
-                        ntd.removeChild(ni);
-                        wrapper.appendChild(ni);
-                    }
+                    ni.setAttribute('draggable', 'false');
+                    ntd.removeChild(ni);
+                    wrapper.appendChild(ni);
                     var btn = document.createElement('button');
                     btn.className       = 'remove-from-group-btn';
                     btn.dataset.itemId  = row.dataset.countId;
@@ -1176,6 +1243,7 @@
                     markAsGroupItem(srcRow,    groupId);
                     markAsGroupItem(targetRow, groupId);
                     renumberRows();
+                    saveSortOrder();
                 }, 'json');
             }
 
@@ -1191,6 +1259,7 @@
                     if (anchor) basketTbody.insertBefore(srcRow, anchor.nextSibling);
                     markAsGroupItem(srcRow, groupId);
                     renumberRows();
+                    saveSortOrder();
                 }, 'json');
             }
 
@@ -1201,13 +1270,18 @@
 
                 basketTbody.addEventListener('dragstart', function(e) {
                     dragSrc = e.target.closest('tr');
-                    if (dragSrc) dragSrc.classList.add('dragging');
+                    if (!dragSrc || dragSrc.classList.contains('group-item-row')) {
+                        dragSrc = null;
+                        return;
+                    }
+                    dragSrc.classList.add('dragging');
                     e.dataTransfer.effectAllowed = 'move';
                 });
 
                 basketTbody.addEventListener('dragover', function(e) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
+                    if (!dragSrc) return;
                     var target = e.target.closest('tr');
                     if (!target || target === dragSrc) return;
 
@@ -1224,6 +1298,13 @@
                     // Dropping on group header → always "add to group" indicator (unless dragging a header)
                     if (target.classList.contains('group-header-row') && !srcIsHeader) {
                         target.classList.add('drag-over-center');
+                        return;
+                    }
+
+                    // Dropping on a group item row: ungrouped items can only join the group (center);
+                    // group headers cannot be dropped inside another group at all.
+                    if (target.classList.contains('group-item-row')) {
+                        if (!srcIsHeader) target.classList.add('drag-over-center');
                         return;
                     }
 
@@ -1252,6 +1333,9 @@
                     delete basketTbody.dataset.pendingZone;
 
                     target.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-center');
+
+                    // Never allow reorder drops directly onto group item rows
+                    if (finalZone !== 'center' && target.classList.contains('group-item-row')) return;
 
                     if (finalZone === 'center') {
                         // GROUP ACTION
@@ -1291,16 +1375,26 @@
                             }
                         }
                         renumberRows();
+                        saveSortOrder();
                     }
                 });
 
                 // Store drop zone during dragover so the drop handler can read it reliably
                 basketTbody.addEventListener('dragover', function(e) {
+                    if (!dragSrc) return;
                     var target = e.target.closest('tr');
                     if (!target || target === dragSrc) return;
-                    var srcIsHeader = dragSrc && dragSrc.classList.contains('group-header-row');
+                    var srcIsHeader = dragSrc.classList.contains('group-header-row');
                     if (target.classList.contains('group-header-row') && !srcIsHeader) {
                         basketTbody.dataset.pendingZone = 'center';
+                        return;
+                    }
+                    if (target.classList.contains('group-item-row')) {
+                        if (!srcIsHeader) {
+                            basketTbody.dataset.pendingZone = 'center';
+                        } else {
+                            delete basketTbody.dataset.pendingZone;
+                        }
                         return;
                     }
                     var rect = target.getBoundingClientRect();
@@ -1325,6 +1419,9 @@
                 basketTbody.querySelectorAll('.group-header-row').forEach(bindGroupHeaderEvents);
                 basketTbody.querySelectorAll('.remove-from-group-btn').forEach(bindRemoveFromGroupBtn);
                 basketTbody.querySelectorAll('.remove-item-btn').forEach(bindRemoveItemBtn);
+
+                // Restore saved display order
+                loadSortOrder();
             }
 
             // ---- Remove item from basket entirely ----
@@ -1336,8 +1433,36 @@
                     if (!confirm('Remove "' + catName + '" from the shopping list?')) return;
                     $.post('viewShoppingList.php', { action: 'removeItem', countId: countId }, function(data) {
                         if (!data.success) return;
-                        var row = basketTbody.querySelector('tr[data-count-id="' + countId + '"]');
+                        var row     = basketTbody.querySelector('tr[data-count-id="' + countId + '"]');
+                        var groupId = row ? (row.dataset.groupId || null) : null;
                         if (row) row.remove();
+
+                        // If item was in a group, clean up group DOM to match server state
+                        if (groupId) {
+                            var remaining = basketTbody.querySelectorAll(
+                                'tr[data-group-id="' + groupId + '"]:not(.group-header-row)');
+                            var hdr = basketTbody.querySelector('.group-header-row[data-group-id="' + groupId + '"]');
+                            if (remaining.length === 0) {
+                                if (hdr) hdr.remove();
+                            } else if (remaining.length === 1) {
+                                // Server dissolved the group — unmark the last member
+                                var last = remaining[0];
+                                last.draggable = true;
+                                last.classList.remove('group-item-row');
+                                delete last.dataset.groupId;
+                                var nc = last.querySelector('td[data-item-name]');
+                                if (nc) nc.innerHTML = escHtml(nc.dataset.itemName);
+                                var wrapperEl = last.querySelector('.basket-notes-cell');
+                                if (wrapperEl) {
+                                    var ni = wrapperEl.querySelector('.basket-notes-input');
+                                    var ptd = wrapperEl.parentNode;
+                                    if (ni) ptd.insertBefore(ni, wrapperEl);
+                                    wrapperEl.remove();
+                                }
+                                if (hdr) hdr.remove();
+                            }
+                        }
+
                         renumberRows();
                         // Add the option back to the add-item dropdown (sorted alphabetically)
                         var select = document.getElementById('addItemSelect');
@@ -1446,6 +1571,7 @@
                 btn.prop('disabled', true).text('Deleting...');
                 $.post('viewShoppingList.php', { action: 'deleteShoppingList', shoppingEventId: eventId }, function(data) {
                     if (data.success) {
+                        try { localStorage.removeItem('shopping-order-' + eventId); } catch(e) {}
                         window.location.href = 'viewShoppingList.php';
                     } else {
                         $('#deleteListModal').hide();
@@ -1502,6 +1628,7 @@
                     bindExcludeCheckbox(newRow.querySelector('.exclude-checkbox'));
 
                     renumberRows();
+                    saveSortOrder();
                 }, 'json');
             });
 
@@ -1689,7 +1816,11 @@
                         }
                     });
 
-                    doc.save('shopping-list-' + familySize.replace(/[^a-z0-9]/gi, '-') + '.pdf');
+                    var now        = new Date();
+                    var dateStr    = now.getFullYear() + '-' +
+                                     String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                                     String(now.getDate()).padStart(2, '0');
+                    doc.save('shopping-list-' + familySize.replace(/[^a-z0-9]/gi, '-') + '-' + dateStr + '.pdf');
                 });
             }
 
