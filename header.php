@@ -806,7 +806,8 @@ if (date("H:i:s") > "18:19:59") {
         $permission_array['viewupdateinventory.php'] = 1;
         $permission_array['viewauditusers.php'] = 2;
         $permission_array['viewmodifyuser.php'] = 2;
-        $permission_array['viewitemcategories.php'] = 1;
+        $permission_array['viewitemcategories.php'] = 2;
+        $permission_array['viewadditemcategory.php'] = 2;
         $permission_array['viewmodifyitemcategory.php'] = 1;
         $permission_array['viewshoppinglist.php'] = 1;
         $permission_array['viewconsumptionrates.php'] = 2;

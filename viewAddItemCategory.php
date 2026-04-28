@@ -11,6 +11,12 @@
         $accessLevel = $_SESSION['access_level'];
         $userID = $_SESSION['_id'];
     }
+
+    if ($accessLevel < 2) {
+        header('Location: index.php');
+        die();
+    }
+
     require_once('database/dbinfo.php');
     require_once('database/dbPersons.php');
     require_once('database/dbItemCategory.php');
