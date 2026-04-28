@@ -35,6 +35,7 @@
     $pallets = get_all_palletEvents();
     $categories = get_all_active_ItemCategory();
     foreach($categories as $category){
+        if ($category->getShopOnly() == 1) continue;
         $pallet_totals[$category->getId()] = 0;
     }
     foreach($pallets as $pallet){
