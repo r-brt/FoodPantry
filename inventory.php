@@ -656,7 +656,7 @@ if ($selectedPairIndex !== null) {
                     </table>
                 </div>
             </div>
-            <?php if($accessLevel >= 2): ?>
+            <?php if($accessLevel >= 1): ?>
                 <div style="margin-bottom: 1.5rem;">
                     <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" style="text-decoration: none; display: flex; justify-content: center;">
                         <button class="modify-button">
