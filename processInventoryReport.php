@@ -170,38 +170,38 @@ if ($format === 'xlsx') {
     exit();
 }
 
-// EXCEL EXPORT
-header("Content-Type: application/vnd.ms-excel; charset=UTF-8");
-header("Content-Disposition: attachment; filename=inventory_report.xls");
-header("Pragma: no-cache");
-header("Expires: 0");
-
-echo "\xEF\xBB\xBF";
-echo "<html><head><meta charset='UTF-8'></head><body>";
-echo "<table border='1' style='border-collapse: collapse; font-family: Arial, sans-serif; text-align: center;'>";
-
-// Report Title
-echo "<tr><th colspan='4' >Inventory Report</th></tr>";
-
-// Column Headers
-echo "<tr>
-        <th style='background-color: #88CCEE; padding: 5px;'>Item Name</th>
-        <th style='background-color: #AA4499; padding: 5px;'>Boxes</th>
-        <th style='background-color: #DDCC77; padding: 5px;'>Items Per Box</th>
-        <th style='background-color: #88CCEE; padding: 5px;'>Total Count</th>
-        </tr>";
-
-// Data Rows
-foreach ($reportData as $row) {
-    echo "<tr>
-            <td style='background-color: #EAEAEA; padding: 5px; text-align: center;'>{$row["item_name"]}</td>
-            <td style='padding: 5px;'>{$row["boxes"]}</td>
-            <td style='padding: 5px;'>{$row["itemsPerBox"]}</td>
-            <td style='padding: 5px;'>{$row["total_count"]}</td>
-            </tr>";
-}
-
-echo "</table>";
-echo "</body></html>";
-exit();
+// EXCEL EXPORT - COMMENTED OUT
+// header("Content-Type: application/vnd.ms-excel; charset=UTF-8");
+// header("Content-Disposition: attachment; filename=inventory_report.xls");
+// header("Pragma: no-cache");
+// header("Expires: 0");
+//
+// echo "\xEF\xBB\xBF";
+// echo "<html><head><meta charset='UTF-8'></head><body>";
+// echo "<table border='1' style='border-collapse: collapse; font-family: Arial, sans-serif; text-align: center;'>";
+//
+// // Report Title
+// echo "<tr><th colspan='4' >Inventory Report</th></tr>";
+//
+// // Column Headers
+// echo "<tr>
+//         <th style='background-color: #88CCEE; padding: 5px;'>Item Name</th>
+//         <th style='background-color: #AA4499; padding: 5px;'>Boxes</th>
+//         <th style='background-color: #DDCC77; padding: 5px;'>Items Per Box</th>
+//         <th style='background-color: #88CCEE; padding: 5px;'>Total Count</th>
+//         </tr>";
+//
+// // Data Rows
+// foreach ($reportData as $row) {
+//     echo "<tr>
+//             <td style='background-color: #EAEAEA; padding: 5px; text-align: center;'>{$row["item_name"]}</td>
+//             <td style='padding: 5px;'>{$row["boxes"]}</td>
+//             <td style='padding: 5px;'>{$row["itemsPerBox"]}</td>
+//             <td style='padding: 5px;'>{$row["total_count"]}</td>
+//             </tr>";
+// }
+//
+// echo "</table>";
+// echo "</body></html>";
+// exit();
 ?>
