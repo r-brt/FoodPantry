@@ -11,29 +11,18 @@
         $accessLevel = $_SESSION['access_level'];
         $userID = $_SESSION['_id'];
     }
+
+    if ($accessLevel < 2) {
+        header('Location: index.php');
+        die();
+    }
+
     require_once('database/dbinfo.php');
     require_once('database/dbPersons.php');
     require_once('database/dbInventoryEvent.php');
     require_once('database/dbItemCategory.php');
     require_once('database/dbItemCounts.php');
     $con = connect();
-
-    //New Categorys
-        if (isset($_POST['add_category'])) {
-            $cat_name = trim($_POST['cat_name']);
-            $bananaBox = isset($_POST['bananaBox']) ? 1 : 0;
-            $itemsPerBox = intval($_POST['itemsPerBox']);
-            $status = "Active";
-
-            if (retrieve_ItemCategory_by_name($cat_name)) {
-                $errors[] = "Category already exists";
-            } else {
-                add_itemCategory($cat_name, $bananaBox, $itemsPerBox, $status);
-
-                header("Location: viewItemCategories.php");
-                exit();
-            }
-        }
 
 ?>
     
@@ -47,19 +36,22 @@
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
         }
         .title {
-            position: fixed;
             text-align: center;
             height: 3.5rem;
-            width: 40%;
-            z-index: 1000;
+            width:auto;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            background-color: white;
-            padding-top: 0;
-            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
+            white-space: nowrap;
+            overflow: hidden;
         }
         .report-container {
             max-width: 1100px;
@@ -72,6 +64,12 @@
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+        }
+        .report-section h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--secondary-accent-color);
         }
         .report-section h2 {
             font-size: 1.5rem;
@@ -86,6 +84,7 @@
         .report-table th,
         .report-table td {
             padding: 0.75rem 1rem;
+            text-align: left;
             border-bottom: 1px solid var(--shadow-and-border-color);
             color: var(--page-font-color);
         }
@@ -93,11 +92,8 @@
             background-color: var(--main-color);
             color: var(--button-font-color);
             font-weight: 500;
-            text-align:center;
-        }
-        .report-table td {
-            text-align: left;
-            border: 1px solid var(--shadow-and-border-color);
+            position: sticky;
+            top: 100px; /* height of page header */
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -187,17 +183,57 @@
         .modify-btn:hover {
             opacity: 0.85;
         }
-        div.table-wrapper {
-                overflow-x: auto;
-            }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .section-header h2 {
+            margin-bottom: 0;
+        }
+        .add-category-lnk {
+            white-space: nowrap;
+        }
+        .add-category-lnk button {
+            padding: 0.5rem 1rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            text-align: center;
+        }
+        .add-category-lnk button:hover {
+            opacity: 0.85;
+        }
         @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
             .report-table th,
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+                position: static;
+
             }
             .report-container {
                 padding: 0.5rem;
+            }
+            div.table-wrapper {
+                overflow-x: auto;
+            }
+            .report-section{
+                padding: 0;
             }
         }
     </style>
@@ -220,16 +256,20 @@
             <?php 
                 require_once('database/dbItemCategory.php');
                 /* display table of Item Categories with a given status (Active/Inactive/Deleted) */
-                $display_accounts_by_status = function($status, $accessLevel){
+                $display_accounts_by_status = function($status, $accessLevel, $extraButton = ''){
                     echo '
                     <div class="report-section">
-                        <h2>'.$status.' Item Categories</h2>
+                        <div class="section-header">
+                            <h2>'.$status.' Item Categories</h2>
+                            '.$extraButton.'
+                        </div>
                         <div class="table-wrapper">
                             <table class="report-table">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
                                         <th>Banana Box</th>
+                                        <th>Shopping List Only</th>
                                         <th>Items Per Box</th>
                                         <th>Actions</th>
                                     </tr>
@@ -245,11 +285,15 @@
                                         $name = $category->getName();
                                         $itemsPerBox = $category->getItemsPerBox();
                                         $bananaBox = $category->getBananaBox() == 1 ? "✓" : "";
+                                        $shopOnly = $category->getShopOnly() == 1 ? "✓" : "";
+                                        // Gray out rows for shopping list only items
+                                        $rowClass = $category->getShopOnly() == 1 ? ' class="row-gray"' : '';
 
                                         echo '
-                                        <tr>
+                                        <tr' . $rowClass . '>
                                             <td>' . $name . '</td>
                                             <td style="text-align: center;">' . $bananaBox . '</td>
+                                            <td style="text-align: center;">' . $shopOnly . '</td>
                                             <td>' . $itemsPerBox . '</td>';
                                         echo ' 
                                             <td><a href="viewModifyItemCategory.php?id=' . $category->getId() . '" class="text-blue-700 underline"><button class="modify-btn">Modify</button></a>
@@ -259,7 +303,7 @@
                                 if($num_active == 0){
                                     echo '
                                     <tr>
-                                        <td colspan="7" class="empty-state">No '.$status.' Categories</td>
+                                        <td colspan="5" class="empty-state">No '.$status.' Categories</td>
                                     </tr>';
                                 }
 
@@ -271,39 +315,17 @@
                             }; ?>
 
                             <!-- Display Table of accounts for each Status -->
-                            <?php 
-                            $display_accounts_by_status("Active", $accessLevel);
+                            <?php
+                            $addCategoryButton = '<a href="viewAddItemCategory.php" class="add-category-lnk"><button type="button">Add Category</button></a>';
+                            $display_accounts_by_status("Active", $accessLevel, $addCategoryButton);
                             $display_accounts_by_status("Inactive", $accessLevel);
                             /* Superadmin can see deleted accounts */
                             if($accessLevel >= 3){
                                 $display_accounts_by_status("Deleted", $accessLevel);
                             }
                             ?>
-                            <div class ="report-section">
-                <h2>Add New Item Category</h2>
-                <form method="POST" action= "viewItemCategories.php">
-                    <div style="display:flex; flex-direction:column; gap:1rem; max-width:400px;">
-                        <div>
-                            <label>Category Name:</label><br>
-                            <input type="text" name="cat_name" required>
-                        </div>
-                        <div>
-                            <label>Items Per Box:</label><br>
-                            <input type="number" name="itemsPerBox" min="0" value="0" required>
-                        </div>
-                        <div>
-                            <label>
-                                <input type="checkbox" name="bananaBox">
-                                Banana Box
-                            </label>
-                        </div>
-                        <div>
-                            <input type="submit" name="add_category" value="Add Category" class="generate-btn">
-                        </div>
-                </form>
         </div>
-        
-                
+
     </main>
 
 </body>

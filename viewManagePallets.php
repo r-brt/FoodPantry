@@ -33,19 +33,20 @@
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
         }
         .title {
-            position: fixed;
             text-align: center;
             height: 3.5rem;
-            width: 40%;
-            z-index: 1000;
+            width:auto;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            background-color: white;
-            padding-top: 0;
-            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
         }
         .report-container {
             max-width: 1100px;
@@ -58,6 +59,12 @@
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+        }
+        .report-section h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--secondary-accent-color);
         }
         .report-section h2 {
             font-size: 1.5rem;
@@ -72,6 +79,7 @@
         .report-table th,
         .report-table td {
             padding: 0.75rem 1rem;
+            text-align: left;
             border-bottom: 1px solid var(--shadow-and-border-color);
             color: var(--page-font-color);
         }
@@ -80,10 +88,8 @@
             color: var(--button-font-color);
             font-weight: 500;
             text-align:center;
-        }
-        .report-table td {
-            text-align: left;
-            border: 1px solid var(--shadow-and-border-color);
+            position: sticky;
+            top: 100px; /* height of page header */
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -245,18 +251,33 @@
         .back-btn:hover {
             background-color: rgba(0,0,0,0.3);
         }
-        div.table-wrapper {
-                overflow-x: auto;
+        .row-red {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+        }
+        .row-red:hover {
+            background-color: rgba(239, 68, 68, 0.25) !important;
         }
         @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            } 
             .report-table th,
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+                position: static;
             }
             .report-container {
                 padding: 0.5rem;
             }
+            div.table-wrapper {
+                overflow-x: auto;
+        }
         }
     </style>
 </head>
@@ -283,19 +304,34 @@
                             <table class="report-table">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Boxes</th>
-                                        <th>Banana Box</th>
-                                        <th>Items Per Box</th>
+                                        <th style="width:25%">Name</th>
+                                        <th style="width:20%">Boxes</th>
+                                        <th style="width:15%">Banana Box</th>
+                                        <th style="width:20%">Items Per Box</th>
+                                        <th style="width:20%">Expiration Date</th>
                                     </tr>
                                 </thead>
                                 <tbody> ';
                                 foreach($palletCounts as $count){
                                     $category = retrieve_ItemCategory($count->getItemCategory());
+                                    // Skip shopping list only items
+                                    if ($category->getShopOnly() == 1) {
+                                        continue;
+                                    }
                                     echo '
-                                        <tr>
+                                        <tr ';
+                                         /* highlight row red if expiration date is less than 1 week away */
+                                        if($count->getExpiration()){
+                                            $datediff = strtotime($count->getExpiration()) - time();
+                                            $days_till_exp = round($datediff / (60 * 60 * 24));
+                                            if($days_till_exp <= 7){
+                                                echo 'class ="row-red"';
+                                            }
+                                        }
+                                        
+                                        echo '>
                                             <td>' . $category->getName() . '</td>
-                                            <td>' . $count->getQuantity() . '</td>
+                                            <td style="text-align: center;">' . $count->getQuantity() . '</td>
                                             <td style="text-align: center;">';
                                                 if($category->getBananaBox() == 1){
                                                     echo '✓';
@@ -303,18 +339,29 @@
                                     echo '
                                             </td>
                                             <td style="text-align: center;">'.$category->getItemsPerBox().'</td>
+                                            <td style="text-align: center;">';
+                                                if($count->getExpiration())
+                                                    echo date("m/d/Y", strtotime($count->getExpiration()));
+                                                else
+                                                    echo ' - ';
+                                    echo '
+                                            </td>
                                         </tr>';
                                 }
                                 if(count($palletCounts) == 0){
                                     echo '
                                     <tr>
-                                        <td colspan="4" class="empty-state">Empty Pallet</td>
+                                        <td colspan="5" class="empty-state">Empty Pallet</td>
                                     </tr>';
                                 }
 
                     echo '
                                 </tbody>
                             </table>
+                        </div>
+                        <div style="margin-top: 1rem; padding: 1rem; background-color: rgba(0,0,0,0.1); border-radius: 0.5rem;">
+                            <h3 style="margin-top: 0; color: var(--page-font-color);">Notes:</h3>
+                            <p style="margin: 0; color: var(--page-font-color); white-space: pre-wrap;">' . ((!empty($pallet->getNotes())) ? htmlspecialchars($pallet->getNotes()) : '<em style="color: var(--inactive-font-color);">No notes</em>') . '</p>
                         </div>
                     </div>';
                     }?>

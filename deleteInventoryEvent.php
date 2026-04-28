@@ -33,22 +33,26 @@
     }
 
     if($warehouseId) {
-        /* Warehouse-anchored: get warehouse, find matching pantry */
+        /* Warehouse-anchored: get warehouse, find matching pantry and pallet */
         $warehouseEvent = retrieve_inventoryEvent($warehouseId);
         if(!$warehouseEvent || $warehouseEvent->getLocation() != 'Warehouse') {
             echo "Warehouse event not found";
             die();
         }
-        $pantryEvent = get_matching_inventoryEvent($warehouseEvent);
+        $matches = get_matching_inventoryEvent($warehouseEvent);
+        $pantryEvent = $matches['Pantry'] ?? null;
+        $palletEvent = $matches['Pallet'] ?? null;
         $eventDate = $warehouseEvent->getDate();
     } else if($pantryId) {
-        /* Pantry-anchored: get pantry, find matching warehouse */
+        /* Pantry-anchored: get pantry, find matching warehouse and pallet */
         $pantryEvent = retrieve_inventoryEvent($pantryId);
         if(!$pantryEvent || $pantryEvent->getLocation() != 'Pantry') {
             echo "Pantry event not found";
             die();
         }
-        $warehouseEvent = get_matching_inventoryEvent($pantryEvent);
+        $matches = get_matching_inventoryEvent($pantryEvent);
+        $warehouseEvent = $matches['Warehouse'] ?? null;
+        $palletEvent = $matches['Pallet'] ?? null;
         $eventDate = $pantryEvent->getDate();
     }
 
@@ -75,9 +79,18 @@
     /* Get all item categories */
     $allCategories = get_all_ItemCategory();
 
+    /* Build set of categories with data in this inventory (for showing inactive categories with historical data) */
+    $categoriesWithData = [];
+    foreach ($warehouseCountsMap as $categoryId => $count) {
+        $categoriesWithData[$categoryId] = true;
+    }
+    foreach ($pantryCountsMap as $categoryId => $count) {
+        $categoriesWithData[$categoryId] = true;
+    }
+
     $errors = array();
 
-    /* If confirmed, delete the paired warehouse and pantry events */
+    /* If confirmed, delete the triplet (warehouse, pantry, pallet events) */
     if($confirm == 1) {
         $deleteSuccess = true;
         $locations = array();
@@ -99,6 +112,16 @@
                 $deleteSuccess = false;
             } else {
                 $locations[] = 'Pantry';
+            }
+        }
+
+        /* Delete paired pallet event */
+        if($palletEvent) {
+            $result = remove_inventoryEvent($palletEvent->getId());
+            if(!$result) {
+                $deleteSuccess = false;
+            } else {
+                $locations[] = 'Pallet';
             }
         }
 
@@ -255,7 +278,7 @@
                     $hasItems = false;
                     $rowNum = 0;
                     foreach($allCategories as $category): ?>
-                        <?php if($category->getStatus() != 'Active') continue; ?>
+                        <?php if(!isset($categoriesWithData[$category->getId()])) continue; ?>
                         <?php
                         $categoryId = $category->getId();
                         $hasWarehouse = isset($warehouseCountsMap[$categoryId]);

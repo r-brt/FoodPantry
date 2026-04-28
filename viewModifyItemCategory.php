@@ -27,6 +27,21 @@
     
     require_once('include/input-validation.php');
     require_once('database/dbItemCategory.php');
+    require_once('database/dbPalletCounts.php');
+    require_once('database/dbShoppingCount.php');
+
+    // AJAX endpoint to check if category is on a pallet or in a shopping list
+    if (isset($_GET['action']) && $_GET['action'] === 'checkInUse' && isset($_GET['id'])) {
+        header('Content-Type: application/json');
+        $palletNames = get_pallet_names_with_category($_GET['id']);
+        $familyNames = get_shoppingList_families_with_category($_GET['id']);
+        echo json_encode([
+            'inUse' => !empty($palletNames) || !empty($familyNames),
+            'pallets' => $palletNames,
+            'families' => $familyNames
+        ]);
+        exit;
+    }
 
     // Does the category exist?
     $theCategory = retrieve_ItemCategory($_GET['id']);
@@ -48,9 +63,22 @@
             die();
         }
         else if(isset($_POST["deactivate_button"])){
+            $palletNames = get_pallet_names_with_category($theCategory->getId());
+            $familyNames = get_shoppingList_families_with_category($theCategory->getId());
+            if (!empty($palletNames) || !empty($familyNames)) {
+                $msg = "Cannot deactivate - this item is currently in use:";
+                if (!empty($palletNames)) {
+                    $msg .= "<br>Pallet(s): " . implode(', ', $palletNames) . ".";
+                }
+                if (!empty($familyNames)) {
+                    $msg .= "<br>Shopping list(s): " . implode(', ', $familyNames) . ".";
+                }
+                $errors[] = $msg;
+            } else {
                 deactivate_itemCategory($theCategory->getId());
                 header('Location: viewItemCategories.php');
                 die();
+            }
         }
         else if(isset($_POST["activate_button"])){
             activate_itemCategory($theCategory->getId());
@@ -58,9 +86,22 @@
             die();
         }
         else if(isset($_POST["delete_button"])){
-            delete_itemCategory($theCategory->getId());
-            header('Location: viewItemCategories.php');
-            die();          
+            $palletNames = get_pallet_names_with_category($theCategory->getId());
+            $familyNames = get_shoppingList_families_with_category($theCategory->getId());
+            if (!empty($palletNames) || !empty($familyNames)) {
+                $msg = "Cannot delete - this item is currently in use:";
+                if (!empty($palletNames)) {
+                    $msg .= " Pallet(s): " . implode(', ', $palletNames) . ".";
+                }
+                if (!empty($familyNames)) {
+                    $msg .= " Shopping list(s): " . implode(', ', $familyNames) . ".";
+                }
+                $errors[] = $msg;
+            } else {
+                delete_itemCategory($theCategory->getId());
+                header('Location: viewItemCategories.php');
+                die();
+            }
         }
         else if(isset($_POST["save_button"])){
             /* check that Name is set */
@@ -78,6 +119,19 @@
             else
                 $bananaBox = 0;
 
+            if(isset($_POST["shopOnly"])){
+                $palletNames = get_pallet_names_with_category($theCategory->getId());
+                if (!empty($palletNames)) {
+                    $msg = "Cannot set to Shopping List Only - this item is currently in use:";
+                    $msg .= "<br>Pallet: " . implode(', ', $palletNames) . ".";
+                    $errors[] = $msg;
+                }
+                else
+                    $shopOnly = 1;
+            }
+            else
+                $shopOnly = 0;
+
             /* check that Items Per Box is set */
             if(isset($_POST["itemsPerBox"])){
 
@@ -93,16 +147,16 @@
                 if(!is_int($itemsPerBox)){
                     $errors[] = 'Items Per Box must be in whole numbers';
                 }
-                else if($itemsPerBox <= 0){
-                    $errors[] = 'Items Per Box must be greater than 0';
+                else if($itemsPerBox < 0){
+                    $errors[] = 'Items Per Box cannot be negative';
                 }
             }
             else{
-                $errors[] = 'Items Per Box must be a whole number greater than 0';
+                $errors[] = 'Items Per Box must be a whole number';
             }
             
             if(empty($errors)){
-                if(update_itemCategory($theCategory->getId(), $name, $bananaBox, $itemsPerBox)){
+                if(update_itemCategory($theCategory->getId(), $name, $bananaBox, $itemsPerBox, $shopOnly)){
                     header('Location: viewItemCategories.php');
                     die();
                 }
@@ -125,19 +179,20 @@
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
         }
         .title {
-            position: fixed;
             text-align: center;
             height: 3.5rem;
-            width: 40%;
-            z-index: 1000;
+            width:auto;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            background-color: white;
-            padding-top: 0;
-            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
         }
         .report-container {
             max-width: 1100px;
@@ -334,10 +389,19 @@
             margin-bottom: 1.25rem;
         }
         @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
             .modify-table th,
             .modify-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+                position: static;
             }
             .report-container {
                 padding: 0.5rem;
@@ -365,6 +429,40 @@
             }
         }
     </style>
+    <script>
+    function confirmDelete(categoryId, categoryName) {
+        // Clear any existing error messages
+        var errorList = document.getElementById('errorList');
+        if (errorList) {
+            errorList.style.display = 'none';
+        }
+
+        fetch('viewModifyItemCategory.php?action=checkInUse&id=' + categoryId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.inUse) {
+                    var msg = 'Cannot delete - this item is currently in use:';
+                    if (data.pallets.length) {
+                        msg += '\nPallet(s): ' + data.pallets.join(', ') + '.';
+                    }
+                    if (data.families.length) {
+                        msg += '\nShopping list(s): ' + data.families.join(', ') + '.';
+                    }
+                    alert(msg);
+                } else {
+                    if (confirm('Are you sure you want to\nDELETE Category: ' + categoryName + '?')) {
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'delete_button';
+                        input.value = '1';
+                        document.forms['invForm'].appendChild(input);
+                        document.forms['invForm'].submit();
+                    }
+                }
+            });
+        return false;
+    }
+    </script>
 </head>
 <pageheader>
     <h1  class="title">Modify Item Category</h1>
@@ -380,7 +478,7 @@
                 }
                 /* Display errors from submitting inventory */
                 if (!empty($errors)): ?>
-                <ul>
+                <ul id="errorList">
                     <?php foreach($errors AS $error): ?>
                         <li><?php echo("<h4 style=\"color:red;\"><i>Error: ".$error."</i></h4>"); ?></li>
                     <?php endforeach; ?>
@@ -408,8 +506,12 @@
                                         <td class="modify-table-input"><input type="checkbox" id="bananaBox" name="bananaBox" value="1" 
                                                     <?php if($theCategory->getBananaBox() == 1) echo("checked")?>>
                                         </td>
-                                    </tr>
-                                    <tr>
+                                    </tr>                                    <tr>
+                                        <td class="modify-table-label"><label class="updateInv-label" for="shopOnly">Shopping List Only: </label></td>
+                                        <td class="modify-table-input"><input type="checkbox" id="shopOnly" name="shopOnly" value="1" 
+                                                    <?php if($theCategory->getShopOnly() == 1) echo("checked")?>
+                                        </td>
+                                    </tr>                                    <tr>
                                         <td class="modify-table-label"> <label class="updateInv-label" for="itemsPerBox">Items Per Box: </label></td>
                                         <td class="modify-table-input"><input type="number" class="updateInv-qty" 
                                                 value="<?php echo($theCategory->getItemsPerBox())?>"
@@ -460,11 +562,13 @@
                                 ';
                             }
                         ?>
+                        <?php if($theCategory->getStatus() != "Deleted"): ?>
                         <hr>
-                        <button name="delete_button" name="delete_button" class="modify-delete-btn" 
-                            onclick="return confirm('Are you sure you want to\nDELETE Category: <?php echo $theCategory->getName();?>?')"
-                            formnovalidate>Delete Category
+                        <button type="button" class="modify-delete-btn"
+                            onclick="confirmDelete(<?php echo $theCategory->getId(); ?>, '<?php echo addslashes($theCategory->getName()); ?>')">
+                            Delete Category
                         </button>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>

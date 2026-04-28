@@ -3,10 +3,12 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require_once('database/dbinfo.php');
+require_once('emailEncryption.php');
 require 'vendor/autoload.php';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
-    $reset = "http://localhost/foodpantry/changeForgottenPassword.php?email=" . urlencode($email);
+    $reset = "http://jenniferp231.sg-host.com/changeForgottenPassword.php?email=" . encryptEmail($email);
+    //$reset = "http://localhost/foodpantry/changeForgottenPassword.php?email=" . encryptEmail($email);
     $mail = new PHPMailer(true);
     
     try{
@@ -30,8 +32,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }catch (Exception $e) {
         echo "That is not an email we have in our system";
     }
-    $successMessage = "If the email you imputed is in our system,
-    a link has been sent to that email to reset your password.";
+    $successMessage = "If the email you inputed is in our system,
+    a link has been sent to reset your password.";
 }
 ?>
 
@@ -234,6 +236,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             gap: 0.75rem;
             margin-bottom: 1.25rem;
         }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            text-decoration: none;
+            border-radius: 0.25rem;
+        }
+        .back-btn:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
         @media only screen and (max-width: 768px) {
             .report-table th,
             .report-table td {
@@ -264,12 +278,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 max-width: 7rem;
                 margin-right: 10%;
             }
+            
         }
     </style>
 </head>
 <body>
     <?php require_once('header.php') ?>
     <main>
+        <main class="edit-container">
+        <a href="login.php" class="back-btn">← Back</a>
         <div class="report-container">
             <h1 class="title">Forgot Password</h1>
 

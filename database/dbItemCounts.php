@@ -268,3 +268,41 @@ function get_previous_counts_by_event($eventId){
     mysqli_close($con);
     return $itemCount_array;
 }
+
+/*
+ * get inventory totals grouped by month and category
+ */
+
+function get_monthly_inventory_totals(){
+    $con = connect();
+    $query = "SELECT
+                DATE_FORMAT(ie.date, '%Y-%m') as month,
+                dic.id as categoryId,
+                dic.name as itemName,
+                SUM(dbic.quantity) as total_boxes
+              FROM dbinventoryevent ie
+              INNER JOIN dbitemcounts dbic ON ie.id = dbic.inventoryEventId
+              INNER JOIN dbitemcategory dic ON dbic.itemCategoryId = dic.id
+              WHERE dic.shopOnly = 0
+              GROUP BY DATE_FORMAT(ie.date, '%Y-%m'), dic.id, dic.name
+              ORDER BY month DESC, dic.name ASC";
+    $sql_result = mysqli_query($con, $query);
+    $array_result = mysqli_fetch_all($sql_result, MYSQLI_ASSOC);
+
+    $monthly_data = array();
+    foreach($array_result as $row){
+        $month = $row['month'];
+        $categoryId = $row['categoryId'];
+
+        if(!isset($monthly_data[$month])){
+            $monthly_data[$month] = array();
+        }
+        $monthly_data[$month][$categoryId] = array(
+            'itemName' => $row['itemName'],
+            'total_boxes' => $row['total_boxes']
+        );
+    }
+
+    mysqli_close($con);
+    return $monthly_data;
+}

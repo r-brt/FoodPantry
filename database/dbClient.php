@@ -75,6 +75,24 @@ function get_clients_by_shoppingEvent($shoppingEventId) {
 }
 
 /*
+ * get newest Clients from dbclient table with a given shoppingEventId
+ */
+
+function get_newest_client_by_shoppingEvent($shoppingEventId) {
+    $con = connect();
+    $query = 'SELECT * FROM dbclient WHERE shoppingEventId = '.$shoppingEventId.' ORDER BY date DESC, id DESC LIMIT 1';
+    $sql_result = mysqli_query($con, $query);
+    if ($sql_result == null || mysqli_num_rows($sql_result) == 0) {
+        mysqli_close($con);
+        return null;
+    }
+    $row = mysqli_fetch_array($sql_result, MYSQLI_ASSOC);
+    $client = new Client($row['id'], $row['shoppingEventId'], $row['personId'], $row['numClients'], $row['date']);
+    mysqli_close($con);
+    return $client;
+}
+
+/*
  * get all Clients from dbclient table with a given personId
  */
 

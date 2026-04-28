@@ -10,12 +10,16 @@ class ShoppingCount {
     private $shoppingEventId; // Foreign Key
     private $itemCategoryId; // Foreign Key
     private $quantity;
+    private $groupId;
+    private $excludeFromConsumption;
 
-    function __construct($id, $shoppingEventId, $itemCategoryId, $quantity) {
+    function __construct($id, $shoppingEventId, $itemCategoryId, $quantity, $groupId, $excludeFromConsumption) {
         $this->id = $id;
         $this->shoppingEventId = $shoppingEventId;
         $this->itemCategoryId = $itemCategoryId;
         $this->quantity = $quantity;
+        $this->groupId = $groupId;
+        $this->excludeFromConsumption = $excludeFromConsumption;
     }
 
     function getId() {
@@ -32,6 +36,14 @@ class ShoppingCount {
 
     function getQuantity() {
         return $this->quantity;
+    }
+
+    function getGroupId() {
+        return $this->groupId;
+    }
+
+    function getExcludeFromConsumption() {
+        return $this->excludeFromConsumption;
     }
 
     public function __toString(){

@@ -27,36 +27,40 @@ usort($allEventObjects, function($a, $b) {
     return $b->getId() - $a->getId();
 });
 
-// Build event pairs (warehouse + matching pantry)
+// Build event triplets (warehouse + pantry + pallet)
 $eventPairs = array();
 foreach($allEventObjects as $event) {
     if($event->getLocation() == 'Warehouse') {
-        $pantryEvent = get_matching_inventoryEvent($event);
+        $matches = get_matching_inventoryEvent($event);
+        $pantryEvent = $matches['Pantry'] ?? null;
+        $palletEvent = $matches['Pallet'] ?? null;
         $eventPairs[] = array(
             'warehouse' => $event,
             'pantry' => $pantryEvent,
+            'pallet' => $palletEvent,
             'date' => $event->getDate(),
             'warehouseId' => $event->getId(),
-            'pantryId' => $pantryEvent ? $pantryEvent->getId() : null
+            'pantryId' => $pantryEvent ? $pantryEvent->getId() : null,
+            'palletId' => $palletEvent ? $palletEvent->getId() : null
         );
     }
 }
 
-// Also add pantry events with no matching warehouse
-foreach($allEventObjects as $event) {
-    if($event->getLocation() == 'Pantry') {
-        $warehouseEvent = get_matching_inventoryEvent($event);
-        if($warehouseEvent === null) {
-            $eventPairs[] = array(
-                'warehouse' => null,
-                'pantry' => $event,
-                'date' => $event->getDate(),
-                'warehouseId' => null,
-                'pantryId' => $event->getId()
-            );
-        }
-    }
-}
+// OLD CODE - orphan pantry logic (no longer needed with triplets)
+// foreach($allEventObjects as $event) {
+//     if($event->getLocation() == 'Pantry') {
+//         $warehouseEvent = get_matching_inventoryEvent($event);
+//         if($warehouseEvent === null) {
+//             $eventPairs[] = array(
+//                 'warehouse' => null,
+//                 'pantry' => $event,
+//                 'date' => $event->getDate(),
+//                 'warehouseId' => null,
+//                 'pantryId' => $event->getId()
+//             );
+//         }
+//     }
+// }
 
 // Re-sort pairs by date (newest first)
 usort($eventPairs, function($a, $b) {
@@ -71,6 +75,52 @@ usort($eventPairs, function($a, $b) {
 
 // Get the selected week from query params, default to latest
 $selectedWeek = $_GET['week'] ?? (count($eventPairs) > 0 ? ($eventPairs[0]['warehouseId'] ?? $eventPairs[0]['pantryId']) : null);
+
+// Get the unique years from dates
+$uniqueYears = array();
+foreach($eventPairs as $index => $pair) {
+    $year = date('Y', strtotime($pair["date"]));
+    if(!in_array($year, $uniqueYears))
+        $uniqueYears[] = $year;
+}
+
+// Default for filterEventList is 30 Most Recent inventories
+$filterEventList = 30;
+
+// Get the selected year from query params, if it exists
+if(isset($_GET['year'])){
+    if(in_array($_GET['year'], $uniqueYears)){
+        $filterEventList = $_GET['year'];
+        // if year and week are in params, make sure the week is in the selected year.
+        // otherwise, change week to be the most recent inventory in the year selected.
+        if($selectedWeek){
+            $currentEvent = retrieve_inventoryEvent($selectedWeek);
+            if($currentEvent){
+                $currentEventYear = date('Y', strtotime($currentEvent->getDate()));
+                if($currentEventYear != $filterEventList){
+                    //set current week to the most recent inventory with the year selected
+                    foreach($eventPairs as $index => $pair) {
+                        $year = date('Y', strtotime($pair["date"]));
+                        if($year == $filterEventList){
+                            $selectedWeek = $pair["warehouseId"];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+    } 
+    else if($_GET['year'] < 100 && $_GET['year'] > 0)
+        $filterEventList = $_GET['year'];
+} 
+// If year is not set but week is set
+else if(isset($_GET['week'])){
+    $currentEvent = retrieve_inventoryEvent($selectedWeek);
+    if($currentEvent){
+        $filterEventList = date('Y', strtotime($currentEvent->getDate()));
+    }
+}
 
 // Find the selected pair index
 $selectedPairIndex = null;
@@ -88,23 +138,47 @@ if ($selectedPairIndex !== null) {
     $selectedPair = $eventPairs[$selectedPairIndex];
     $sameDateEvents = [];
     
-    // Collect warehouse and pantry events from the pair
+    // Collect warehouse, pantry, and pallet events from the triplet
     if ($selectedPair['warehouse']) {
         $sameDateEvents[] = $selectedPair['warehouse'];
     }
     if ($selectedPair['pantry']) {
         $sameDateEvents[] = $selectedPair['pantry'];
     }
-    
-    // Get all active item categories
-    $activeCategories = get_all_active_ItemCategory();
-    
+    if (isset($selectedPair['pallet']) && $selectedPair['pallet']) {
+        $sameDateEvents[] = $selectedPair['pallet'];
+    }
+
+    // Get all item categories (including inactive for historical data)
+    $allCategories = get_all_ItemCategory();
+
+    // Build set of categories with data in this inventory
+    $categoriesWithData = [];
+    foreach ($sameDateEvents as $event) {
+        $eventCounts = get_itemCounts_by_inventoryEvent($event->getId());
+        foreach ($eventCounts as $count) {
+            $categoriesWithData[$count->getItemCategory()] = true;
+        }
+    }
+
     // Build items array with location-specific counts
-    foreach ($activeCategories as $category) {
+    foreach ($allCategories as $category) {
         $categoryId = $category->getId();
+
+        // Skip shopping list only items
+        if ($category->getShopOnly() == 1) {
+            continue;
+        }
+
+        // Only show categories that have data in this inventory
+        if (!isset($categoriesWithData[$categoryId])) {
+            continue;
+        }
+
         $warehouseBoxes = 0;
         $pantryBoxes = 0;
-        
+        $palletBoxes = 0;
+
         // Check all events on the same date for this category
         foreach ($sameDateEvents as $event) {
             $eventCounts = get_itemCounts_by_inventoryEvent($event->getId());
@@ -114,25 +188,26 @@ if ($selectedPairIndex !== null) {
                         $warehouseBoxes += $count->getQuantity();
                     } elseif ($event->getLocation() === 'Pantry') {
                         $pantryBoxes += $count->getQuantity();
+                    } elseif ($event->getLocation() === 'Pallet') {
+                        $palletBoxes += $count->getQuantity();
                     }
                 }
             }
         }
-        
-        $totalBoxes = $warehouseBoxes + $pantryBoxes;
-        
-        // Only include items with quantity > 0
-        
-            $items[] = [
-                'id' => $categoryId,
-                'item_name' => $category->getName(),
-                'itemsPerBox' => $category->getItemsPerBox(),
-                'bananaBox' => $category->getBananaBox(),
-                'warehouse_boxes' => $warehouseBoxes,
-                'pantry_boxes' => $pantryBoxes,
-                'total_boxes' => $totalBoxes
-            ];
-        
+
+        $totalBoxes = $warehouseBoxes + $pantryBoxes + $palletBoxes;
+
+        $items[] = [
+            'id' => $categoryId,
+            'item_name' => $category->getName(),
+            'itemsPerBox' => $category->getItemsPerBox(),
+            'bananaBox' => $category->getBananaBox(),
+            'warehouse_boxes' => $warehouseBoxes,
+            'pantry_boxes' => $pantryBoxes,
+            'pallet_boxes' => $palletBoxes,
+            'total_boxes' => $totalBoxes
+        ];
+
     }
     
     // Sort items by name
@@ -153,19 +228,20 @@ if ($selectedPairIndex !== null) {
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
         }
         .title {
-            position: fixed;
             text-align: center;
             height: 3.5rem;
-            width: 40%;
-            z-index: 1000;
+            width:auto;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            background-color: white;
-            padding-top: 0;
-            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
         }
         .report-container {
             max-width: 1100px;
@@ -201,11 +277,15 @@ if ($selectedPairIndex !== null) {
             text-align: left;
             border-bottom: 1px solid var(--shadow-and-border-color);
             color: var(--page-font-color);
+            text-align: left;
+            vertical-align: middle;
         }
         .report-table th {
             background-color: var(--main-color);
             color: var(--button-font-color);
             font-weight: 500;
+            position: sticky;
+            top: 100px; /* height of page header */
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -215,40 +295,110 @@ if ($selectedPairIndex !== null) {
             padding: 3rem 1rem;
             color: var(--inactive-font-color);
         }
+        .mobile-text {
+            display: none;
+        }
         @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
             .report-table th,
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
             }
+            .report-table th {
+                position: sticky;
+                top: 100px;
+            }
             .report-container {
                 padding: 0.5rem;
             }
             div.table-wrapper {
-                overflow-x: auto;
+                overflow-x: visible;
             }
-            .table-toolbar {
+            .updateInv-optionRow {
+                display: flex;
+                align-items: right;
                 flex-direction: column;
-                align-items: stretch;
+                justify-content: left;
+                gap: 1rem;
             }
-            .toolbar-left,
-            .toolbar-right {
-                width: 100%;
+            .updateInv-option {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                width: auto;
+                gap: 1rem;
             }
-            .toolbar-select,
-            .toolbar-search {
-                width: 100%;
+            .updateInv-qty {
+                max-width: 7rem;
+                margin-right: 2rem !important;
+                
+            }
+            .desktop-text {
+                display: none;
+            }
+            .mobile-text {
+                display: inline;
+            }
+            .report-table th {
+                font-size: 0.85rem;
+                padding: 4px;
+            }
+            .report-table td {
+                padding: 4px;
             }
         }
-        .week-selector {
+        .week-and-filter-section{
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+        }
+        .form-section {
             margin-bottom: 1.5rem;
+        }
+        .form-section label {
+            display: block;
+            color: var(--page-font-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .form-section select {
+            width: 100%;
+            max-width: 300px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            cursor: pointer;
+        }
+        .form-section select:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .inventory-selector-toolbar {
+            display: flex;
+            align-content: center;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            flex-direction: column;
+        }
+        .week-selector {
+            margin-bottom: .5rem;
             display: flex;
             gap: 0.75rem;
             align-items: center;
         }
         .week-selector label {
             color: var(--page-font-color);
-            font-weight: 500;
         }
         .week-selector select {
             padding: 0.5rem 0.75rem;
@@ -315,10 +465,77 @@ if ($selectedPairIndex !== null) {
         .toolbar-btn-clear:hover {
             background-color: rgba(0,0,0,0.3);
         }
-        .row-number {
-            text-align: center;
-            color: var(--inactive-font-color);
+        .modify-button {
+            padding: 0.5rem 1rem;
+            background-color: var(--accent-color);
+            color: var(--button-font-color);
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.95rem;
             font-weight: 500;
+            max-width: 500px;
+        }
+        .modify-button:hover {
+            opacity: 0.85;
+        }
+        @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            }
+            .report-table th,
+            .report-table td {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+                position: static;
+
+            }
+            .report-container {
+                padding: 0.5rem;
+            }
+            div.table-wrapper {
+                overflow-x: visible;
+            }
+            .updateInv-optionRow {
+                display: flex;
+                align-items: right;
+                flex-direction: column;
+                justify-content: left;
+                gap: 1rem;
+            }
+            .updateInv-option {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                width: auto;
+                gap: 1rem;
+            }
+            .updateInv-qty {
+                max-width: 7rem;
+                margin-right: 2rem !important;
+                
+            }
+            .desktop-text {
+                display: none;
+            }
+            .mobile-text {
+                display: inline;
+            }
+            .report-table th {
+                font-size: 0.85rem;
+                padding: 4px;
+            }
+            .report-table td {
+                padding: 4px;
+            }
+            .report-section{
+                padding: 0;
+            }
         }
     </style>
 </head>
@@ -331,20 +548,40 @@ if ($selectedPairIndex !== null) {
         <div class="report-container">
             <div class="report-section">
                 <h2>Food Items</h2>
-                <div class="week-selector">
-                    <label for="weekSelect">View Inventory:</label>
-                    <select id="weekSelect" name="week" onchange="window.location.href='?week=' + this.value">
-                        <?php if (count($eventPairs) > 0): ?>
-                            <?php foreach ($eventPairs as $pair): ?>
-                                <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
-                                <option value="<?= htmlspecialchars($pairId) ?>" <?= ($pairId == $selectedWeek) ? 'selected' : '' ?>>
-                                    <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                <div class="week-and-filter-section">
+                    <div class="form-section">
+                        <label for="weekSelect">Select Inventory to View:</label>
+                        <select id="weekSelect" name="week" class="toolbar-select" style="min-width: 1rem; important!;"  onchange="window.location.href='?year='+<?php echo $filterEventList ?>+'&week=' + this.value">
+                            <?php if (count($eventPairs) > 0): ?>
+                                <?php foreach ($eventPairs as $index => $pair): ?>
+                                    <?php $pairId = $pair['warehouseId'] ?? $pair['pantryId']; ?>
+                                    <?php if (date('Y', strtotime($pair['date'])) == $filterEventList || ($filterEventList < 100 && $index < $filterEventList)): ?>
+                                        <option value="<?= htmlspecialchars($pairId) ?>" <?= ($pairId == $selectedWeek) ? 'selected' : '' ?>>
+                                            <?= date('m/d/Y', strtotime($pair['date'])) ?>
+                                        </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-section">
+                        <label for="yearSelect" style="font-weight: 500;">Filter Inventories:</label>
+                        <select id="yearSelect" name="year" class="toolbar-select" style="min-width: 1rem; important!;" onchange="window.location.href='?year=' + this.value +'&week='+<?php echo intval($selectedWeek) ?>">
+                            <option value="30" <?= ($filterEventList == "30") ? 'selected' : '' ?>>
+                                    Most Recent 
+                            </option>
+                            <optgroup label="By Year">
+                            <?php foreach ($uniqueYears as $year): ?>
+                                <option value="<?= $year ?>" <?= ($year == $filterEventList) ? 'selected' : '' ?>>
+                                    <?= $year ?>
                                 </option>
                             <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
+                            </optgroup>
+                        </select>
+                    </div>
                 </div>
-
+                <hr>
+                <br>
                 <div class="table-toolbar">
                     <div class="toolbar-left">
                         <label for="sortSelect" style="color: var(--page-font-color); margin-right: 0.5rem;">Sort by:</label>
@@ -362,25 +599,48 @@ if ($selectedPairIndex !== null) {
                 <div class="table-wrapper">
                     <table class="report-table" id="inventoryTable">
                         <thead>
-                            <tr>
-                                <th style="width: 50px;">#</th>
-                                <th>Item Name</th>
-                                <th>Warehouse</th>
-                                <th>Pantry</th>
-                                <th>Total Boxes</th>
-                                <th>Banana Box</th>
-                                <th>Items Per Box</th>
-                                <th>Total Items</th>
-                            </tr>
-                        </thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>
+                                        <span class="desktop-text">Warehouse</span>
+                                        <span class="mobile-text">WH</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Pantry</span>
+                                        <span class="mobile-text">PT</span>
+                                    </th>
+                                    <th>
+                                        <div class="pallet-column" style="display: block;">
+                                            <span class="desktop-text">Pallet Boxes</span>
+                                            <span class="mobile-text">Pallets</span>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Total Boxes</span>
+                                        <span class="mobile-text">Total Boxes</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Banana Box</span>
+                                        <span class="mobile-text">Ban. Box</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Items Per Box</span>
+                                        <span class="mobile-text">Items/Box</span>
+                                    </th>
+                                    <th>
+                                        <span class="desktop-text">Total Items</span>
+                                        <span class="mobile-text">Total Items</span>
+                                    </th>
+                                </tr>
+                            </thead>
                         <tbody>
                             <?php if (count($items) > 0): ?>
                                 <?php foreach ($items as $item): ?>
                                     <tr>
-                                        <td class="row-number"></td>
                                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                                         <td><?= $item['warehouse_boxes'] > 0 ? htmlspecialchars($item['warehouse_boxes']) : '-' ?></td>
                                         <td><?= $item['pantry_boxes'] > 0 ? htmlspecialchars($item['pantry_boxes']) : '-' ?></td>
+                                        <td><?= $item['pallet_boxes'] > 0 ? htmlspecialchars($item['pallet_boxes']) : '-' ?></td>
                                         <td><?= htmlspecialchars($item['total_boxes']) ?></td>
                                         <td><?= $item['bananaBox'] == 1 ? '✓' : '' ?></td>
                                         <td><?= htmlspecialchars($item['itemsPerBox']) ?></td>
@@ -396,11 +656,11 @@ if ($selectedPairIndex !== null) {
                     </table>
                 </div>
             </div>
-            <?php if($accessLevel >= 2): ?>
+            <?php if($accessLevel >= 1): ?>
                 <div style="margin-bottom: 1.5rem;">
-                    <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" style="text-decoration: none;">
-                        <button style="padding: 0.75rem 1.5rem; background-color: #dc2626; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; font-weight: 600;">
-                            Edit/Delete Weekly Inventory
+                    <a href="editInventoryEvent.php?warehouseId=<?= htmlspecialchars($selectedWeek) ?>" style="text-decoration: none; display: flex; justify-content: center;">
+                        <button class="modify-button">
+                            Modify
                         </button>
                     </a>
                 </div>
@@ -410,16 +670,6 @@ if ($selectedPairIndex !== null) {
 
     <script>
         $(function() {
-            // Update row numbers
-            function updateRowNumbers() {
-                $('#inventoryTable tbody tr:visible').each(function(index) {
-                    $(this).find('.row-number').text(index + 1);
-                });
-            }
-
-            // Initialize row numbers on page load
-            updateRowNumbers();
-
             // Sorting functionality
             $('#sortSelect').change(function() {
                 var sortValue = $(this).val();
@@ -429,15 +679,15 @@ if ($selectedPairIndex !== null) {
                 if (sortValue === 'name-asc') {
                     // Sort by name A-Z
                     $rows.sort(function(a, b) {
-                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
-                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        var nameA = $(a).find('td').eq(0).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(0).text().toLowerCase();
                         return nameA.localeCompare(nameB);
                     });
                 } else if (sortValue === 'name-desc') {
                     // Sort by name Z-A
                     $rows.sort(function(a, b) {
-                        var nameA = $(a).find('td').eq(1).text().toLowerCase();
-                        var nameB = $(b).find('td').eq(1).text().toLowerCase();
+                        var nameA = $(a).find('td').eq(0).text().toLowerCase();
+                        var nameB = $(b).find('td').eq(0).text().toLowerCase();
                         return nameB.localeCompare(nameA);
                     });
                 }
@@ -446,9 +696,6 @@ if ($selectedPairIndex !== null) {
                 $.each($rows, function(index, row) {
                     $tbody.append(row);
                 });
-
-                // Update row numbers after sorting
-                updateRowNumbers();
             });
 
             // Search functionality
@@ -456,7 +703,7 @@ if ($selectedPairIndex !== null) {
                 var searchTerm = $(this).val().toLowerCase();
 
                 $('#inventoryTable tbody tr').each(function() {
-                    var itemName = $(this).find('td').eq(1).text().toLowerCase();
+                    var itemName = $(this).find('td').eq(0).text().toLowerCase();
 
                     if (itemName.indexOf(searchTerm) > -1) {
                         $(this).show();
@@ -464,16 +711,12 @@ if ($selectedPairIndex !== null) {
                         $(this).hide();
                     }
                 });
-
-                // Update row numbers after filtering
-                updateRowNumbers();
             });
 
             // Clear search button
             $('#clearSearch').click(function() {
                 $('#searchInput').val('');
                 $('#inventoryTable tbody tr').show();
-                updateRowNumbers();
             });
 
             // Store original order for default sorting

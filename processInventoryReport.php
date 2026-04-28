@@ -9,7 +9,7 @@ require 'vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 2) {
+if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 1) {
     header('Location: login.php');
     die();
 }
@@ -17,6 +17,7 @@ if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 2) {
 //require_once('database/dbPersons.php');
 //require_once('database/dbEvents.php');
 require_once('database/dbinfo.php');
+require_once('database/dbInventoryEvent.php');
 
 // 👉 Add month completeness check function
 // function is_month_complete($dateFrom) {
@@ -45,28 +46,32 @@ if (empty($selectedWeek)) {
     exit();
 }
 
-$eventCheckSql = "SELECT id FROM dbinventoryevent WHERE id = ?";
-$eventCheckStmt = $con->prepare($eventCheckSql);
-$eventCheckStmt->bind_param("i", $selectedWeek);
-$eventCheckStmt->execute();
-$eventCheckResult = $eventCheckStmt->get_result();
-
-if ($eventCheckResult->num_rows === 0) {
+$primaryEvent = retrieve_inventoryEvent($selectedWeek);
+if (!$primaryEvent) {
     echo "No inventory event found for the selected date.";
     exit();
 }
-$eventCheckStmt->close();
 
-$sql = "SELECT dic.id, dic.name as item_name, 
-        dbic.quantity as boxes, 
-        dic.itemsPerBox, 
-        dbic.quantity * dic.itemsPerBox as total_count, 
-        dbic.inventoryEventID as inventoryEventId 
-        FROM dbitemcategory dic 
-        INNER JOIN dbitemcounts dbic on dic.id = dbic.itemCategoryId 
-        WHERE dbic.inventoryEventID = ?";
-$params = [$selectedWeek];
-$types = "s";
+// Get all matching events (Warehouse, Pantry, Pallet triplet)
+$eventIds = [$selectedWeek];
+$matches = get_matching_inventoryEvent($primaryEvent);
+foreach ($matches as $location => $event) {
+    if ($event) {
+        $eventIds[] = $event->getId();
+    }
+}
+
+// Sum quantities across all locations (Warehouse, Pantry, Pallet)
+$eventPlaceholders = implode(',', array_fill(0, count($eventIds), '?'));
+$sql = "SELECT dic.id, dic.name as item_name,
+        SUM(dbic.quantity) as boxes,
+        dic.itemsPerBox,
+        SUM(dbic.quantity) * dic.itemsPerBox as total_count
+        FROM dbitemcategory dic
+        INNER JOIN dbitemcounts dbic on dic.id = dbic.itemCategoryId
+        WHERE dbic.inventoryEventID IN ($eventPlaceholders) AND dic.shopOnly = 0";
+$params = $eventIds;
+$types = str_repeat('i', count($eventIds));
 
 // managing selected item categories
 if (!empty($selectedItemCategories)) {
@@ -75,8 +80,11 @@ if (!empty($selectedItemCategories)) {
     $sql .= " AND dic.id IN ($placeholders)";
     // for the bind function to work with all the items
     $types .= str_repeat('s', count($selectedItemCategories));
-    $params = array_merge($params, $selectedItemCategories); 
+    $params = array_merge($params, $selectedItemCategories);
 }
+
+// Group by category to combine quantities from all locations
+$sql .= " GROUP BY dic.id, dic.name, dic.itemsPerBox";
 
 $stmt = $con->prepare($sql);
 $stmt->bind_param($types, ...$params);
@@ -162,38 +170,38 @@ if ($format === 'xlsx') {
     exit();
 }
 
-// EXCEL EXPORT
-header("Content-Type: application/vnd.ms-excel; charset=UTF-8");
-header("Content-Disposition: attachment; filename=inventory_report.xls");
-header("Pragma: no-cache");
-header("Expires: 0");
-
-echo "\xEF\xBB\xBF";
-echo "<html><head><meta charset='UTF-8'></head><body>";
-echo "<table border='1' style='border-collapse: collapse; font-family: Arial, sans-serif; text-align: center;'>";
-
-// Report Title
-echo "<tr><th colspan='4' >Inventory Report</th></tr>";
-
-// Column Headers
-echo "<tr>
-        <th style='background-color: #88CCEE; padding: 5px;'>Item Name</th>
-        <th style='background-color: #AA4499; padding: 5px;'>Boxes</th>
-        <th style='background-color: #DDCC77; padding: 5px;'>Items Per Box</th>
-        <th style='background-color: #88CCEE; padding: 5px;'>Total Count</th>
-        </tr>";
-
-// Data Rows
-foreach ($reportData as $row) {
-    echo "<tr>
-            <td style='background-color: #EAEAEA; padding: 5px; text-align: center;'>{$row["item_name"]}</td>
-            <td style='padding: 5px;'>{$row["boxes"]}</td>
-            <td style='padding: 5px;'>{$row["itemsPerBox"]}</td>
-            <td style='padding: 5px;'>{$row["total_count"]}</td>
-            </tr>";
-}
-
-echo "</table>";
-echo "</body></html>";
-exit();
+// EXCEL EXPORT - COMMENTED OUT
+// header("Content-Type: application/vnd.ms-excel; charset=UTF-8");
+// header("Content-Disposition: attachment; filename=inventory_report.xls");
+// header("Pragma: no-cache");
+// header("Expires: 0");
+//
+// echo "\xEF\xBB\xBF";
+// echo "<html><head><meta charset='UTF-8'></head><body>";
+// echo "<table border='1' style='border-collapse: collapse; font-family: Arial, sans-serif; text-align: center;'>";
+//
+// // Report Title
+// echo "<tr><th colspan='4' >Inventory Report</th></tr>";
+//
+// // Column Headers
+// echo "<tr>
+//         <th style='background-color: #88CCEE; padding: 5px;'>Item Name</th>
+//         <th style='background-color: #AA4499; padding: 5px;'>Boxes</th>
+//         <th style='background-color: #DDCC77; padding: 5px;'>Items Per Box</th>
+//         <th style='background-color: #88CCEE; padding: 5px;'>Total Count</th>
+//         </tr>";
+//
+// // Data Rows
+// foreach ($reportData as $row) {
+//     echo "<tr>
+//             <td style='background-color: #EAEAEA; padding: 5px; text-align: center;'>{$row["item_name"]}</td>
+//             <td style='padding: 5px;'>{$row["boxes"]}</td>
+//             <td style='padding: 5px;'>{$row["itemsPerBox"]}</td>
+//             <td style='padding: 5px;'>{$row["total_count"]}</td>
+//             </tr>";
+// }
+//
+// echo "</table>";
+// echo "</body></html>";
+// exit();
 ?>

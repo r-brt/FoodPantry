@@ -26,11 +26,18 @@
     *  Submitting the form on this page reloads the page with data in _POST
     *  if _POST is not empty, process data from form
     */
+    
     $errors = [];
+
     $pallet_name = "Pallet";
-    $updatedItems = array();
-    $inputCategories = array();
-    $inputQuantities = array();
+
+    $categories_by_row = array();
+    $quantities_by_row = array();
+    $expirations_by_row = array();
+
+    $quantities_by_cat = array();
+    $expirations_by_cat = array();
+
     if (!empty($_POST)) {
         if(isset($_POST["cancel_button"])){
             header('Location: viewManagePallets.php');
@@ -60,16 +67,19 @@
             $key_type = $key_parts[0];
             $key_id = $key_parts[1];
             if($key_type == "category"){
-                $inputCategories[] = $value;
+                $categories_by_row[] = $value;
             }
             else if($key_type == "qty"){
-                $inputQuantities[] = $value;
+                $quantities_by_row[] = $value;
+            }
+            else if($key_type == "exp"){
+                $expirations_by_row[] = $value;
             }
         }
 
         // check for duplicate allCategories$allCategories
         $dupe_category = array();
-        foreach(array_count_values($inputCategories) as $cat => $count)
+        foreach(array_count_values($categories_by_row) as $cat => $count)
             if($count > 1) $dupe_category[] = $cat;
 
         foreach($dupe_category as $cat){
@@ -79,17 +89,22 @@
             }
         }
 
-        foreach($inputCategories as $id_key => $categoryId){
+        foreach($categories_by_row as $id_key => $categoryId){
             if(empty($categoryId)){
-                // if quantity is filled out but category is not, show error for missing category. 
-                // if category and quantity are both empty, no error.
-                if(!empty($inputQuantities[$id_key])){
+                /* if quantity is filled out or expiration date is filled out 
+                 * but category is not, show error for missing category. 
+                 * if category and quantity are both empty, no error. */
+                if(!empty($quantities_by_row[$id_key]) || !empty($expirations_by_row[$id_key])){
                     $errors[] = "Missing Category on row " . ($id_key+1);
                 }
                 continue;
             }
 
-            $quantity = $inputQuantities[$id_key];
+            $quantity = $quantities_by_row[$id_key];
+            $expiration = "";
+            if(isset($expirations_by_row[$id_key]))
+                $expiration = $expirations_by_row[$id_key];
+
             if(empty($quantity)){
                 $category = retrieve_ItemCategory($categoryId);
                 if(!empty($category)){
@@ -120,14 +135,15 @@
             }
             /* accept items with 0 or greater quantity */
             else if($quantity >= 0){
-                $updatedItems[$categoryId] = $quantity;
+                $quantities_by_cat[$categoryId] = $quantity;
+                $expirations_by_cat[$categoryId] = $expiration;
             }
         }
 
-        if(count($updatedItems) == 0 && empty($errors)){
+        if(count($quantities_by_cat) == 0 && empty($errors)){
             $errors[] = 'Add at least 1 item to the pallet';
         }
-        else if(count($updatedItems) > 0 && empty($errors)){
+        else if(count($quantities_by_cat) > 0 && empty($errors)){
             $palletEventId = add_palletEvent($pallet_name, $personId);
             if($pallet_name == "PALLET_PLACEHOLDER_NAME"){
                 $pallet_name = "Pallet " . $palletEventId;
@@ -138,8 +154,9 @@
                 }
                 update_palletEvent_name($palletEventId, $pallet_name);
             }
-            foreach($updatedItems as $categoryId => $quantity){
-                add_palletCount($palletEventId, $categoryId, $quantity);
+            foreach($quantities_by_cat as $categoryId => $quantity){
+                $expiration = $expirations_by_cat[$categoryId];
+                add_palletCount($palletEventId, $categoryId, $quantity, $expiration);
             }
             header('Location: viewManagePallets.php');
             die();
@@ -158,19 +175,20 @@
         pageheader {
             margin-top: 3rem;
             display: flex; justify-content: center; align-items: center;
+            position: sticky;
+            top: 1rem;
+            z-index: 6;
         }
         .title {
-            position: fixed;
             text-align: center;
             height: 3.5rem;
-            width: 40%;
-            z-index: 1000;
+            width:auto;
             font-size: 2rem;
             font-weight: 600;
             color: var(--secondary-accent-color);
-            background-color: white;
-            padding-top: 0;
-            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            padding-top: .4rem;
+            border-radius: 10px;
+            background-color: #ffffffee;
         }
         .report-container {
             max-width: 1100px;
@@ -182,7 +200,7 @@
             /* border: 1px solid var(--shadow-and-border-color); */
             border-radius: 15px;
             padding: 1.5rem;
-
+            margin-bottom: 2rem;
         }
         .report-section h1 {
             font-size: 1.5rem;
@@ -211,6 +229,9 @@
             background-color: var(--main-color);
             color: var(--button-font-color);
             font-weight: 500;
+            text-align:center;
+            position: sticky;
+            top: 100px; /* height of page header */
         }
         .report-table tr:hover {
             background-color: rgba(255,255,255,0.05);
@@ -304,6 +325,16 @@
         .updateInv-qty {
             width: 100px;
             max-width: 100px;
+            margin-bottom: 0rem !important;
+            padding: 0.4rem 0.6rem !important;
+            border: 1px solid var(--shadow-and-border-color);
+            border-radius: 0.25rem;
+            background-color: rgba(0,0,0,0.2);
+            color: var(--page-font-color);
+            font-size: 0.9rem;
+        }
+        .updateInv-exp {
+            max-width: 8rem;
             margin-bottom: 0rem !important;
             padding: 0.4rem 0.6rem !important;
             border: 1px solid var(--shadow-and-border-color);
@@ -415,10 +446,19 @@
             background-color: darkred;
         }
         @media only screen and (max-width: 768px) {
+            pageheader {
+                top: 100px;
+            }
+            .title {
+                border-radius: 0;
+                background-color: #ffffff;
+                width: 100%;
+            } 
             .report-table th,
             .report-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+                position: static;
             }
             .report-container {
                 padding: 0.5rem;
@@ -485,6 +525,7 @@
                                         <th>Boxes</th>
                                         <th>Banana Box</th>
                                         <th>Items Per Box</th>
+                                        <th>Expiration Date</th>
                                         <th> </th>
                                     </tr>
                                 </thead>
@@ -492,7 +533,17 @@
                                      
                         <?php $allCategories = get_all_active_ItemCategory(); ?>
                         <?php $row_count = 0; ?>
-                        <?php foreach($inputCategories AS $categoryid): ?>
+                        <?php foreach($categories_by_row AS $categoryid): ?>
+                            <?php
+                                // Skip rows for shopping list only items
+                                if (!empty($categoryid)) {
+                                    $rowCategory = retrieve_ItemCategory($categoryid);
+                                    if ($rowCategory && $rowCategory->getShopOnly() == 1) {
+                                        $row_count++;
+                                        continue;
+                                    }
+                                }
+                            ?>
                             <?php if(empty($categoryid)) : ?>
                                 <tr class="rowClass">
                                     <div class="updateInv-row">
@@ -500,16 +551,21 @@
                                             <select name="category_<?php echo($row_count); ?>" id="category_<?php echo($row_count); ?>" onchange="updateCategoryColumns(this)">
                                                 <option value="">-- Select Category --</option>
                                                 <?php foreach($allCategories AS $category): ?>
+                                                    <?php if ($category->getShopOnly() == 1) { continue; } ?>
                                                     <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>"><?php echo($category->getName())?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
                                         <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
-                                                value="<?php echo(isset($inputQuantities[$row_count]) ? $inputQuantities[$row_count] : ''); ?>"
+                                                value="<?php echo(isset($quantities_by_row[$row_count]) ? $quantities_by_row[$row_count] : ''); ?>"
                                                 name="qty_<?php echo($row_count); ?>" 
                                                 id="qty_<?php echo($row_count); ?>"></td>
-                                        <td style="text-align: center;"><div class="bb_<?php echo($row_count); ?>"></div></td>
-                                        <td style="text-align: center;"><div class="ipb_<?php echo($row_count); ?>"></div></td>
+                                        <td><div style="text-align: center;" class="bb_<?php echo($row_count); ?>"></div></td>
+                                        <td><div style="text-align: center;" class="ipb_<?php echo($row_count); ?>"></div></td>
+                                        <td><input type="date" class="updateInv-exp"
+                                                value="<?php echo(isset($expirations_by_row[$row_count]) ? $expirations_by_row[$row_count] : ''); ?>"
+                                                name="exp_<?php echo($row_count); ?>" 
+                                                id="exp_<?php echo($row_count); ?>"></td>
                                         <td style="text-align: center;"><button type="button" class="delete-row-btn" onclick="removeRow(this)">Remove</button></td>
 
                                     </div>
@@ -522,29 +578,35 @@
                                             <select name="category_<?php echo($row_count); ?>" id="category_<?php echo($row_count); ?>" onchange="updateCategoryColumns(this)">
                                                 <option value="">-- Select Category --</option>
                                                 <?php foreach($allCategories AS $cat): ?>
+                                                    <?php if ($cat->getShopOnly() == 1) { continue; } ?>
                                                     <option value="<?php echo($cat->getId()."_".$cat->getBananaBox()."_".$cat->getItemsPerBox())?>" <?php if($cat->getId() == $category->getId()) echo("selected")?>><?php echo($cat->getName())?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
                                         <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
-                                                value="<?php echo(isset($inputQuantities[$row_count]) ? $inputQuantities[$row_count] : ''); ?>"
+                                                value="<?php echo(isset($quantities_by_row[$row_count]) ? $quantities_by_row[$row_count] : ''); ?>"
                                                 name="qty_<?php echo($row_count); ?>" 
                                                 id="qty_<?php echo($row_count); ?>"></td>
-                                        <td style="text-align: center;"><div class="bb_<?php echo($row_count); ?>"><?php echo($category->getBananaBox() == 1 ? '✓' : '')?></div></td>
-                                        <td style="text-align: center;"><div class="ipb_<?php echo($row_count); ?>"><?php echo($category->getItemsPerBox())?></div></td>
+                                        <td><div style="text-align: center;" class="bb_<?php echo($row_count); ?>"><?php echo($category->getBananaBox() == 1 ? '✓' : '')?></div></td>
+                                        <td><div style="text-align: center;" class="ipb_<?php echo($row_count); ?>"><?php echo($category->getItemsPerBox())?></div></td>
+                                        <td><input type="date" class="updateInv-exp"
+                                                value="<?php echo(isset($expirations_by_row[$row_count]) ? $expirations_by_row[$row_count] : ''); ?>"
+                                                name="exp_<?php echo($row_count); ?>" 
+                                                id="exp_<?php echo($row_count); ?>"></td>
                                         <td style="text-align: center;"><button type="button" class="delete-row-btn" onclick="removeRow(this)">Remove</button></td>
                                     </div>
                                 </tr>
                             <?php endif; ?>
                             <?php $row_count++; ?>
                         <?php endforeach; ?>
-                        <?php if(empty($inputCategories)) : ?>
+                        <?php if(empty($categories_by_row)) : ?>
                             <tr class="rowClass">
                                 <div class="updateInv-row">
                                     <td>
                                         <select name="category_0" id="category_0" onchange="updateCategoryColumns(this)">
                                             <option value="">-- Select Category --</option>
                                             <?php foreach($allCategories AS $category): ?>
+                                                <?php if ($category->getShopOnly() == 1) { continue; } ?>
                                                 <option value="<?php echo($category->getId()."_".$category->getBananaBox()."_".$category->getItemsPerBox())?>"><?php echo($category->getName())?></option>
                                             <?php endforeach; ?>
                                         </select>
@@ -552,8 +614,11 @@
                                     <td><input type="number" class="updateInv-qty" min="0" placeholder="Qty" 
                                             name="qty_0" 
                                             id="qty_0"></td>
-                                    <td style="text-align: center;"><div class="bb_0"></div></td>
-                                    <td style="text-align: center;"><div class="ipb_0"></div></td>
+                                    <td><div style="text-align: center;" class="bb_0"></div></td>
+                                    <td><div style="text-align: center;" class="ipb_0"></div></td>
+                                    <td><input type="date" class="updateInv-exp"
+                                                name="exp_0" 
+                                                id="exp_0"></td>
                                     <td style="text-align: center;"><button type="button" class="delete-row-btn" onclick="removeRow(this)">Remove</button></td>
                                 </div>
                             </tr> 
@@ -597,7 +662,8 @@
                 var quantity = row.insertCell(1);
                 var bananaBox = row.insertCell(2);
                 var itemsPerBox = row.insertCell(3);
-                var removeRow = row.insertCell(4);
+                var expiration = row.insertCell(4);
+                var removeRow = row.insertCell(5);
                 
                 let dropdown = document.querySelector('[id^=category_]');
                 let new_dropdown = dropdown.cloneNode(true);
@@ -614,8 +680,16 @@
                 quantity.append(new_qty_input);
 
                 // Add some text to the new cells:
-                bananaBox.innerHTML = "<div class=\"bb_" + row_count + "\"></div>";
-                itemsPerBox.innerHTML = "<div class=\"ipb_" + row_count + "\"></div>";
+                bananaBox.innerHTML = "<div style=\"text-align: center;\" class=\"bb_" + row_count + "\"></div>";
+                itemsPerBox.innerHTML = "<div style=\"text-align: center;\" class=\"ipb_" + row_count + "\"></div>";
+
+                let exp_input = document.querySelector('[id^=exp_]');
+                let new_exp_input = exp_input.cloneNode(true);
+                new_exp_input.name = 'exp_' + row_count;
+                new_exp_input.id = 'exp_' + row_count;
+                new_exp_input.value = "";
+                expiration.append(new_exp_input);
+
                 removeRow.innerHTML = "<button type=\"button\" class=\"delete-row-btn\" onclick=\"removeRow(this)\">Remove</button>";
 
                 row_count++;

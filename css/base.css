@@ -69,7 +69,7 @@ table, td, tr, th, form, fieldset, em, button, a {
 
     --main-color: #2A435A; 
 
-    --accent-color: #F6C445;
+    --accent-color: #ffc20e;
  
     --secondary-accent-color: #00395E;
 
@@ -1537,4 +1537,11 @@ div .dd {
     margin: 1rem;
     padding: 1rem;
     background-color: rgba(0,0,0,0.15);
+}
+
+.row-gray {
+    background-color: rgba(156, 163, 175, 0.25) !important;
+}
+.row-gray:hover {
+    background-color: rgba(156, 163, 175, 0.35) !important;
 }

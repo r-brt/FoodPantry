@@ -38,7 +38,7 @@
 
             if (!$user) {
                 $badLogin = true;
-            } else if ($user->get_status() === "Inactive") {
+            } else if ($user->get_status() !== "Active") {
                 // If the user is archived, block login
                 $archivedAccount = true;
             } else if (password_verify($password, $user->get_password())) {
@@ -81,6 +81,7 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<script src="https://cdn.tailwindcss.com"></script>
     	<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;700&display=swap" rel="stylesheet">
 	<style>
@@ -114,7 +115,8 @@
   <div class="hidden md:block md:w-1/2 bg-center rounded-r-[50px] bg-[#00395E]">
       <img src="images/ccda-logo-white.svg"
             alt="Tanya Time"
-            style="height: 100%;">
+            style="position: relative; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 35%"
+            >
   </div>
 
   <!-- Right: Form Section -->
@@ -141,7 +143,7 @@
                         echo '<span class="text-white bg-red-700 text-center block p-2 rounded-lg mb-2">No login with that username and password combination currently exists.</span>';
                     }
                     if ($archivedAccount) {
-                        echo '<span class="text-white bg-red-700 block p-2 rounded-lg mb-2">This account has either been archived or not yet approved by managment. For help, notify <a href="mailto:volunteer@fredspca.org">volunteer@fredspca.org</a>.</span>';
+                        echo '<span class="text-white bg-red-700 block p-2 rounded-lg mb-2">This account has either been archived or not yet approved by managment. For help, notify your administrator.</a>.</span>';
                     }
 		    if (isset($_GET['registerSuccess'])) {
                         echo '<span class="text-white text-center bg-green-700 block p-2 rounded-lg mb-2">Registration Successful! Please login below.</span>';
@@ -159,7 +161,7 @@
           <a href="forgotPassword.php" class="text-[#22654D] text-sm hover:underline">Forgot password?</a>
           <!--<a href="https://whiskeyvalor.org" class="text-[#22654D] text-sm hover:underline">Whiskey Valor Website</a> -->
         </div>
-        <button class="cursor-pointer w-full bg-[#F6C445] hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition duration-300">Login</button>
+        <button class="cursor-pointer w-full bg-[#ffc20e] hover:bg-[#4d98f3] text-white font-semibold py-3 rounded-lg transition duration-300" style="background-color: --accent-color;">Login</button>
       </form>
 
       <!-- Divider -->
