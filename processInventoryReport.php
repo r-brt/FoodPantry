@@ -9,7 +9,7 @@ require 'vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 2) {
+if (!isset($_SESSION['access_level']) || $_SESSION['access_level'] < 1) {
     header('Location: login.php');
     die();
 }
