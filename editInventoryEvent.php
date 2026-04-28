@@ -11,8 +11,8 @@
         $userID = $_SESSION['_id'];
     }
 
-    /* Access control - Managers only */
-    if($accessLevel < 2) {
+    /* Access control - Inventory Counters and Managers */
+    if($accessLevel < 1) {
         header('Location: index.php');
         die();
     }
