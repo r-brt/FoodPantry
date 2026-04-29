@@ -243,7 +243,7 @@
 <html>
 <head>
     <?php require_once('universal.inc') ?>
-    <title>Edit Inventory | Whiskey Valor Foundation</title>
+    <title>Edit Inventory | CCDA</title>
     <style>
         pageheader {
             margin-top: 3rem;
